@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+// 读取签名配置
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -22,6 +31,16 @@ android {
 
     buildTypes {
         release {
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.create("release") {
+                    keyAlias = keystoreProperties["keyAlias"].toString()
+                    keyPassword = keystoreProperties["keyPassword"].toString()
+                    storeFile = file(keystoreProperties["storeFile"].toString())
+                    storePassword = keystoreProperties["storePassword"].toString()
+                }
+            } else {
+                signingConfigs["debug"]
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

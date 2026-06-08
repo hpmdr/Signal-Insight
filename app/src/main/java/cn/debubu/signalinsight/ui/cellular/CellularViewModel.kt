@@ -3,6 +3,7 @@ package cn.debubu.signalinsight.ui.cellular
 import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.data.cellular.CellularData
 import cn.debubu.signalinsight.data.cellular.CellularRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -36,6 +38,51 @@ class CellularViewModel constructor(
 
     private var dataCollectionJob: Job? = null
 
+    // === 每张卡独立的数据快照（供 HorizontalPager 使用） ===
+    val sim1SignalData: State<SignalData> = derivedStateOf {
+        _sim1Data.value?.servingCell?.let { cell ->
+            SignalData(
+                dbm = cell.dbm,
+                progress = ((cell.dbm + 120) / 60f).coerceIn(0f, 1f),
+                operatorName = cell.operatorName,
+                networkType = cell.networkType,
+                rsrp = cell.rsrp, rsrq = cell.rsrq, sinr = cell.sinr, rssi = cell.rssi,
+                pci = cell.pci, earfcn = cell.earfcn, band = cell.band, tac = cell.tac
+            )
+        } ?: SignalData()
+    }
+
+    val sim2SignalData: State<SignalData> = derivedStateOf {
+        _sim2Data.value?.servingCell?.let { cell ->
+            SignalData(
+                dbm = cell.dbm,
+                progress = ((cell.dbm + 120) / 60f).coerceIn(0f, 1f),
+                operatorName = cell.operatorName,
+                networkType = cell.networkType,
+                rsrp = cell.rsrp, rsrq = cell.rsrq, sinr = cell.sinr, rssi = cell.rssi,
+                pci = cell.pci, earfcn = cell.earfcn, band = cell.band, tac = cell.tac
+            )
+        } ?: SignalData()
+    }
+
+    val sim1NeighborCells: State<List<NeighborCellTableModel>> = derivedStateOf {
+        _sim1Data.value?.neighborCells?.map { neighbor ->
+            NeighborCellTableModel(
+                pci = neighbor.pci, earfcn = neighbor.earfcn, band = neighbor.band,
+                rsrp = neighbor.rsrp, rsrq = neighbor.rsrq, sinr = neighbor.sinr
+            )
+        }?.sortedByDescending { it.rsrp } ?: emptyList()
+    }
+
+    val sim2NeighborCells: State<List<NeighborCellTableModel>> = derivedStateOf {
+        _sim2Data.value?.neighborCells?.map { neighbor ->
+            NeighborCellTableModel(
+                pci = neighbor.pci, earfcn = neighbor.earfcn, band = neighbor.band,
+                rsrp = neighbor.rsrp, rsrq = neighbor.rsrq, sinr = neighbor.sinr
+            )
+        }?.sortedByDescending { it.rsrp } ?: emptyList()
+    }
+
     init {
         startDataCollection()
     }
@@ -47,7 +94,7 @@ class CellularViewModel constructor(
     }
 
     private fun startDataCollection() {
-        dataCollectionJob = viewModelScope.launch {
+        dataCollectionJob = viewModelScope.launch(Dispatchers.IO) {
             repository.getDualSimCellularDataFlow().collect { (sim1Data, sim2Data) ->
                 _sim1Data.value = sim1Data
                 _sim2Data.value = sim2Data

@@ -111,9 +111,12 @@ data class CellularSignalInfo(
                     val lteSinr = signalStrengthLte.rssnr.let {
                         if (it != Int.MAX_VALUE) it else -20
                     }
+                    val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
+                        ?: cellIdentityLte.operatorAlphaLong?.toString()
+                        ?: "Unknown"
                     CellularSignalInfo(
                         simSlotId = simSlotId,
-                        operatorName = operatorName,
+                        operatorName = resolvedOperator,
                         networkType = "4G LTE",
                         dbm = signalStrengthLte.dbm,
                         rsrp = signalStrengthLte.rsrp,
@@ -161,9 +164,13 @@ data class CellularSignalInfo(
                         -20
                     }
 
+                    val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
+                        ?: cellIdentityNr.operatorAlphaLong?.toString()
+                        ?: "Unknown"
+
                     CellularSignalInfo(
                         simSlotId = simSlotId,
-                        operatorName = operatorName,
+                        operatorName = resolvedOperator,
                         networkType = "5G NR",
                         dbm = signalStrengthNr.dbm,
                         rsrp = rsrp,
@@ -179,9 +186,12 @@ data class CellularSignalInfo(
                 is CellInfoWcdma -> {
                     val signalStrengthWcdma = cellInfo.cellSignalStrength
                     val cellIdentityWcdma = cellInfo.cellIdentity
+                    val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
+                        ?: cellIdentityWcdma.operatorAlphaLong?.toString()
+                        ?: "Unknown"
                     CellularSignalInfo(
                         simSlotId = simSlotId,
-                        operatorName = operatorName,
+                        operatorName = resolvedOperator,
                         networkType = "3G WCDMA",
                         dbm = signalStrengthWcdma.dbm,
                         pci = cellIdentityWcdma.psc,
@@ -193,9 +203,12 @@ data class CellularSignalInfo(
                 is CellInfoGsm -> {
                     val signalStrengthGsm = cellInfo.cellSignalStrength
                     val cellIdentityGsm = cellInfo.cellIdentity
+                    val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
+                        ?: cellIdentityGsm.operatorAlphaLong?.toString()
+                        ?: "Unknown"
                     CellularSignalInfo(
                         simSlotId = simSlotId,
-                        operatorName = operatorName,
+                        operatorName = resolvedOperator,
                         networkType = "2G GSM",
                         dbm = signalStrengthGsm.dbm,
                         rssi = signalStrengthGsm.rssi,
@@ -204,7 +217,10 @@ data class CellularSignalInfo(
                         isPrimary = isPrimary
                     )
                 }
-                else -> CellularSignalInfo(simSlotId = simSlotId, isPrimary = isPrimary, operatorName = operatorName)
+                else -> CellularSignalInfo(
+                    simSlotId = simSlotId, isPrimary = isPrimary,
+                    operatorName = operatorName.takeUnless { it == "Unknown" } ?: "Unknown"
+                )
             }
             return signalStrength
         }

@@ -30,14 +30,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -52,7 +48,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cn.debubu.signalinsight.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PermissionScreen(
     onNavigateToMain: () -> Unit,
@@ -94,29 +89,20 @@ fun PermissionScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.permission_title)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
-    ) { paddingValues ->
+    Column(modifier = Modifier.fillMaxSize()) {
+        // === 可滚动的内容区（标题已移到外层 TopAppBar） ===
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             HeaderSection()
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             PermissionCardsSection(
                 permissionRequirements = permissionRequirements,
@@ -125,16 +111,85 @@ fun PermissionScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
-            FooterSection(
-                allPermissionsGranted = allPermissionsGranted,
-                shouldNavigateToSettings = shouldNavigateToSettings,
-                onRequestAllPermissions = { viewModel.requestPermissions() },
-                onNavigateToSettings = { viewModel.navigateToSettings(context as Activity) }
-            )
+        // === 固定在底部的操作区：提示 + 授权按钮 ===
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            tonalElevation = 0.dp,
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 永久拒绝提示
+                if (shouldNavigateToSettings) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.permission_denied_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                // 授权按钮
+                Button(
+                    onClick = {
+                        if (shouldNavigateToSettings) {
+                            viewModel.navigateToSettings(context as Activity)
+                        } else {
+                            viewModel.requestPermissions()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    enabled = !allPermissionsGranted
+                ) {
+                    Icon(
+                        imageVector = if (shouldNavigateToSettings) {
+                            Icons.Default.Settings
+                        } else {
+                            Icons.Default.CheckCircle
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (shouldNavigateToSettings) {
+                            stringResource(R.string.permission_go_settings)
+                        } else {
+                            stringResource(R.string.permission_authorize)
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
     }
 }
@@ -146,7 +201,7 @@ fun HeaderSection() {
     ) {
         Box(
             modifier = Modifier
-                .size(80.dp)
+                .size(56.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
@@ -155,24 +210,15 @@ fun HeaderSection() {
                 imageVector = Icons.Default.PhoneAndroid,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(28.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(R.string.permission_main_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = stringResource(R.string.permission_subtitle),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
@@ -318,77 +364,6 @@ fun PermissionCard(
                     color = statusColor
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun FooterSection(
-    allPermissionsGranted: Boolean,
-    shouldNavigateToSettings: Boolean,
-    onRequestAllPermissions: () -> Unit,
-    onNavigateToSettings: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (shouldNavigateToSettings) {
-            Surface(
-                color = MaterialTheme.colorScheme.errorContainer,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.permission_denied_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        Button(
-            onClick = {
-                if (shouldNavigateToSettings) {
-                    onNavigateToSettings()
-                } else {
-                    onRequestAllPermissions()
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(28.dp),
-            enabled = !allPermissionsGranted
-        ) {
-            Icon(
-                imageVector = if (shouldNavigateToSettings) Icons.Default.Settings else Icons.Default.CheckCircle,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = if (shouldNavigateToSettings) {
-                    stringResource(R.string.permission_go_settings)
-                } else {
-                    stringResource(R.string.permission_authorize)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
         }
     }
 }

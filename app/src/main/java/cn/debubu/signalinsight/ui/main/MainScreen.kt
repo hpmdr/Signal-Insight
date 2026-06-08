@@ -122,7 +122,11 @@ fun MainScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(R.string.app_bar_title),
+                            text = if (allPermissionsGranted) {
+                                stringResource(R.string.app_bar_title)
+                            } else {
+                                stringResource(R.string.permission_title)
+                            },
                             fontWeight = FontWeight.Bold
                         )
                     },
