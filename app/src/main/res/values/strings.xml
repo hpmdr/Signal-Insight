@@ -1,3 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Signal Insight</string>
+    <!-- 应用名 -->
+    <string name="app_name">信号监测仪</string>
+
+    <!-- 主界面 (MainScreen) -->
+    <string name="menu_title">菜单</string>
+    <string name="menu_signal_monitor">信号监测</string>
+    <string name="menu_about">关于</string>
+    <string name="menu_settings">设置</string>
+    <string name="app_bar_title">信号监测仪</string>
+    <string name="open_menu">打开菜单</string>
+
+    <!-- 关于页面 (AboutScreen) -->
+    <string name="about_title">关于</string>
+    <string name="about_content">信号监测仪 v1.0.0\n\n这是一个用于监测蜂窝网络信号强度的应用。</string>
+
+    <!-- 设置页面 (SettingsScreen) -->
+    <string name="settings_title">设置</string>
+    <string name="settings_placeholder">设置功能开发中...</string>
+
+    <!-- 权限页面 (Permission) -->
+    <string name="permission_title">权限授权</string>
+    <string name="permission_main_title">需要权限以开始监测</string>
+    <string name="permission_subtitle">请授权以下权限以使用基站信号监测功能</string>
+    <string name="permission_denied_hint">部分权限被永久拒绝，请在设置中手动开启</string>
+    <string name="permission_go_settings">去设置中心</string>
+    <string name="permission_authorize">授权并进入</string>
+
+    <!-- 权限项 -->
+    <string name="perm_phone_state_title">电话状态权限</string>
+    <string name="perm_phone_state_desc">读取基站与信号强度信息</string>
+    <string name="perm_phone_full_title">完整电话权限</string>
+    <string name="perm_phone_full_desc">获取双卡信息（Android 16+ 必需）</string>
+    <string name="perm_location_title">精确位置权限</string>
+    <string name="perm_location_desc">关联基站地理位置（需选择"精确位置"）</string>
+
+    <!-- 权限状态 -->
+    <string name="perm_status_granted">已开启</string>
+    <string name="perm_status_manual">需手动开启</string>
+    <string name="perm_status_pending">待授权</string>
+
+    <!-- 信号监测页面 (CellularPage) -->
+    <string name="cellular_no_sim_toast">该卡槽没有插卡，无法切换显示</string>
+    <string name="cellular_signal_quality">质量: %s</string>
+    <string name="cellular_serving_cell_title">当前注册小区详情</string>
+    <string name="cellular_tap_hint">点击格块查看科普释义与参考标准</string>
+    <string name="cellular_neighbor_title">邻小区列表</string>
+    <string name="cellular_neighbor_empty">暂无邻小区数据</string>
+
+    <!-- 信号状态标签 -->
+    <string name="signal_excellent">极佳</string>
+    <string name="signal_fair">一般</string>
+    <string name="signal_poor">较差</string>
+
+    <!-- 邻小区表格列头 -->
+    <string name="column_pci">PCI</string>
+    <string name="column_frequency">频点</string>
+    <string name="column_band">频段</string>
+
+    <!-- 科普弹窗 -->
+    <string name="explainer_what_is">它是做什么的？</string>
+    <string name="explainer_impact">对体验的影响</string>
+    <string name="explainer_standard">参考标准 (左差右优)</string>
+    <string name="explainer_understand">理解了</string>
+
+    <!-- 网络类型名称 -->
+    <string name="network_5g_nr">5G NR</string>
+    <string name="network_4g_lte">4G LTE</string>
+    <string name="network_3g_wcdma">3G WCDMA</string>
+    <string name="network_2g_gsm">2G GSM</string>
+
+    <!-- 运营商名称（用于 MCC/MNC 映射默认值） -->
+    <string name="operator_unknown">未知</string>
+    <string name="operator_no_sim">未插卡</string>
+    <string name="operator_china_mobile">中国移动</string>
+    <string name="operator_china_unicom">中国联通</string>
+    <string name="operator_china_telecom">中国电信</string>
+    <string name="operator_china_broadcast">中国广电</string>
+
+    <!-- RSRP 科普（新增强化版） -->
+    <string name="metric_rsrp_label">RSRP</string>
+    <string name="metric_rsrp_full">参考信号接收功率 (Reference Signal Received Power)</string>
+    <string name="metric_rsrp_desc">这是衡量 4G/5G 信号强度的最直接指标。它表示手机接收到基站信号的功率大小。</string>
+    <string name="metric_rsrp_impact">数值越接近 0，信号越强。如果数值太低，你会感觉到网页打不开，通话断断续续。</string>
+    <string name="metric_rsrp_tip">RSRP 是衡量信号覆盖的最核心指标，信号强度的测量单位是 dBm。</string>
+    <string name="rsrp_explain_title">什么是 RSRP？</string>
+    <string name="rsrp_explain_basic">RSRP（参考信号接收功率）是手机测量基站发出的参考信号的功率值，是衡量 4G/5G 信号强度的最核心指标。它的单位是 dBm（分贝毫瓦），数值越接近 0 表示信号越强。</string>
+    <string name="rsrp_range_title">RSRP 信号强度分级</string>
+    <string name="rsrp_range_excellent">极佳（> -85dBm）</string>
+    <string name="rsrp_range_excellent_desc">信号极强，速度和稳定性最佳，接近基站</string>
+    <string name="rsrp_range_good">良好（-85 ~ -95dBm）</string>
+    <string name="rsrp_range_good_desc">信号良好，日常使用体验流畅</string>
+    <string name="rsrp_range_fair">一般（-95 ~ -105dBm）</string>
+    <string name="rsrp_range_fair_desc">信号一般，网速可能下降但基本可用</string>
+    <string name="rsrp_range_poor">较差（-105 ~ -115dBm）</string>
+    <string name="rsrp_range_poor_desc">信号较弱，可能遇到网页加载慢、通话质量下降</string>
+    <string name="rsrp_range_weak">极弱（&lt; -115dBm）</string>
+    <string name="rsrp_range_weak_desc">信号极弱，可能掉线，建议靠近窗户或室外</string>
+    <string name="rsrp_factor_title">影响信号强度的因素</string>
+    <string name="rsrp_factor_distance">与基站的距离：越远信号越弱</string>
+    <string name="rsrp_factor_obstacle">建筑物遮挡：钢筋混凝土墙体衰减严重</string>
+    <string name="rsrp_factor_weather">天气影响：大雨、大雾有轻微衰减</string>
+    <string name="rsrp_factor_load">用户密度：基站负载高时信号会波动</string>
+    <string name="rsrp_assessment_title">当前信号评估</string>
+    <string name="rsrp_assessment_excellent">当前信号极佳！你距离基站很近，5G 体验达到最佳状态。</string>
+    <string name="rsrp_assessment_good">信号良好，日常使用体验流畅。如果感觉不理想，可以尝试调整位置。</string>
+    <string name="rsrp_assessment_fair">信号一般，网速可能受影响。建议靠近窗户或到室外空旷处。</string>
+    <string name="rsrp_assessment_poor">信号较弱。建议移动到窗户附近或室外，避开建筑物遮挡。</string>
+    <string name="rsrp_assessment_weak">信号极弱。请在室内靠近窗户，或到户外无遮挡区域。</string>
+    <!-- 保留旧版 range 名称供 metricsDatabase 引用 -->
+    <string name="range_rsrp_weak">极弱</string>
+    <string name="range_rsrp_fair">一般</string>
+    <string name="range_rsrp_excellent">极佳</string>
+    <string name="range_rsrq_poor">差</string>
+    <string name="range_rsrq_medium">中</string>
+    <string name="range_rsrq_good">优</string>
+
+    <!-- RSRQ 科普（新增强化版） -->
+    <string name="metric_rsrq_label">RSRQ</string>
+    <string name="metric_rsrq_full">参考信号接收质量 (Reference Signal Received Quality)</string>
+    <string name="metric_rsrq_desc">反映信号的"纯净度"。即使信号很强，如果干扰太多，质量也会很差。</string>
+    <string name="metric_rsrq_impact">数值越低，说明环境干扰越大。这通常发生在人群密集的车站或商场。</string>
+    <string name="metric_rsrq_tip">RSRQ 与 RSRP 结合使用才能全面评估信号状况。</string>
+    <string name="rsrq_explain_title">什么是 RSRQ？</string>
+    <string name="rsrq_explain_basic">RSRQ（参考信号接收质量）衡量的是信号的"纯净度"。即使 RSRP 显示信号很强，但如果环境中有很多干扰，RSRQ 会降低，实际体验仍然不佳。RSRQ 单位是 dB。</string>
+    <string name="rsrq_range_title">RSRQ 质量分级</string>
+    <string name="rsrq_range_good">优（> -10dB）</string>
+    <string name="rsrq_range_good_desc">信号纯净，干扰少，体验极佳</string>
+    <string name="rsrq_range_fair">中（-15 ~ -10dB）</string>
+    <string name="rsrq_range_fair_desc">有一定干扰，但整体可用</string>
+    <string name="rsrq_range_poor">差（&lt; -15dB）</string>
+    <string name="rsrq_range_poor_desc">干扰较大，网速不稳定，可能出现在人群密集处</string>
+    <string name="rsrq_joint_title">RSRP 与 RSRQ 联合判断</string>
+    <string name="rsrq_joint_good_both">RSRP 强 + RSRQ 优 = 信号质量极佳！</string>
+    <string name="rsrq_joint_good_both_desc">信号强度和纯净度都很好，这是最理想的网络状态。</string>
+    <string name="rsrq_joint_strong_noise">RSRP 强 + RSRQ 差 = 干扰大</string>
+    <string name="rsrq_joint_strong_noise_desc">虽然信号强度够，但环境干扰大。多发生在人群密集的车站、商场等地方。</string>
+    <string name="rsrq_joint_weak_both">RSRP 弱 + RSRQ 差 = 信号差</string>
+    <string name="rsrq_joint_weak_both_desc">信号强度和纯净度都差，建议移动到室外或靠近窗户处。</string>
+    <string name="rsrq_assessment_title">当前信号质量评估</string>
+    <string name="rsrq_assessment_good">信号纯净度高，干扰少，体验很好。</string>
+    <string name="rsrq_assessment_fair">存在一定干扰，但如果 RSRP 信号强，体验仍然可以接受。</string>
+    <string name="rsrq_assessment_poor">干扰较大。建议远离人群密集区域或大型电子设备。</string>
+
+    <!-- SINR 科普（新增强化版） -->
+    <string name="metric_sinr_label">SINR</string>
+    <string name="metric_sinr_full">信噪比 (Signal to Interference plus Noise Ratio)</string>
+    <string name="metric_sinr_desc">有用信号与噪声的比值。就像在嘈杂的房间里听人说话，比值越高听得越清楚。</string>
+    <string name="metric_sinr_impact">这是决定你下载速度快慢的最核心指标。SINR 越高，5G 测速跑分就越高。</string>
+    <string name="metric_sinr_tip">SINR 是影响实际网速的关键指标，比 RSRP 更能反映真实体验。</string>
+    <string name="sinr_explain_title">什么是 SINR？</string>
+    <string name="sinr_explain_basic">SINR（信噪比）是有用信号与干扰加噪声的比值。可以想象在嘈杂的房间里听人说话——信号是说话声，噪声是周围的嘈杂声。SINR 越高，你听得越清楚，网速就越快。单位是 dB。</string>
+    <string name="sinr_range_title">SINR 与下载速度对应表</string>
+    <string name="sinr_range_excellent">极速（> 20dB）</string>
+    <string name="sinr_range_excellent_speed">5G 测速可达 800Mbps+，4G 可达 100Mbps+</string>
+    <string name="sinr_range_good">流畅（10 ~ 20dB）</string>
+    <string name="sinr_range_good_speed">5G 测速 300-800Mbps，日常使用非常流畅</string>
+    <string name="sinr_range_fair">一般（5 ~ 10dB）</string>
+    <string name="sinr_range_fair_speed">5G 测速 100-300Mbps，视频浏览正常</string>
+    <string name="sinr_range_poor">较差（0 ~ 5dB）</string>
+    <string name="sinr_range_poor_speed">网速较慢，网页加载可能有延迟</string>
+    <string name="sinr_range_weak">卡顿（&lt; 0dB）</string>
+    <string name="sinr_range_weak_speed">信噪比不足，可能掉线或无法连接</string>
+    <string name="sinr_factor_title">影响 SINR 的因素</string>
+    <string name="sinr_factor_location">距离基站越近，信号越强，SINR 越高</string>
+    <string name="sinr_factor_crowd">人群密集导致干扰增加，SINR 下降</string>
+    <string name="sinr_factor_handover">基站交界处切换频繁，SINR 可能波动</string>
+    <string name="sinr_assessment_title">当前 SINR 评估</string>
+    <string name="sinr_assessment_excellent">下载速度极快！这个 SINR 值下 5G 测速可达 800Mbps 以上。</string>
+    <string name="sinr_assessment_good">下载流畅，日常使用无压力。靠近基站网速会更好。</string>
+    <string name="sinr_assessment_fair">网速一般，看视频没问题但下载大文件可能较慢。</string>
+    <string name="sinr_assessment_poor">网速较慢，建议走到开阔处改善信号环境。</string>
+    <string name="sinr_assessment_weak">信噪比过低，建议移动到信号更好的位置。</string>
+    <!-- 保留旧版 range 名称供 metricsDatabase 引用 -->
+    <string name="range_sinr_poor">卡顿</string>
+    <string name="range_sinr_fair">流畅</string>
+    <string name="range_sinr_good">极速</string>
+
+    <!-- RSSI 科普（新增强化版） -->
+    <string name="metric_rssi_label">RSSI</string>
+    <string name="metric_rssi_full">接收信号强度指示</string>
+    <string name="metric_rssi_desc">手机接收到的总功率，包括有用信号、干扰和背景噪声。</string>
+    <string name="metric_rssi_impact">在 4G/5G 系统中，其参考意义通常弱于 RSRP。</string>
+    <string name="metric_rssi_tip">RSSI 测的是所有信号的总和，RSRP 只测有用信号。</string>
+    <string name="rssi_explain_title">什么是 RSSI？</string>
+    <string name="rssi_explain_basic">RSSI（接收信号强度指示）是手机接收到的总功率，包括有用信号、干扰和背景噪声。它是一个比 RSRP 更宽泛的指标。单位是 dBm。</string>
+    <string name="rssi_vs_rsrp_title">RSSI 与 RSRP 的区别</string>
+    <string name="rssi_vs_rsrp_large">RSSI >> RSRP = 干扰大</string>
+    <string name="rssi_vs_rsrp_large_desc">如果 RSSI 远高于 RSRP，说明环境中存在大量干扰。</string>
+    <string name="rssi_vs_rsrp_small">RSSI ≈ RSRP = 信号纯净</string>
+    <string name="rssi_vs_rsrp_small_desc">如果 RSSI 接近 RSRP，说明信号纯净，干扰少。</string>
+    <string name="rssi_when_use_title">什么时候参考 RSSI？</string>
+    <string name="rssi_when_use_wifi">Wi-Fi 网络：RSSI 是 Wi-Fi 信号的主要指标</string>
+    <string name="rssi_when_use_2g">2G/GSM 网络：RSSI 更常用</string>
+    <string name="rssi_when_use_proximity">信号快速检查：粗略判断是否靠近基站</string>
+    <string name="rssi_assessment_title">当前 RSSI 评估</string>
+    <string name="rssi_assessment_good">信号水平在正常范围内。</string>
+    <string name="rssi_assessment_fair">有信号但可能存在干扰。</string>
+    <string name="rssi_assessment_poor">信号偏低。请确认你处于覆盖良好的区域。</string>
+
+    <!-- Band 科普（新增强化版） -->
+    <string name="metric_band_label">Band</string>
+    <string name="metric_band_full">工作频段 (Frequency Band)</string>
+    <string name="metric_band_desc">频段是无线通信中划分出来的特定频率范围，就像高速公路上的不同车道。</string>
+    <string name="metric_band_impact">低频段穿墙能力强但网速慢；高频段（如 n78）网速极快但穿透力弱。</string>
+    <string name="metric_band_tip">n78 是目前最主流的 5G 高速频段。</string>
+    <string name="band_explain_title">什么是频段？</string>
+    <string name="band_explain_basic">频段是无线通信中划分出来的特定频率范围，就像高速公路上的不同车道。每个频段都有自己独特的特性：频率高低决定了信号的覆盖范围、穿透能力和传输速度。</string>
+    <string name="band_current_title">当前连接频段</string>
+    <string name="band_type_low">低频段（支持 4G/5G）</string>
+    <string name="band_type_mid">中频段（支持 4G/5G）</string>
+    <string name="band_type_high">高频段（支持 5G）</string>
+    <string name="band_operator_title">中国主要运营商频段分布</string>
+    <string name="band_comparison_title">频段特性对比</string>
+    <string name="band_assessment">频段评价</string>
+    <string name="band_table_operator">运营商</string>
+    <string name="band_table_5g">5G 频段</string>
+    <string name="band_table_4g">4G 频段</string>
+    <string name="band_table_feature">特点</string>
+    <string name="band_feature_coverage">覆盖范围</string>
+    <string name="band_feature_penetration">穿墙能力</string>
+    <string name="band_feature_speed">传输速度</string>
+    <string name="band_low_desc">覆盖广、穿墙强，适合广域覆盖和农村地区</string>
+    <string name="band_mid_desc">覆盖和速度均衡，城市和郊区的主力频段</string>
+    <string name="band_high_desc">速度极快但覆盖窄穿墙弱，适合热点和密集城区</string>
+    <string name="band_excellent_hint">%s 属于高速频段，你当前的 5G 体验很好！</string>
+    <string name="band_good_hint">%s 属于中频段，速度与覆盖均衡。追求更高速率可尝试靠近 5G 基站。</string>
+    <string name="band_normal_hint">%s 属于低频段，覆盖稳定但速度偏慢，适合室内和远距离使用。</string>
+    <string name="band_china_mobile_5g">n41 (2.6GHz), n79 (4.9GHz)</string>
+    <string name="band_china_mobile_4g">B3 (1800MHz), B8 (900MHz), B39 (1900MHz)</string>
+    <string name="band_china_mobile_feature">频段覆盖广，5G 与 4G 共存，城市农村均有良好覆盖</string>
+    <string name="band_china_unicom_5g">n78 (3.5GHz)</string>
+    <string name="band_china_unicom_4g">B1 (2100MHz), B3 (1800MHz), B8 (900MHz)</string>
+    <string name="band_china_unicom_feature">n78 是 5G 黄金频段，速度快体验好，覆盖以城市为主</string>
+    <string name="band_china_telecom_5g">n78 (3.5GHz)</string>
+    <string name="band_china_telecom_4g">B1 (2100MHz), B3 (1800MHz), B5 (850MHz)</string>
+    <string name="band_china_telecom_feature">与中国联通共享 n78，4G 低频 B5 覆盖广</string>
+    <string name="band_china_broadcast_5g">n28 (700MHz), n79 (4.9GHz)</string>
+    <string name="band_china_broadcast_4g">暂无</string>
+    <string name="band_china_broadcast_feature">700MHz「黄金频段」覆盖极广穿墙强，是 5G 广域覆盖利器</string>
+    <string name="band_low_freq">低频 (sub-1GHz)</string>
+    <string name="band_mid_freq">中频 (1-3GHz)</string>
+    <string name="band_high_freq">高频 (3-6GHz)</string>
+    <string name="band_wide">广</string>
+    <string name="band_medium">中</string>
+    <string name="band_narrow">窄</string>
+    <string name="band_strong">强</string>
+    <string name="band_weak">弱</string>
+    <string name="band_fast">快</string>
+    <string name="band_slow">慢</string>
+    <string name="band_type_name">频段类型</string>
+
+    <!-- PCI 科普（新增强化版） -->
+    <string name="metric_pci_label">PCI</string>
+    <string name="metric_pci_full">物理小区标识 (Physical Cell ID)</string>
+    <string name="metric_pci_desc">用来区分不同基站的"身份证号"。</string>
+    <string name="metric_pci_impact">当 PCI 发生变化时，说明你的手机完成了基站切换。</string>
+    <string name="metric_pci_tip">如果 PCI 频繁跳变，说明你处于两个基站交界处。</string>
+    <string name="pci_explain_title">什么是 PCI？</string>
+    <string name="pci_explain_basic">PCI（物理小区标识）是网络分配给每个小区扇区的唯一编号，用于帮助手机区分邻近的基站。4G LTE 的 PCI 范围为 0~503，5G NR 的 PCI 范围为 0~1007。</string>
+    <string name="pci_handover_title">基站切换原理</string>
+    <string name="pci_handover_normal">正常切换：PCI 变化代表切换到新基站</string>
+    <string name="pci_handover_normal_desc">当你从一个小区的覆盖区域移动到另一个小区时，手机会自动切换到信号更强的基站，PCI 随之变化。</string>
+    <string name="pci_handover_frequent">频繁切换：PCI 不稳定</string>
+    <string name="pci_handover_frequent_desc">如果 PCI 在短时间内多次变化（每分钟数次），说明你处于基站交界处或信号不稳定。</string>
+    <string name="pci_mod3_title">PCI Mod 3 干扰</string>
+    <string name="pci_mod3_desc">在 4G LTE 网络中，相邻小区的 PCI Mod 3 值不能相同，否则会产生信号干扰。这就是为什么运营商需要精心规划 PCI 分配。</string>
+    <string name="pci_assessment_title">当前 PCI 评估</string>
+    <string name="pci_assessment_stable">当前 PCI 稳定。你的连接保持在同一基站。</string>
+    <string name="pci_assessment_changed">PCI 已变化。你的手机已切换到新的基站。</string>
+
+    <!-- EARFCN 科普（新增强化版） -->
+    <string name="metric_earfcn_label">EARFCN</string>
+    <string name="metric_earfcn_full">中心频点</string>
+    <string name="metric_earfcn_desc">代表基站工作的精确频率位置。通过此数值计算基站确切的下行频率。</string>
+    <string name="metric_earfcn_impact">不同的运营商拥有不同的频点范围。</string>
+    <string name="metric_earfcn_tip">通过 EARFCN 可以换算出基站的确切工作频率（MHz）。</string>
+    <string name="earfcn_explain_title">什么是 EARFCN？</string>
+    <string name="earfcn_explain_basic">EARFCN（绝对无线频率信道编号）是代表基站中心频率的编号。运营商使用它来标识基站广播的特定信道。</string>
+    <string name="earfcn_formula_title">频率换算</string>
+    <string name="earfcn_formula_4g">4G LTE：Fdl = Fdl_low + 0.1 × (EARFCN - Ndl)</string>
+    <string name="earfcn_formula_4g_note">每个 EARFCN 对应一个具体的下行频率（MHz）。</string>
+    <string name="earfcn_operator_title">运营商频点范围</string>
+    <string name="earfcn_operator_mobile">中国移动：B3(1800MHz), B8(900MHz), B39(1900MHz), n41(2.6GHz), n79(4.9GHz)</string>
+    <string name="earfcn_operator_unicom">中国联通：B1(2100MHz), B3(1800MHz), n78(3.5GHz)</string>
+    <string name="earfcn_operator_telecom">中国电信：B1(2100MHz), B3(1800MHz), B5(850MHz), n78(3.5GHz)</string>
+    <string name="earfcn_operator_broadcast">中国广电：n28(700MHz), n79(4.9GHz)</string>
+    <string name="earfcn_assessment_title">当前 EARFCN 评估</string>
+    <string name="earfcn_assessment_text">你的手机连接到了特定频率信道。同一频段内不同信道的性能特性相近。</string>
+
+    <!-- TAC 科普（新增强化版） -->
+    <string name="metric_tac_label">TAC</string>
+    <string name="metric_tac_full">跟踪区域代码 (Tracking Area Code)</string>
+    <string name="metric_tac_desc">运营商将基站划分成不同的"片区"进行管理。</string>
+    <string name="metric_tac_impact">跨区域移动时 TAC 会更新。</string>
+    <string name="metric_tac_tip">TAC 的变化频率低于 PCI，通常在跨区域出行时才会更新。</string>
+    <string name="tac_explain_title">什么是 TAC？</string>
+    <string name="tac_explain_basic">TAC（跟踪区域代码）是为特定地理区域的一组基站分配的编号。运营商使用 TAC 来管理寻呼——当有人拨打你的电话时，网络只会在你当前 TAC 内的基站进行寻呼，而不是全网广播。</string>
+    <string name="tac_update_title">TAC 何时更新</string>
+    <string name="tac_update_move">移动到新城区或市中心</string>
+    <string name="tac_update_highway">驾车行驶在城市之间的高速公路上</string>
+    <string name="tac_update_subway">地铁或火车经过不同区域</string>
+    <string name="tac_update_airport">乘坐飞机到达新城市</string>
+    <string name="tac_purpose_title">TAC 的作用</string>
+    <string name="tac_purpose_paging">高效寻呼：只在当前区域内的基站寻呼</string>
+    <string name="tac_purpose_location">位置跟踪：帮助网络知道你所在的区域</string>
+    <string name="tac_purpose_balance">负载均衡：避免网络资源浪费</string>
+    <string name="tac_assessment_title">当前 TAC 评估</string>
+    <string name="tac_assessment_stable">当前 TAC 稳定。你所在的跟踪区域没有变化。</string>
+    <string name="tac_assessment_changed">TAC 已更新。你已进入新的跟踪区域。</string>
 </resources>

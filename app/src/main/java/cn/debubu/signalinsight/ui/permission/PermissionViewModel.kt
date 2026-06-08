@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.data.permission.PermissionManager
 import kotlinx.coroutines.launch
 
@@ -47,14 +48,14 @@ class PermissionViewModel constructor(
                 listOf(
                     PermissionRequirement(
                         permission = Manifest.permission.READ_BASIC_PHONE_STATE,
-                        title = "电话状态权限",
-                        description = "读取基站与信号强度信息",
+                        titleResId = R.string.perm_phone_state_title,
+                        descriptionResId = R.string.perm_phone_state_desc,
                         icon = "phone_android"
                     ),
                     PermissionRequirement(
                         permission = Manifest.permission.READ_PHONE_STATE,
-                        title = "完整电话权限",
-                        description = "获取双卡信息（Android 16+ 必需）",
+                        titleResId = R.string.perm_phone_full_title,
+                        descriptionResId = R.string.perm_phone_full_desc,
                         icon = "phone_android"
                     )
                 )
@@ -63,8 +64,8 @@ class PermissionViewModel constructor(
             _permissionRequirements.add(
                 PermissionRequirement(
                     permission = Manifest.permission.READ_PHONE_STATE,
-                    title = "电话状态权限",
-                    description = "读取基站与信号强度信息",
+                    titleResId = R.string.perm_phone_state_title,
+                    descriptionResId = R.string.perm_phone_state_desc,
                     icon = "phone_android"
                 )
             )
@@ -73,8 +74,8 @@ class PermissionViewModel constructor(
         _permissionRequirements.add(
             PermissionRequirement(
                 permission = Manifest.permission.ACCESS_FINE_LOCATION,
-                title = "精确位置权限",
-                description = "关联基站地理位置（需选择'精确位置'）",
+                titleResId = R.string.perm_location_title,
+                descriptionResId = R.string.perm_location_desc,
                 icon = "location_on"
             )
         )
@@ -174,16 +175,16 @@ class PermissionViewModel constructor(
 
 data class PermissionRequirement(
     val permission: String,
-    val title: String,
-    val description: String,
+    val titleResId: Int,
+    val descriptionResId: Int,
     val icon: String,
     var isGranted: Boolean = false,
     var isPermanentlyDenied: Boolean = false
 ) {
-    val statusText: String
+    val statusTextResId: Int
         get() = when {
-            isGranted -> "已开启"
-            isPermanentlyDenied -> "需手动开启"
-            else -> "待授权"
+            isGranted -> R.string.perm_status_granted
+            isPermanentlyDenied -> R.string.perm_status_manual
+            else -> R.string.perm_status_pending
         }
 }

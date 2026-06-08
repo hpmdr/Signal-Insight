@@ -18,14 +18,14 @@ import android.telephony.TelephonyManager
  * @return 运营商中文名称
  */
 fun getOperatorNameByMccMnc(mcc: String?, mnc: String?, fallbackName: String? = null): String {
-    if (mcc == null || mnc == null) return fallbackName ?: "未知"
+    if (mcc == null || mnc == null) return fallbackName ?: "Unknown"
 
     return when ("$mcc$mnc") {
-        "46000", "46002", "46004", "46007" -> "中国移动"
-        "46001", "46006", "46009" -> "中国联通"
-        "46003", "46005", "46011" -> "中国电信"
-        "46015" -> "中国广电"
-        else -> fallbackName ?: "未知"
+        "46000", "46002", "46004", "46007" -> "China Mobile"
+        "46001", "46006", "46009" -> "China Unicom"
+        "46003", "46005", "46011" -> "China Telecom"
+        "46015" -> "China Broadcasting"
+        else -> fallbackName ?: "Unknown"
     }
 }
 
@@ -49,8 +49,8 @@ fun getOperatorNameByMccMnc(mcc: String?, mnc: String?, fallbackName: String? = 
  */
 data class CellularSignalInfo(
     val simSlotId: Int = 0,
-    val operatorName: String = "未知",
-    val networkType: String = "未知",
+    val operatorName: String = "Unknown",
+    val networkType: String = "Unknown",
     val dbm: Int = -120,
     val rsrp: Int = -120,
     val rsrq: Int = -20,
@@ -101,13 +101,16 @@ data class CellularSignalInfo(
          *   }
          * };
          */
-        fun fromCellInfo(cellInfo: CellInfo, simSlotId: Int, isPrimary: Boolean, operatorName: String = "未知"): CellularSignalInfo {
+        fun fromCellInfo(cellInfo: CellInfo, simSlotId: Int, isPrimary: Boolean, operatorName: String = "Unknown"): CellularSignalInfo {
             val signalStrength = when (cellInfo) {
                 is CellInfoLte -> {
                     val signalStrengthLte = cellInfo.cellSignalStrength
                     val cellIdentityLte = cellInfo.cellIdentity
                     val cellBand = cellIdentityLte.bands.firstOrNull()?.toString()
                         ?: "B${cellIdentityLte.earfcn / 1000}"
+                    val lteSinr = signalStrengthLte.rssnr.let {
+                        if (it != Int.MAX_VALUE) it else -20
+                    }
                     CellularSignalInfo(
                         simSlotId = simSlotId,
                         operatorName = operatorName,
@@ -115,6 +118,7 @@ data class CellularSignalInfo(
                         dbm = signalStrengthLte.dbm,
                         rsrp = signalStrengthLte.rsrp,
                         rsrq = signalStrengthLte.rsrq,
+                        sinr = lteSinr,
                         rssi = signalStrengthLte.rssi,
                         pci = cellIdentityLte.pci,
                         earfcn = cellIdentityLte.earfcn,
@@ -221,7 +225,7 @@ data class CellularSignalInfo(
                 TelephonyManager.NETWORK_TYPE_GSM,
                 TelephonyManager.NETWORK_TYPE_GPRS,
                 TelephonyManager.NETWORK_TYPE_EDGE -> "2G GSM"
-                else -> "未知"
+                else -> "Unknown"
             }
         }
     }
@@ -261,10 +265,14 @@ data class NeighborCellInfo(
                     val cellIdentityLte = cellInfo.cellIdentity
                     val cellBand = cellIdentityLte.bands.firstOrNull()?.toString()
                         ?: "B${cellIdentityLte.earfcn / 1000}"
+                    val lteSinr = signalStrengthLte.rssnr.let {
+                        if (it != Int.MAX_VALUE) it else -20
+                    }
                     NeighborCellInfo(
                         pci = cellIdentityLte.pci,
                         rsrp = signalStrengthLte.rsrp,
                         rsrq = signalStrengthLte.rsrq,
+                        sinr = lteSinr,
                         rssi = signalStrengthLte.rssi,
                         earfcn = cellIdentityLte.earfcn,
                         band = cellBand,

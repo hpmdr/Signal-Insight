@@ -1,5 +1,6 @@
 package cn.debubu.signalinsight
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,7 +31,7 @@ class MainActivity : ComponentActivity() {
         val application = application as SignalInsightApplication
         val cellularViewModel = ViewModelProvider(
             this,
-            CellularViewModelFactory(application.cellularRepository)
+            CellularViewModelFactory(application.cellularRepository, application)
         )[CellularViewModel::class.java]
         
         val permissionViewModel = ViewModelProvider(
@@ -50,12 +51,13 @@ class MainActivity : ComponentActivity() {
 }
 
 class CellularViewModelFactory(
-    private val repository: cn.debubu.signalinsight.data.cellular.CellularRepository
+    private val repository: cn.debubu.signalinsight.data.cellular.CellularRepository,
+    private val application: Application
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CellularViewModel::class.java)) {
-            return CellularViewModel(repository) as T
+            return CellularViewModel(repository, application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

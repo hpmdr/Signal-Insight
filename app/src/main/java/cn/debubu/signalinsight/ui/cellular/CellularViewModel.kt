@@ -1,13 +1,15 @@
 package cn.debubu.signalinsight.ui.cellular
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.data.cellular.CellularData
 import cn.debubu.signalinsight.data.cellular.CellularRepository
 import kotlinx.coroutines.Job
@@ -15,8 +17,9 @@ import kotlinx.coroutines.launch
 
 
 class CellularViewModel constructor(
-    private val repository: CellularRepository
-) : ViewModel() {
+    private val repository: CellularRepository,
+    application: Application
+) : AndroidViewModel(application) {
     private val TAG = "CellularNewViewModel"
 
     var activeSim by mutableIntStateOf(1)
@@ -110,23 +113,25 @@ class CellularViewModel constructor(
     }
 
     fun getSimOperatorName(simId: Int): String {
+        val app = getApplication<Application>()
+        val noSim = app.getString(R.string.operator_no_sim)
         val simData = if (simId == 1) _sim1Data.value else _sim2Data.value
-        val operatorName = simData?.servingCell?.operatorName ?: "未插卡"
-        return if (operatorName == "未插卡") "未插卡" else operatorName
+        val operatorName = simData?.servingCell?.operatorName ?: "No SIM"
+        return if (operatorName == "No SIM") noSim else operatorName
     }
 
     fun isSimInserted(simId: Int): Boolean {
         val simData = if (simId == 1) _sim1Data.value else _sim2Data.value
         val operatorName = simData?.servingCell?.operatorName
-        return operatorName != null && operatorName != "未插卡"
+        return operatorName != null && operatorName != "No SIM"
     }
 
     fun getSimOptions(): List<String> {
         val sim1Name = _sim1Data.value?.servingCell?.operatorName
         val sim2Name = _sim2Data.value?.servingCell?.operatorName
         return listOfNotNull(
-            if (sim1Name != null && sim1Name != "未插卡") sim1Name else null,
-            if (sim2Name != null && sim2Name != "未插卡") sim2Name else null
+            if (sim1Name != null && sim1Name != "No SIM") sim1Name else null,
+            if (sim2Name != null && sim2Name != "No SIM") sim2Name else null
         )
     }
 }
@@ -134,8 +139,8 @@ class CellularViewModel constructor(
 data class SignalData(
     val dbm: Int = -120,
     val progress: Float = 0f,
-    val operatorName: String = "未知",
-    val networkType: String = "未知",
+    val operatorName: String = "Unknown",
+    val networkType: String = "Unknown",
     val rsrp: Int = -120,
     val rsrq: Int = -20,
     val sinr: Int = -20,

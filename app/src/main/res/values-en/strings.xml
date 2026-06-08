@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Signal Insight</string>
+
+    <!-- MainScreen -->
+    <string name="menu_title">Menu</string>
+    <string name="menu_signal_monitor">Signal Monitor</string>
+    <string name="menu_about">About</string>
+    <string name="menu_settings">Settings</string>
+    <string name="app_bar_title">Signal Insight</string>
+    <string name="open_menu">Open menu</string>
+
+    <!-- AboutScreen -->
+    <string name="about_title">About</string>
+    <string name="about_content">Signal Insight v1.0.0\n\nAn app for monitoring cellular network signal strength.</string>
+
+    <!-- SettingsScreen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_placeholder">Settings feature is under development...</string>
+
+    <!-- Permission -->
+    <string name="permission_title">Permission Authorization</string>
+    <string name="permission_main_title">Permissions Required to Start Monitoring</string>
+    <string name="permission_subtitle">Please grant the following permissions to use the cellular signal monitoring feature</string>
+    <string name="permission_denied_hint">Some permissions have been permanently denied. Please enable them manually in Settings.</string>
+    <string name="permission_go_settings">Go to Settings</string>
+    <string name="permission_authorize">Authorize &amp; Enter</string>
+
+    <!-- Permission items -->
+    <string name="perm_phone_state_title">Phone State Permission</string>
+    <string name="perm_phone_state_desc">Read cell tower and signal strength information</string>
+    <string name="perm_phone_full_title">Full Phone Permission</string>
+    <string name="perm_phone_full_desc">Get dual SIM information (Required for Android 16+)</string>
+    <string name="perm_location_title">Precise Location Permission</string>
+    <string name="perm_location_desc">Associate cell tower with geographic location (select \"Precise Location\")</string>
+
+    <!-- Permission status -->
+    <string name="perm_status_granted">Granted</string>
+    <string name="perm_status_manual">Enable Manually</string>
+    <string name="perm_status_pending">Pending</string>
+
+    <!-- CellularPage -->
+    <string name="cellular_no_sim_toast">No SIM card in this slot, cannot switch display</string>
+    <string name="cellular_signal_quality">Quality: %s</string>
+    <string name="cellular_serving_cell_title">Current Serving Cell Details</string>
+    <string name="cellular_tap_hint">Tap a metric card to view educational explanations and reference standards</string>
+    <string name="cellular_neighbor_title">Neighbor Cells</string>
+    <string name="cellular_neighbor_empty">No neighbor cell data available</string>
+
+    <!-- Signal status labels -->
+    <string name="signal_excellent">Excellent</string>
+    <string name="signal_fair">Fair</string>
+    <string name="signal_poor">Poor</string>
+
+    <!-- Neighbor cell table column headers -->
+    <string name="column_pci">PCI</string>
+    <string name="column_frequency">Frequency</string>
+    <string name="column_band">Band</string>
+
+    <!-- Explainer dialog -->
+    <string name="explainer_what_is">What is it?</string>
+    <string name="explainer_impact">Impact on Experience</string>
+    <string name="explainer_standard">Reference Standard (Left: Poor, Right: Excellent)</string>
+    <string name="explainer_understand">Got it</string>
+
+    <!-- Network type names -->
+    <string name="network_5g_nr">5G NR</string>
+    <string name="network_4g_lte">4G LTE</string>
+    <string name="network_3g_wcdma">3G WCDMA</string>
+    <string name="network_2g_gsm">2G GSM</string>
+
+    <!-- Operator names (for MCC/MNC mapping defaults) -->
+    <string name="operator_unknown">Unknown</string>
+    <string name="operator_no_sim">No SIM</string>
+    <string name="operator_china_mobile">China Mobile</string>
+    <string name="operator_china_unicom">China Unicom</string>
+    <string name="operator_china_telecom">China Telecom</string>
+    <string name="operator_china_broadcast">China Broadcasting</string>
+
+    <!-- RSRP科普 -->
+    <string name="metric_rsrp_label">RSRP</string>
+    <string name="metric_rsrp_full">Reference Signal Received Power (RSRP)</string>
+    <string name="metric_rsrp_desc">The most direct indicator of 4G/5G signal strength. It represents the power level of the signal received from the cell tower.</string>
+    <string name="metric_rsrp_impact">The closer the value is to 0, the stronger the signal. If the value is too low, you may experience web pages failing to load and choppy calls.</string>
+    <string name="metric_rsrp_tip"></string>
+    <string name="range_rsrp_weak">Weak</string>
+    <string name="range_rsrp_fair">Fair</string>
+    <string name="range_rsrp_excellent">Excellent</string>
+
+    <!-- RSRQ科普 -->
+    <string name="metric_rsrq_label">RSRQ</string>
+    <string name="metric_rsrq_full">Reference Signal Received Quality (RSRQ)</string>
+    <string name="metric_rsrq_desc">Reflects the \"purity\" of the signal. Even if the signal is strong, too much interference can degrade quality significantly.</string>
+    <string name="metric_rsrq_impact">Lower values indicate greater environmental interference. This typically occurs in crowded places like train stations or shopping malls.</string>
+    <string name="range_rsrq_poor">Poor</string>
+    <string name="range_rsrq_medium">Medium</string>
+    <string name="range_rsrq_good">Good</string>
+
+    <!-- SINR科普 -->
+    <string name="metric_sinr_label">SINR</string>
+    <string name="metric_sinr_full">Signal to Interference plus Noise Ratio (SINR)</string>
+    <string name="metric_sinr_desc">The ratio of useful signal to noise. Like listening to someone speak in a noisy room — the higher the ratio, the clearer you can hear.</string>
+    <string name="metric_sinr_impact">This is the key metric determining your download speed. Higher SINR means higher 5G speed test scores.</string>
+    <string name="range_sinr_poor">Laggy</string>
+    <string name="range_sinr_fair">Smooth</string>
+    <string name="range_sinr_good">Extreme</string>
+
+    <!-- RSSI科普（新增强化版） -->
+    <string name="metric_rssi_label">RSSI</string>
+    <string name="metric_rssi_full">Received Signal Strength Indicator</string>
+    <string name="metric_rssi_desc">Total power received by the device, including useful signal, interference, and background noise.</string>
+    <string name="metric_rssi_impact">In 4G/5G systems, its reference value is generally lower than RSRP.</string>
+    <string name="metric_rssi_tip">RSSI measures everything, RSRP measures only the useful signal.</string>
+    <string name="rssi_explain_title">What is RSSI?</string>
+    <string name="rssi_explain_basic">RSSI (Received Signal Strength Indicator) measures the total power received by your phone, including useful signal, interference, and background noise. It is a broader measurement than RSRP.</string>
+    <string name="rssi_vs_rsrp_title">RSSI vs RSRP Comparison</string>
+    <string name="rssi_vs_rsrp_large">RSSI >> RSRP = lots of noise</string>
+    <string name="rssi_vs_rsrp_large_desc">If RSSI is much higher than RSRP, there is significant interference in your environment.</string>
+    <string name="rssi_vs_rsrp_small">RSSI ≈ RSRP = clean signal</string>
+    <string name="rssi_vs_rsrp_small_desc">If RSSI is close to RSRP, the signal is clean with minimal interference.</string>
+    <string name="rssi_when_use_title">When is RSSI Useful?</string>
+    <string name="rssi_when_use_wifi">Wi-Fi networks: RSSI is the primary signal metric</string>
+    <string name="rssi_when_use_2g">2G/GSM networks: RSSI is more commonly used</string>
+    <string name="rssi_when_use_proximity">Signal proximity check: good for quick checks</string>
+    <string name="rssi_assessment_title">Current RSSI Assessment</string>
+    <string name="rssi_assessment_good">Signal level is within normal range.</string>
+    <string name="rssi_assessment_fair">Signal is present but may have interference.</string>
+    <string name="rssi_assessment_poor">Signal is low. Check if you are in an area with good coverage.</string>
+
+    <!-- Band explanatory (enhanced) -->
+    <string name="metric_band_label">Band</string>
+    <string name="metric_band_full">Frequency Band</string>
+    <string name="metric_band_desc">A frequency band is a specific range of radio frequencies allocated for wireless communication.</string>
+    <string name="metric_band_impact">Lower bands penetrate walls better but deliver slower speeds; higher bands like n78 offer extremely fast speeds but poor penetration.</string>
+    <string name="metric_band_tip">n78 is currently the most widely used high-speed 5G band.</string>
+    <string name="band_explain_title">What is a Band?</string>
+    <string name="band_explain_basic">A frequency band is a specific range of radio frequencies allocated for wireless communication, like different lanes on a highway. Each band has unique characteristics: higher frequencies offer faster speeds but shorter range and weaker penetration.</string>
+    <string name="band_current_title">Current Band</string>
+    <string name="band_type_low">Low Band (supports 4G/5G)</string>
+    <string name="band_type_mid">Mid Band (supports 4G/5G)</string>
+    <string name="band_type_high">High Band (supports 5G)</string>
+    <string name="band_operator_title">China Operator Band Distribution</string>
+    <string name="band_comparison_title">Band Characteristics Comparison</string>
+    <string name="band_assessment">Band Assessment</string>
+    <string name="band_table_operator">Operator</string>
+    <string name="band_table_5g">5G Bands</string>
+    <string name="band_table_4g">4G Bands</string>
+    <string name="band_table_feature">Features</string>
+    <string name="band_feature_coverage">Coverage</string>
+    <string name="band_feature_penetration">Penetration</string>
+    <string name="band_feature_speed">Speed</string>
+    <string name="band_low_desc">Wide coverage, strong penetration. Ideal for rural areas and wide-area deployment.</string>
+    <string name="band_mid_desc">Balanced coverage and speed. The primary band for urban and suburban areas.</string>
+    <string name="band_high_desc">Extremely fast but limited coverage. Best for hotspots and dense urban areas.</string>
+    <string name="band_excellent_hint">%s is a high-speed band. Your 5G experience should be excellent!</string>
+    <string name="band_good_hint">%s is a mid-band, balancing speed and coverage. For faster speeds, try moving closer to a 5G tower.</string>
+    <string name="band_normal_hint">%s is a low band with stable coverage but slower speeds. Best for indoor and long-distance use.</string>
+    <string name="band_china_mobile_5g">n41 (2.6GHz), n79 (4.9GHz)</string>
+    <string name="band_china_mobile_4g">B3 (1800MHz), B8 (900MHz), B39 (1900MHz)</string>
+    <string name="band_china_mobile_feature">Wide band coverage, both 5G and 4G coexist. Good coverage in cities and rural areas.</string>
+    <string name="band_china_unicom_5g">n78 (3.5GHz)</string>
+    <string name="band_china_unicom_4g">B1 (2100MHz), B3 (1800MHz), B8 (900MHz)</string>
+    <string name="band_china_unicom_feature">n78 is the 5G gold band with fast speeds. Coverage is primarily urban.</string>
+    <string name="band_china_telecom_5g">n78 (3.5GHz)</string>
+    <string name="band_china_telecom_4g">B1 (2100MHz), B3 (1800MHz), B5 (850MHz)</string>
+    <string name="band_china_telecom_feature">Shares n78 with China Unicom. B5 offers wide 4G coverage.</string>
+    <string name="band_china_broadcast_5g">n28 (700MHz), n79 (4.9GHz)</string>
+    <string name="band_china_broadcast_4g">N/A</string>
+    <string name="band_china_broadcast_feature">The 700MHz golden band offers extremely wide coverage and strong penetration.</string>
+    <string name="band_low_freq">Low (sub-1GHz)</string>
+    <string name="band_mid_freq">Mid (1-3GHz)</string>
+    <string name="band_high_freq">High (3-6GHz)</string>
+    <string name="band_wide">Wide</string>
+    <string name="band_medium">Medium</string>
+    <string name="band_narrow">Narrow</string>
+    <string name="band_strong">Strong</string>
+    <string name="band_weak">Weak</string>
+    <string name="band_fast">Fast</string>
+    <string name="band_slow">Slow</string>
+    <string name="band_type_name">Band Type</string>
+
+    <!-- PCI科普（新增强化版） -->
+    <string name="metric_pci_label">PCI</string>
+    <string name="metric_pci_full">Physical Cell ID (PCI)</string>
+    <string name="metric_pci_desc">A unique ID number used to distinguish different cell towers.</string>
+    <string name="metric_pci_impact">When the PCI changes, your phone has completed a cell tower handover.</string>
+    <string name="metric_pci_tip">If PCI changes frequently, you are at the boundary between two cell towers.</string>
+    <string name="pci_explain_title">What is PCI?</string>
+    <string name="pci_explain_basic">PCI (Physical Cell ID) is a unique identifier assigned to each cell sector by the network. It helps your phone distinguish between neighboring cell towers. PCI values range from 0 to 1007 (4G LTE) or 0 to 1007 (5G NR).</string>
+    <string name="pci_handover_title">How Cell Handover Works</string>
+    <string name="pci_handover_normal">Normal handover: PCI changes when you move between cells</string>
+    <string name="pci_handover_normal_desc">When you move from one cell tower coverage area to another, your phone automatically switches to the stronger signal, and the PCI changes accordingly.</string>
+    <string name="pci_handover_frequent">Frequent handover: unstable PCI</string>
+    <string name="pci_handover_frequent_desc">If PCI changes rapidly (several times per minute), you are likely at a cell tower boundary or experiencing signal instability.</string>
+    <string name="pci_mod3_title">PCI Mod 3 Interference</string>
+    <string name="pci_mod3_desc">In 4G LTE networks, PCI Mod 3 should not be the same for neighboring cells, otherwise signal interference occurs. This is why PCI planning is important for network operators.</string>
+    <string name="pci_assessment_title">Current PCI Assessment</string>
+    <string name="pci_assessment_stable">Current PCI is stable. Your connection is maintaining a consistent cell tower.</string>
+    <string name="pci_assessment_changed">PCI has changed. Your phone has handed over to a new cell tower.</string>
+
+    <!-- EARFCN科普（新增强化版） -->
+    <string name="metric_earfcn_label">EARFCN</string>
+    <string name="metric_earfcn_full">Center Frequency (EARFCN)</string>
+    <string name="metric_earfcn_desc">Represents the exact frequency position of the cell tower. Used to calculate the precise downlink frequency.</string>
+    <string name="metric_earfcn_impact">Different operators have different frequency ranges.</string>
+    <string name="metric_earfcn_tip">EARFCN can be used to calculate the exact frequency in MHz.</string>
+    <string name="earfcn_explain_title">What is EARFCN?</string>
+    <string name="earfcn_explain_basic">EARFCN (E-UTRA Absolute Radio Frequency Channel Number) is a number that represents the exact center frequency of a cell. Network operators use it to identify the specific channel a cell tower is broadcasting on.</string>
+    <string name="earfcn_formula_title">Frequency Calculation</string>
+    <string name="earfcn_formula_4g">4G LTE: Fdl = Fdl_low + 0.1 × (EARFCN - Ndl)</string>
+    <string name="earfcn_formula_4g_note">Each EARFCN corresponds to a specific downlink frequency in MHz.</string>
+    <string name="earfcn_operator_title">Operator Frequency Ranges</string>
+    <string name="earfcn_operator_mobile">China Mobile: B3(1800MHz), B8(900MHz), B39(1900MHz), n41(2.6GHz), n79(4.9GHz)</string>
+    <string name="earfcn_operator_unicom">China Unicom: B1(2100MHz), B3(1800MHz), n78(3.5GHz)</string>
+    <string name="earfcn_operator_telecom">China Telecom: B1(2100MHz), B3(1800MHz), B5(850MHz), n78(3.5GHz)</string>
+    <string name="earfcn_operator_broadcast">China Broadcasting: n28(700MHz), n79(4.9GHz)</string>
+    <string name="earfcn_assessment_title">Current EARFCN Assessment</string>
+    <string name="earfcn_assessment_text">Your phone is connected to a specific frequency channel. Different channels within the same band have similar performance characteristics.</string>
+
+    <!-- TAC科普（新增强化版） -->
+    <string name="metric_tac_label">TAC</string>
+    <string name="metric_tac_full">Tracking Area Code (TAC)</string>
+    <string name="metric_tac_desc">Operators divide cell towers into different zones for management.</string>
+    <string name="metric_tac_impact">TAC is updated when you move across zones.</string>
+    <string name="metric_tac_tip">TAC changes less frequently than PCI, usually when you travel to a new area.</string>
+    <string name="tac_explain_title">What is TAC?</string>
+    <string name="tac_explain_basic">TAC (Tracking Area Code) is a number assigned to a group of cell towers in a specific geographic area. Network operators use TAC to manage paging — when someone calls you, the network only pages the cell towers within your current TAC, not the entire network.</string>
+    <string name="tac_update_title">When TAC Updates</string>
+    <string name="tac_update_move">Moving to a new district or city center</string>
+    <string name="tac_update_highway">Traveling along highways between cities</string>
+    <string name="tac_update_subway">Subway or train passing through different zones</string>
+    <string name="tac_update_airport">Flying into a new city (airport arrival)</string>
+    <string name="tac_purpose_title">Purpose of TAC</string>
+    <string name="tac_purpose_paging">Efficient paging: Only pages the cell towers in your current area</string>
+    <string name="tac_purpose_location">Location tracking: Helps the network know which region you are in</string>
+    <string name="tac_purpose_balance">Load balancing: Prevents the network from wasting resources</string>
+    <string name="tac_assessment_title">Current TAC Assessment</string>
+    <string name="tac_assessment_stable">Current TAC is stable. Your location area has not changed.</string>
+    <string name="tac_assessment_changed">TAC has changed. You have entered a new tracking area.</string>
+</resources>

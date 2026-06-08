@@ -42,7 +42,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -75,19 +74,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import cn.debubu.signalinsight.R
 import kotlinx.coroutines.launch
 
 data class MetricInfo(
-    val label: String,
-    val full: String,
-    val desc: String,
-    val impact: String,
-    val tip: String? = null,
+    val labelResId: Int,
+    val fullResId: Int,
+    val descResId: Int,
+    val impactResId: Int,
+    val tipResId: Int? = null,
     val range: List<RangeStep>? = null
 )
 
 data class RangeStep(
-    val label: String,
+    val labelResId: Int,
     val text: String,
     val color: Color
 )
@@ -114,7 +115,7 @@ fun CellularPage(
     val signalData by viewModel.currentSignalData
     val neighborCells by viewModel.neighborCells
 
-    var selectedMetric by remember { mutableStateOf<MetricInfo?>(null) }
+    var selectedMetricKey by remember { mutableStateOf<String?>(null) }
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -130,69 +131,69 @@ fun CellularPage(
     val metricsDatabase = remember {
         mapOf(
             "RSRP" to MetricInfo(
-                "RSRP",
-                "参考信号接收功率 (Reference Signal Received Power)",
-                "这是衡量 4G/5G 信号强度的最直接指标。它表示手机接收到基站信号的功率大小。",
-                "数值越接近 0，信号越强。如果数值太低，你会感觉到网页打不开，通话断断续续。",
+                R.string.metric_rsrp_label,
+                R.string.metric_rsrp_full,
+                R.string.metric_rsrp_desc,
+                R.string.metric_rsrp_impact,
                 range = listOf(
-                    RangeStep("极弱", "<-110", Color(0xFFBA1A1A)),
-                    RangeStep("一般", "-100~-80", Color(0xFF6C5D00)),
-                    RangeStep("极佳", ">-80dBm", Color(0xFF386B28))
+                    RangeStep(R.string.range_rsrp_weak, "<-110", Color(0xFFBA1A1A)),
+                    RangeStep(R.string.range_rsrp_fair, "-100~-80", Color(0xFF6C5D00)),
+                    RangeStep(R.string.range_rsrp_excellent, ">-80dBm", Color(0xFF386B28))
                 )
             ),
             "RSRQ" to MetricInfo(
-                "RSRQ",
-                "参考信号接收质量 (Reference Signal Received Quality)",
-                "反映信号的\"纯净度\"。即使信号很强，如果干扰太多，质量也会很差。",
-                "数值越低，说明环境干扰越大。这通常发生在人群密集的车站或商场。",
+                R.string.metric_rsrq_label,
+                R.string.metric_rsrq_full,
+                R.string.metric_rsrq_desc,
+                R.string.metric_rsrq_impact,
                 range = listOf(
-                    RangeStep("差", "<-20dB", Color(0xFFBA1A1A)),
-                    RangeStep("中", "-15~-10", Color(0xFF6C5D00)),
-                    RangeStep("优", ">-10dB", Color(0xFF386B28))
+                    RangeStep(R.string.range_rsrq_poor, "<-20dB", Color(0xFFBA1A1A)),
+                    RangeStep(R.string.range_rsrq_medium, "-15~-10", Color(0xFF6C5D00)),
+                    RangeStep(R.string.range_rsrq_good, ">-10dB", Color(0xFF386B28))
                 )
             ),
             "SINR" to MetricInfo(
-                "SINR",
-                "信噪比 (Signal to Interference plus Noise Ratio)",
-                "有用信号与噪声的比值。就像在嘈杂的房间里听人说话，比值越高听得越清楚。",
-                "这是决定你下载速度快慢的最核心指标。SINR 越高，5G 测速跑分就越高。",
+                R.string.metric_sinr_label,
+                R.string.metric_sinr_full,
+                R.string.metric_sinr_desc,
+                R.string.metric_sinr_impact,
                 range = listOf(
-                    RangeStep("卡顿", "<0dB", Color(0xFFBA1A1A)),
-                    RangeStep("流畅", "0~20dB", Color(0xFF6C5D00)),
-                    RangeStep("极速", ">20dB", Color(0xFF386B28))
+                    RangeStep(R.string.range_sinr_poor, "<0dB", Color(0xFFBA1A1A)),
+                    RangeStep(R.string.range_sinr_fair, "0~20dB", Color(0xFF6C5D00)),
+                    RangeStep(R.string.range_sinr_good, ">20dB", Color(0xFF386B28))
                 )
             ),
             "RSSI" to MetricInfo(
-                "RSSI",
-                "接收信号强度指示",
-                "手机接收到的总功率，包括有用信号、干扰和背景噪声。",
-                "在 4G/5G 系统中，其参考意义通常弱于 RSRP。"
+                R.string.metric_rssi_label,
+                R.string.metric_rssi_full,
+                R.string.metric_rssi_desc,
+                R.string.metric_rssi_impact
             ),
             "Band" to MetricInfo(
-                "Band",
-                "工作频段 (Frequency Band)",
-                "无线电通信的\"车道\"。不同的频段对应不同的无线电频率。",
-                "低频段穿墙能力强但网速慢；高频段（如 n78）网速极快但穿透力弱。",
-                tip = "n78 是目前最主流的 5G 高速频段。"
+                R.string.metric_band_label,
+                R.string.metric_band_full,
+                R.string.metric_band_desc,
+                R.string.metric_band_impact,
+                tipResId = R.string.metric_band_tip
             ),
             "PCI" to MetricInfo(
-                "PCI",
-                "物理小区标识 (Physical Cell ID)",
-                "用来区分不同基站的\"身份证号\"。",
-                "当 PCI 发生变化时，说明你的手机完成了基站切换。",
-                tip = "如果 PCI 频繁跳变，说明你处于两个基站交界处。"
+                R.string.metric_pci_label,
+                R.string.metric_pci_full,
+                R.string.metric_pci_desc,
+                R.string.metric_pci_impact,
+                tipResId = R.string.metric_pci_tip
             ),
             "EARFCN" to MetricInfo(
-                "EARFCN",
-                "中心频点",
-                "代表基站工作的精确频率位置。通过此数值计算基站确切的下行频率。",
-                impact = "不同的运营商拥有不同的频点范围。"
+                R.string.metric_earfcn_label,
+                R.string.metric_earfcn_full,
+                R.string.metric_earfcn_desc,
+                R.string.metric_earfcn_impact
             ),
             "TAC" to MetricInfo(
-                "TAC",
-                "跟踪区域代码 (Tracking Area Code)",
-                "运营商将基站划分成不同的\"片区\"进行管理。",
-                "跨区域移动时 TAC 会更新。"
+                R.string.metric_tac_label,
+                R.string.metric_tac_full,
+                R.string.metric_tac_desc,
+                R.string.metric_tac_impact
             )
         )
     }
@@ -203,9 +204,9 @@ fun CellularPage(
         else -> Color(0xFFBA1A1A)
     }
     val statusLabel = when {
-        signalData.dbm > -85 -> "极佳"
-        signalData.dbm > -105 -> "一般"
-        else -> "较差"
+        signalData.dbm > -85 -> context.getString(R.string.signal_excellent)
+        signalData.dbm > -105 -> context.getString(R.string.signal_fair)
+        else -> context.getString(R.string.signal_poor)
     }
     Column(
         modifier = modifier
@@ -223,7 +224,7 @@ fun CellularPage(
                 } else {
                     Toast.makeText(
                         context,
-                        "该卡槽没有插卡，无法切换显示",
+                        context.getString(R.string.cellular_no_sim_toast),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -231,7 +232,7 @@ fun CellularPage(
         )
 
         Surface(
-            onClick = { selectedMetric = metricsDatabase["RSRP"]; showSheet = true },
+            onClick = { selectedMetricKey = "RSRP"; showSheet = true },
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(28.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -294,7 +295,7 @@ fun CellularPage(
                         border = BorderStroke(1.dp, statusColor.copy(alpha = 0.2f))
                     ) {
                         Text(
-                            "质量: $statusLabel",
+                            stringResource(R.string.cellular_signal_quality, statusLabel),
                             Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.ExtraBold,
@@ -323,7 +324,7 @@ fun CellularPage(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "当前注册小区详情",
+                        stringResource(R.string.cellular_serving_cell_title),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.outline
@@ -352,7 +353,7 @@ fun CellularPage(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clickable {
-                                        selectedMetric = metricsDatabase[item.label]; showSheet = true
+                                        selectedMetricKey = item.label; showSheet = true
                                     }
                                     .padding(vertical = 10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -431,7 +432,7 @@ fun CellularPage(
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "点击格块查看科普释义与参考标准",
+                            stringResource(R.string.cellular_tap_hint),
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 9.sp,
                             color = MaterialTheme.colorScheme.outline
@@ -459,7 +460,7 @@ fun CellularPage(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "邻小区列表",
+                        stringResource(R.string.cellular_neighbor_title),
                         Modifier.padding(start = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Black,
@@ -472,7 +473,7 @@ fun CellularPage(
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
                         .padding(vertical = 8.dp)
                 ) {
-                    listOf("PCI", "频点", "频段", "RSRP", "RSRQ", "SINR").forEach {
+                    listOf(stringResource(R.string.column_pci), stringResource(R.string.column_frequency), stringResource(R.string.column_band), "RSRP", "RSRQ", "SINR").forEach {
                         Text(
                             it,
                             Modifier.weight(1f),
@@ -492,7 +493,7 @@ fun CellularPage(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "暂无邻小区数据",
+                            stringResource(R.string.cellular_neighbor_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -552,7 +553,7 @@ fun CellularPage(
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
-                        if (index < neighborCells.size - 1) Divider(
+                        if (index < neighborCells.size - 1) HorizontalDivider(
                             Modifier.padding(horizontal = 16.dp),
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                         )
@@ -562,14 +563,48 @@ fun CellularPage(
         }
     }
 
-    if (showSheet && selectedMetric != null) {
+    if (showSheet && selectedMetricKey != null) {
+        val key = selectedMetricKey!!
         ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
+            onDismissRequest = { showSheet = false; selectedMetricKey = null },
             sheetState = sheetState,
             containerColor = MaterialTheme.colorScheme.surface,
             dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
-            MetricExplainerContent(selectedMetric!!) { showSheet = false }
+            when (key) {
+                "Band" -> BandExplainer(
+                    currentBand = signalData.band,
+                    onClose = { showSheet = false; selectedMetricKey = null }
+                )
+                "RSRP" -> RsrpExplainer(
+                    currentRsrp = signalData.dbm,
+                    onClose = { showSheet = false; selectedMetricKey = null }
+                )
+                "RSRQ" -> RsrqExplainer(
+                    currentRsrq = signalData.rsrq,
+                    onClose = { showSheet = false; selectedMetricKey = null }
+                )
+                "SINR" -> SinrExplainer(
+                    currentSinr = signalData.sinr,
+                    onClose = { showSheet = false; selectedMetricKey = null }
+                )
+                "RSSI" -> RssiExplainer(
+                    currentRssi = signalData.rssi,
+                    onClose = { showSheet = false; selectedMetricKey = null }
+                )
+                "PCI" -> PciExplainer(
+                    currentPci = signalData.pci,
+                    onClose = { showSheet = false; selectedMetricKey = null }
+                )
+                "EARFCN" -> EarfcnExplainer(
+                    currentEarfcn = signalData.earfcn,
+                    onClose = { showSheet = false; selectedMetricKey = null }
+                )
+                "TAC" -> TacExplainer(
+                    currentTac = signalData.tac,
+                    onClose = { showSheet = false; selectedMetricKey = null }
+                )
+            }
         }
     }
 }
@@ -597,13 +632,13 @@ fun MetricExplainerContent(info: MetricInfo, onClose: () -> Unit) {
             Spacer(Modifier.width(16.dp))
             Column {
                 Text(
-                    info.label,
+                    stringResource(info.labelResId),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    info.full,
+                    stringResource(info.fullResId),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )
@@ -626,14 +661,14 @@ fun MetricExplainerContent(info: MetricInfo, onClose: () -> Unit) {
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "它是做什么的？",
+                        stringResource(R.string.explainer_what_is),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
                 Text(
-                    info.desc,
+                    stringResource(info.descResId),
                     Modifier.padding(top = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 20.sp
@@ -652,14 +687,14 @@ fun MetricExplainerContent(info: MetricInfo, onClose: () -> Unit) {
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                "对体验的影响",
+                stringResource(R.string.explainer_impact),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.outline
             )
         }
         Text(
-            info.impact,
+            stringResource(info.impactResId),
             Modifier.padding(top = 6.dp, start = 2.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -668,7 +703,7 @@ fun MetricExplainerContent(info: MetricInfo, onClose: () -> Unit) {
         info.range?.let { ranges ->
             Spacer(Modifier.height(24.dp))
             Text(
-                "参考标准 (左差右优)",
+                stringResource(R.string.explainer_standard),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.outline
@@ -687,7 +722,7 @@ fun MetricExplainerContent(info: MetricInfo, onClose: () -> Unit) {
                         ranges.forEach { range ->
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    range.label,
+                                    stringResource(range.labelResId),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Black,
                                     color = range.color
@@ -730,7 +765,7 @@ fun MetricExplainerContent(info: MetricInfo, onClose: () -> Unit) {
             }
         }
 
-        info.tip?.let { tip ->
+        info.tipResId?.let { tipResId ->
             Spacer(Modifier.height(20.dp))
             Surface(
                 color = Color(0xFFE3F2FD),
@@ -741,7 +776,7 @@ fun MetricExplainerContent(info: MetricInfo, onClose: () -> Unit) {
                     Icon(Icons.Default.Build, null, Modifier.size(14.dp), tint = Color(0xFF1976D2))
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        tip,
+                        stringResource(tipResId),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF1976D2),
                         fontWeight = FontWeight.Medium
@@ -760,7 +795,7 @@ fun MetricExplainerContent(info: MetricInfo, onClose: () -> Unit) {
             shape = RoundedCornerShape(16.dp),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
         ) {
-            Text("理解了", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.explainer_understand), fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -30,8 +30,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.ui.cellular.CellularPage
 import cn.debubu.signalinsight.ui.cellular.CellularViewModel
 import cn.debubu.signalinsight.ui.permission.PermissionScreen
@@ -67,17 +69,17 @@ fun MainScreen(
 
     val destinations = listOf(
         NavigationItem(
-            title = "信号监测",
+            title = stringResource(R.string.menu_signal_monitor),
             icon = Icons.Default.Home,
             destination = Destination.Cellular
         ),
         NavigationItem(
-            title = "关于",
+            title = stringResource(R.string.menu_about),
             icon = Icons.Default.Info,
             destination = Destination.About
         ),
         NavigationItem(
-            title = "设置",
+            title = stringResource(R.string.menu_settings),
             icon = Icons.Default.Settings,
             destination = Destination.Settings
         )
@@ -91,7 +93,7 @@ fun MainScreen(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "菜单",
+                        text = stringResource(R.string.menu_title),
                         style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 16.dp)
@@ -120,7 +122,7 @@ fun MainScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "信号监测仪",
+                            text = stringResource(R.string.app_bar_title),
                             fontWeight = FontWeight.Bold
                         )
                     },
@@ -134,7 +136,7 @@ fun MainScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
-                                contentDescription = "打开菜单"
+                                contentDescription = stringResource(R.string.open_menu)
                             )
                         }
                     },
@@ -195,13 +197,13 @@ fun AboutScreen() {
             .padding(16.dp)
     ) {
         Text(
-            text = "关于",
+            text = stringResource(R.string.about_title),
             style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "信号监测仪 v1.0.0\n\n这是一个用于监测蜂窝网络信号强度的应用。",
+            text = stringResource(R.string.about_content),
             style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
         )
     }
@@ -215,7 +217,7 @@ fun SettingsScreen() {
             .padding(16.dp)
     ) {
         Text(
-            text = "设置",
+            text = stringResource(R.string.settings_title),
             style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
@@ -223,7 +225,7 @@ fun SettingsScreen() {
             modifier = Modifier.height(16.dp)
         )
         Text(
-            text = "设置功能开发中...",
+            text = stringResource(R.string.settings_placeholder),
             style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
         )
     }

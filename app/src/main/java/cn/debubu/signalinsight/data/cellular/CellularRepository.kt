@@ -103,15 +103,16 @@ class CellularRepository constructor(
         return "未插卡"
     }
 
-    /**
-     * 获取网络类型
-     *
-     * @param slotId SIM 卡槽 ID
-     * @return 网络类型字符串
-     */
     private fun getNetworkType(slotId: Int): String {
         val tm = getTelephonyManagerForSlot(slotId) ?: return "未知"
-        return CellularSignalInfo.getNetworkTypeName(tm.networkType)
+        val networkType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            @Suppress("DEPRECATION")
+            tm.dataNetworkType
+        } else {
+            @Suppress("DEPRECATION")
+            tm.networkType
+        }
+        return CellularSignalInfo.getNetworkTypeName(networkType)
     }
 
     /**

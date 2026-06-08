@@ -46,9 +46,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cn.debubu.signalinsight.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,7 +97,7 @@ fun PermissionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("权限授权") },
+                title = { Text(stringResource(R.string.permission_title)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -160,7 +162,7 @@ fun HeaderSection() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "需要权限以开始监测",
+            text = stringResource(R.string.permission_main_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -169,7 +171,7 @@ fun HeaderSection() {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "请授权以下权限以使用基站信号监测功能",
+            text = stringResource(R.string.permission_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -280,7 +282,7 @@ fun PermissionCard(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = requirement.title,
+                        text = stringResource(requirement.titleResId),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -289,7 +291,7 @@ fun PermissionCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = requirement.description,
+                        text = stringResource(requirement.descriptionResId),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -310,7 +312,7 @@ fun PermissionCard(
                 }
 
                 Text(
-                    text = requirement.statusText,
+                    text = stringResource(requirement.statusTextResId),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Medium,
                     color = statusColor
@@ -348,7 +350,7 @@ fun FooterSection(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "部分权限被永久拒绝，请在设置中手动开启",
+                        text = stringResource(R.string.permission_denied_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -380,9 +382,9 @@ fun FooterSection(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = if (shouldNavigateToSettings) {
-                    "去设置中心"
+                    stringResource(R.string.permission_go_settings)
                 } else {
-                    "授权并进入"
+                    stringResource(R.string.permission_authorize)
                 },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
