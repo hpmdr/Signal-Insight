@@ -2,6 +2,7 @@ package cn.debubu.signalinsight.ui.cellular
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -35,21 +36,12 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -113,18 +105,13 @@ data class SimStatus(
 // 主页面：HorizontalPager + NavigationBar 双卡切换
 // =====================================================================
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CellularPage(
     modifier: Modifier = Modifier,
-    viewModel: CellularViewModel
+    viewModel: CellularViewModel,
+    onOpenExplainer: (key: String, signalData: SignalData) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
-
-    // ---- 弹窗状态 ----
-    var selectedMetricKey by remember { mutableStateOf<String?>(null) }
-    var showSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // ---- SIM 选项（响应式派生，数据到达后自动更新） ----
     val simOptions by remember {
@@ -230,44 +217,63 @@ fun CellularPage(
                     signalData = viewModel.sim1SignalData.value,
                     neighborCells = viewModel.sim1NeighborCells.value,
                     metricsDatabase = metricsDatabase,
-                    onMetricClick = { key -> selectedMetricKey = key; showSheet = true }
+                    onMetricClick = { key -> onOpenExplainer(key, viewModel.sim1SignalData.value) }
                 )
                 2 -> SimContentPage(
                     signalData = viewModel.sim2SignalData.value,
                     neighborCells = viewModel.sim2NeighborCells.value,
                     metricsDatabase = metricsDatabase,
-                    onMetricClick = { key -> selectedMetricKey = key; showSheet = true }
+                    onMetricClick = { key -> onOpenExplainer(key, viewModel.sim2SignalData.value) }
                 )
             }
         }
 
-        // 底部导航栏 — 药丸式分段按钮（方案 C）
+        // 底部导航栏 — 文字 + 底部滑动指示条（方案 D）
         NavigationBar(
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp
         ) {
-            // 药丸容器
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            var containerWidth by remember { mutableStateOf(0.dp) }
+            val density = LocalDensity.current
+            val tabCount = simOptions.size.coerceAtLeast(1)
+
+            // 指示条：宽度为屏幕宽度的 1/4，居中于每个 tab
+            val tabWidth = if (containerWidth > 0.dp) containerWidth / tabCount else 0.dp
+            val barWidth = if (containerWidth > 0.dp) containerWidth / 4 else 0.dp
+            val targetOffset = tabWidth * pagerState.currentPage + (tabWidth - barWidth) / 2
+            val animatedOffset by animateDpAsState(
+                targetValue = targetOffset,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                label = "IndicatorSlide"
+            )
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 7.dp)
-                    .height(34.dp)
+                    .height(52.dp)
+                    .onGloballyPositioned { coords ->
+                        containerWidth = with(density) { coords.size.width.toDp() }
+                    }
             ) {
+                // 文字按钮
                 Row(modifier = Modifier.fillMaxSize()) {
                     simOptions.forEachIndexed { index, sim ->
                         val isSelected = pagerState.currentPage == index
+                        val textColor by animateColorAsState(
+                            targetValue = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            label = "TabTextColor"
+                        )
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary
-                                    else Color.Transparent
-                                )
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
@@ -278,68 +284,30 @@ fun CellularPage(
                         ) {
                             Text(
                                 text = sim.name,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected)
-                                    MaterialTheme.colorScheme.onPrimary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                color = textColor
                             )
                         }
                     }
                 }
+
+                // 底部短横线指示条（居中于每个 tab，弹簧动画滑动）
+                Box(
+                    modifier = Modifier
+                        .offset(x = animatedOffset, y = (-8).dp)
+                        .width(barWidth)
+                        .height(3.dp)
+                        .align(Alignment.BottomStart)
+                        .background(
+                            MaterialTheme.colorScheme.primary,
+                            RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp)
+                        )
+                )
             }
         }
     }
 
-    // ---- 底部科普弹窗（所有页面共用） ----
-    if (showSheet && selectedMetricKey != null) {
-        val key = selectedMetricKey!!
-        val signalData = if (viewModel.activeSim == 1) viewModel.sim1SignalData.value
-                         else viewModel.sim2SignalData.value
-
-        ModalBottomSheet(
-            onDismissRequest = { showSheet = false; selectedMetricKey = null },
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
-            dragHandle = { BottomSheetDefaults.DragHandle() }
-        ) {
-            when (key) {
-                "Band" -> BandExplainer(
-                    currentBand = signalData.band,
-                    onClose = { showSheet = false; selectedMetricKey = null }
-                )
-                "RSRP" -> RsrpExplainer(
-                    currentRsrp = signalData.dbm,
-                    onClose = { showSheet = false; selectedMetricKey = null }
-                )
-                "RSRQ" -> RsrqExplainer(
-                    currentRsrq = signalData.rsrq,
-                    onClose = { showSheet = false; selectedMetricKey = null }
-                )
-                "SINR" -> SinrExplainer(
-                    currentSinr = signalData.sinr,
-                    onClose = { showSheet = false; selectedMetricKey = null }
-                )
-                "RSSI" -> RssiExplainer(
-                    currentRssi = signalData.rssi,
-                    onClose = { showSheet = false; selectedMetricKey = null }
-                )
-                "PCI" -> PciExplainer(
-                    currentPci = signalData.pci,
-                    onClose = { showSheet = false; selectedMetricKey = null }
-                )
-                "EARFCN" -> EarfcnExplainer(
-                    currentEarfcn = signalData.earfcn,
-                    onClose = { showSheet = false; selectedMetricKey = null }
-                )
-                "TAC" -> TacExplainer(
-                    currentTac = signalData.tac,
-                    onClose = { showSheet = false; selectedMetricKey = null }
-                )
-            }
-        }
-    }
 }
 
 // =====================================================================

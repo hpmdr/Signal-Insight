@@ -10,6 +10,8 @@
     <string name="menu_settings">设置</string>
     <string name="app_bar_title">信号监测仪</string>
     <string name="open_menu">打开菜单</string>
+    <string name="back">返回</string>
+    <string name="explainer_detail_title_suffix">详解</string>
 
     <!-- 关于页面 (AboutScreen) -->
     <string name="about_title">关于</string>

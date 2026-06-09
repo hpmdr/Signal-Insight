@@ -87,12 +87,18 @@
 
 ### UI 层架构（Composable + MVVM）
 ```
-CellularPlugin.kt（主页面）
-  ├── CompactSimSwitcher（SIM 切换器）
-  ├── SignalCircle（信号环）
-  ├── MetricGrid（指标网格 2×4）
-  │   └── click → selectedMetricKey
-  └── ModalBottomSheet
+MainScreen.kt（主容器）
+  ├── 权限未授权 → PermissionScreen
+  ├── 权限已授权
+  │   └── selectedDestination:
+  │       ├── Cellular → CellularPage
+  │       │   ├── HorizontalPager（左右滑动）
+  │       │   │   ├── Page 0 → SimContentPage(sim1SignalData, sim1NeighborCells)
+  │       │   │   └── Page 1 → SimContentPage(sim2SignalData, sim2NeighborCells)
+  │       │   └── NavigationBar（底部，文字+滑动指示条）
+  │       ├── About → AboutScreen
+  │       └── Settings → SettingsScreen
+  └── selectedExplainerKey != null → ExplainerDetailScreen（全屏详情页）
       └── when(key):
           ├── BandExplainer.kt
           ├── RSRPExplainer.kt
@@ -140,7 +146,8 @@ SingnalInsight/
 │   │   │   │   ├── PCIExplainer.kt
 │   │   │   │   ├── EARFCNExplainer.kt
 │   │   │   │   ├── TACExplainer.kt
-│   │   │   │   └── ExplainerUtils.kt        # 共享组件
+│   │   │   │   ├── ExplainerDetailScreen.kt # 全屏科普详情页
+│   │   │   │   ├── ExplainerUtils.kt        # 共享组件
 │   │   │   ├── ui/main/
 │   │   │   ├── ui/permission/
 │   │   │   ├── ui/theme/
