@@ -8,8 +8,11 @@
 
 ## 技术栈
 - **语言**：Kotlin
-- **UI 框架**：Jetpack Compose
-- **构建系统**：Gradle 8.13
+- **架构模式**：MVVM（ViewModel 使用 StateFlow，UI 用 collectAsState 收集）
+- **构建系统**：Gradle 9.5.1
+- **AGP**：9.2.0
+- **Kotlin**：2.4.0
+- **Compose BOM**：2026.05.00
 - **编译 SDK**：36
 - **最小 SDK**：31
 - **目标 SDK**：36

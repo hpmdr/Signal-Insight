@@ -2,86 +2,94 @@ package cn.debubu.signalinsight.ui.cellular
 
 import android.app.Application
 import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.data.cellular.CellularData
 import cn.debubu.signalinsight.data.cellular.CellularRepository
+import cn.debubu.signalinsight.data.cellular.CellularSignalInfo
+import cn.debubu.signalinsight.data.cellular.NeighborCellTableModel
+import cn.debubu.signalinsight.data.cellular.SignalData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-
-class CellularViewModel constructor(
+/**
+ * 蜂窝信号 ViewModel — 使用 StateFlow 实现 MVVM 架构
+ *
+ * 数据流：
+ *   CellularRepository (callbackFlow)
+ *     → _sim1Data / _sim2Data (MutableStateFlow)
+ *       → sim1SignalData / sim2SignalData (derived map)
+ *       → currentSignalData (combine)
+ *     → Compose UI (collectAsState)
+ */
+class CellularViewModel(
     private val repository: CellularRepository,
     application: Application
 ) : AndroidViewModel(application) {
-    private val TAG = "CellularNewViewModel"
 
-    var activeSim by mutableIntStateOf(1)
-        private set
+    private val TAG = "CellularViewModel"
 
-    private val _sim1Data = mutableStateOf<CellularData?>(null)
-    private val _sim2Data = mutableStateOf<CellularData?>(null)
+    // ─── 原始数据源 ─────────────────────────────────────────────
 
-    private val _currentSignalData = mutableStateOf(SignalData())
-    val currentSignalData: State<SignalData> = _currentSignalData
+    private val _sim1Data = MutableStateFlow<CellularData?>(null)
+    private val _sim2Data = MutableStateFlow<CellularData?>(null)
+    private val _activeSim = MutableStateFlow(1)
 
-    private val _neighborCells = mutableStateOf<List<NeighborCellTableModel>>(emptyList())
-    val neighborCells: State<List<NeighborCellTableModel>> = _neighborCells
+    /** 当前选中的 SIM 卡槽 (1 或 2) */
+    val activeSim: StateFlow<Int> = _activeSim.asStateFlow()
 
     private var dataCollectionJob: Job? = null
 
-    // === 每张卡独立的数据快照（供 HorizontalPager 使用） ===
-    val sim1SignalData: State<SignalData> = derivedStateOf {
-        _sim1Data.value?.servingCell?.let { cell ->
-            SignalData(
-                dbm = cell.dbm,
-                progress = ((cell.dbm + 120) / 60f).coerceIn(0f, 1f),
-                operatorName = cell.operatorName,
-                networkType = cell.networkType,
-                rsrp = cell.rsrp, rsrq = cell.rsrq, sinr = cell.sinr, rssi = cell.rssi,
-                pci = cell.pci, earfcn = cell.earfcn, band = cell.band, tac = cell.tac
-            )
-        } ?: SignalData()
-    }
+    // ─── 派生状态 (每张卡独立) ─────────────────────────────────────
 
-    val sim2SignalData: State<SignalData> = derivedStateOf {
-        _sim2Data.value?.servingCell?.let { cell ->
-            SignalData(
-                dbm = cell.dbm,
-                progress = ((cell.dbm + 120) / 60f).coerceIn(0f, 1f),
-                operatorName = cell.operatorName,
-                networkType = cell.networkType,
-                rsrp = cell.rsrp, rsrq = cell.rsrq, sinr = cell.sinr, rssi = cell.rssi,
-                pci = cell.pci, earfcn = cell.earfcn, band = cell.band, tac = cell.tac
-            )
-        } ?: SignalData()
-    }
+    /** SIM 1 的 UI 信号数据 */
+    val sim1SignalData: StateFlow<SignalData> = _sim1Data
+        .map { it?.servingCell.toSignalData() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SignalData())
 
-    val sim1NeighborCells: State<List<NeighborCellTableModel>> = derivedStateOf {
-        _sim1Data.value?.neighborCells?.map { neighbor ->
-            NeighborCellTableModel(
-                pci = neighbor.pci, earfcn = neighbor.earfcn, band = neighbor.band,
-                rsrp = neighbor.rsrp, rsrq = neighbor.rsrq, sinr = neighbor.sinr
-            )
-        }?.sortedByDescending { it.rsrp } ?: emptyList()
-    }
+    /** SIM 2 的 UI 信号数据 */
+    val sim2SignalData: StateFlow<SignalData> = _sim2Data
+        .map { it?.servingCell.toSignalData() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SignalData())
 
-    val sim2NeighborCells: State<List<NeighborCellTableModel>> = derivedStateOf {
-        _sim2Data.value?.neighborCells?.map { neighbor ->
-            NeighborCellTableModel(
-                pci = neighbor.pci, earfcn = neighbor.earfcn, band = neighbor.band,
-                rsrp = neighbor.rsrp, rsrq = neighbor.rsrq, sinr = neighbor.sinr
-            )
-        }?.sortedByDescending { it.rsrp } ?: emptyList()
-    }
+    /** SIM 1 的邻小区列表 */
+    val sim1NeighborCells: StateFlow<List<NeighborCellTableModel>> = _sim1Data
+        .map { data -> data?.neighborCells.toNeighborModels() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** SIM 2 的邻小区列表 */
+    val sim2NeighborCells: StateFlow<List<NeighborCellTableModel>> = _sim2Data
+        .map { data -> data?.neighborCells.toNeighborModels() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // ─── 派生状态 (当前激活的卡) ────────────────────────────────────
+
+    /** 当前激活 SIM 的 UI 信号数据 */
+    val currentSignalData: StateFlow<SignalData> = combine(
+        _activeSim, _sim1Data, _sim2Data
+    ) { active, sim1, sim2 ->
+        val data = if (active == 1) sim1 else sim2
+        data?.servingCell.toSignalData()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SignalData())
+
+    /** 当前激活 SIM 的邻小区列表 */
+    val neighborCells: StateFlow<List<NeighborCellTableModel>> = combine(
+        _activeSim, _sim1Data, _sim2Data
+    ) { active, sim1, sim2 ->
+        val data = if (active == 1) sim1 else sim2
+        data?.neighborCells.toNeighborModels()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // ─── 初始化 ─────────────────────────────────────────────────
 
     init {
         startDataCollection()
@@ -99,66 +107,29 @@ class CellularViewModel constructor(
                 _sim1Data.value = sim1Data
                 _sim2Data.value = sim2Data
 
-                updateCurrentSignalData()
-                updateNeighborCells()
-
-                Log.d(TAG,"SIM 1: ${sim1Data.servingCell?.operatorName}, 邻小区: ${sim1Data.neighborCells.size}")
-                Log.d(TAG,"SIM 2: ${sim2Data.servingCell?.operatorName}, 邻小区: ${sim2Data.neighborCells.size}")
+                Log.d(TAG, "SIM 1: ${sim1Data.servingCell?.operatorName}, 邻小区: ${sim1Data.neighborCells.size}")
+                Log.d(TAG, "SIM 2: ${sim2Data.servingCell?.operatorName}, 邻小区: ${sim2Data.neighborCells.size}")
             }
         }
     }
 
-    private fun updateCurrentSignalData() {
-        val currentData = if (activeSim == 1) _sim1Data.value else _sim2Data.value
-        val signalData = currentData?.servingCell?.let { cell ->
-            SignalData(
-                dbm = cell.dbm,
-                progress = ((cell.dbm + 120) / 60f).coerceIn(0f, 1f),
-                operatorName = cell.operatorName,
-                networkType = cell.networkType,
-                rsrp = cell.rsrp,
-                rsrq = cell.rsrq,
-                sinr = cell.sinr,
-                rssi = cell.rssi,
-                pci = cell.pci,
-                earfcn = cell.earfcn,
-                band = cell.band,
-                tac = cell.tac
-            )
-        } ?: SignalData()
+    // ─── 卡槽切换 ────────────────────────────────────────────────
 
-        _currentSignalData.value = signalData
-    }
-
-    private fun updateNeighborCells() {
-        val currentData = if (activeSim == 1) _sim1Data.value else _sim2Data.value
-        val neighborList = currentData?.neighborCells?.map { neighbor ->
-            NeighborCellTableModel(
-                pci = neighbor.pci,
-                earfcn = neighbor.earfcn,
-                band = neighbor.band,
-                rsrp = neighbor.rsrp,
-                rsrq = neighbor.rsrq,
-                sinr = neighbor.sinr
-            )
-        }?.sortedByDescending { it.rsrp } ?: emptyList()
-
-        _neighborCells.value = neighborList
-    }
-
+    /**
+     * 切换到指定的 SIM 卡槽
+     * @return 切换是否成功（目标卡槽有数据）
+     */
     fun switchSim(simId: Int): Boolean {
         val simData = if (simId == 1) _sim1Data.value else _sim2Data.value
+        if (simData == null) return false
 
-        if (simData == null) {
-            return false
-        }
-
-        activeSim = simId
-        updateCurrentSignalData()
-        updateNeighborCells()
+        _activeSim.value = simId
         return true
     }
 
+    // ─── SIM 状态查询 ────────────────────────────────────────────
+
+    /** 获取指定 SIM 卡槽的运营商名称（国际化字符串） */
     fun getSimOperatorName(simId: Int): String {
         val app = getApplication<Application>()
         val noSim = app.getString(R.string.operator_no_sim)
@@ -167,12 +138,14 @@ class CellularViewModel constructor(
         return if (operatorName == "No SIM") noSim else operatorName
     }
 
+    /** 判断指定 SIM 卡槽是否已插卡 */
     fun isSimInserted(simId: Int): Boolean {
         val simData = if (simId == 1) _sim1Data.value else _sim2Data.value
         val operatorName = simData?.servingCell?.operatorName
         return operatorName != null && operatorName != "No SIM"
     }
 
+    /** 获取已插入的 SIM 卡运营商名称列表 */
     fun getSimOptions(): List<String> {
         val sim1Name = _sim1Data.value?.servingCell?.operatorName
         val sim2Name = _sim2Data.value?.servingCell?.operatorName
@@ -183,26 +156,35 @@ class CellularViewModel constructor(
     }
 }
 
-data class SignalData(
-    val dbm: Int = -120,
-    val progress: Float = 0f,
-    val operatorName: String = "Unknown",
-    val networkType: String = "Unknown",
-    val rsrp: Int = -120,
-    val rsrq: Int = -20,
-    val sinr: Int = -20,
-    val rssi: Int = -120,
-    val pci: Int = 0,
-    val earfcn: Int = 0,
-    val band: String = "",
-    val tac: Int = 0
-)
+// ─── 私有扩展函数 ──────────────────────────────────────────────────
 
-data class NeighborCellTableModel(
-    val pci: Int,
-    val earfcn: Int,
-    val band: String,
-    val rsrp: Int,
-    val rsrq: Int,
-    val sinr: Int
-)
+/** 将 [CellularSignalInfo] 转换为 UI 用的 [SignalData] */
+private fun CellularSignalInfo?.toSignalData(): SignalData = this?.let { cell ->
+    SignalData(
+        dbm = cell.dbm,
+        progress = ((cell.dbm + 120) / 60f).coerceIn(0f, 1f),
+        operatorName = cell.operatorName,
+        networkType = cell.networkType,
+        rsrp = cell.rsrp,
+        rsrq = cell.rsrq,
+        sinr = cell.sinr,
+        rssi = cell.rssi,
+        pci = cell.pci,
+        earfcn = cell.earfcn,
+        band = cell.band,
+        tac = cell.tac,
+    )
+} ?: SignalData()
+
+/** 将邻小区列表转换为表格模型 */
+private fun List<cn.debubu.signalinsight.data.cellular.NeighborCellInfo>?.toNeighborModels(): List<NeighborCellTableModel> =
+    this?.map { neighbor ->
+        NeighborCellTableModel(
+            pci = neighbor.pci,
+            earfcn = neighbor.earfcn,
+            band = neighbor.band,
+            rsrp = neighbor.rsrp,
+            rsrq = neighbor.rsrq,
+            sinr = neighbor.sinr,
+        )
+    }?.sortedByDescending { it.rsrp } ?: emptyList()

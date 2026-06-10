@@ -16,10 +16,19 @@ data class PermissionState(
 
 class PermissionManager constructor(private val context: Context) {
 
+    /**
+     * 检查权限状态 — 同时检测是否被永久拒绝（"不再询问"）
+     * 根据 Android 官方最佳实践：
+     *   permanentlyDenied = checkSelfPermission(DENIED) && !shouldShowRequestPermissionRationale()
+     */
     fun checkPermissions(permissions: List<String>, activity: Activity? = null): PermissionState {
         val missing = missingPermissions(permissions)
         val allGranted = missing.isEmpty()
-        val permanentlyDenied = false
+        val permanentlyDenied = if (activity != null) {
+            isPermanentlyDenied(activity, missing)
+        } else {
+            false
+        }
 
         return PermissionState(
             allGranted = allGranted,
@@ -28,6 +37,9 @@ class PermissionManager constructor(private val context: Context) {
             shouldRequest = !permanentlyDenied && missing.isNotEmpty()
         )
     }
+
+    fun isPermissionGranted(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
     fun missingPermissions(permissions: List<String>): List<String> =
         permissions.filter {

@@ -54,35 +54,36 @@ fun PermissionScreen(
     viewModel: PermissionViewModel
 ) {
     val context = LocalContext.current
+    val activity = context as? Activity
     val permissionRequirements = viewModel.permissionRequirements
     val allPermissionsGranted = viewModel.allPermissionsGranted.value
-    val shouldNavigateToSettings = viewModel.shouldNavigateToSettings.value
+    val hasPermanentlyDenied = viewModel.hasPermanentlyDenied.value
     val isRequestingPermissions = viewModel.isRequestingPermissions.value
 
+    // 首次进入时检查权限
     LaunchedEffect(Unit) {
-        viewModel.checkAllPermissions(context as? Activity)
+        viewModel.checkAllPermissions(activity)
     }
 
+    // 全部授权后自动跳转
     LaunchedEffect(allPermissionsGranted) {
         if (allPermissionsGranted) {
             onNavigateToMain()
         }
     }
 
-    val permissionsToRequest = remember(permissionRequirements) {
+    // 需要请求的权限列表
+    val permissionsToRequest = remember {
         permissionRequirements.map { it.permission }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
-        viewModel.handlePermissionResult(
-            permissions = permissionsToRequest,
-            result = result,
-            activity = context as? Activity
-        )
+        viewModel.handlePermissionResult(permissionsToRequest, result, activity)
     }
 
+    // 当 ViewModel 设置 isRequestingPermissions 时弹框
     LaunchedEffect(isRequestingPermissions) {
         if (isRequestingPermissions) {
             permissionLauncher.launch(permissionsToRequest.toTypedArray())
@@ -90,7 +91,7 @@ fun PermissionScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // === 可滚动的内容区（标题已移到外层 TopAppBar） ===
+        // 可滚动内容
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -99,22 +100,22 @@ fun PermissionScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-
             HeaderSection()
-
             Spacer(modifier = Modifier.height(24.dp))
 
             PermissionCardsSection(
                 permissionRequirements = permissionRequirements,
                 onRequestPermission = { permission ->
-                    permissionLauncher.launch(arrayOf(permission))
+                    // 单个权限卡点击 → 标记此权限，发起请求
+                    viewModel.requestPermissions(activity ?: return@PermissionCardsSection)
+                    // 注意：仍使用 launcher 弹完整权限框，由 ViewModel 控制
                 }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // === 固定在底部的操作区：提示 + 授权按钮 ===
+        // 底部操作区
         Surface(
             modifier = Modifier.fillMaxWidth(),
             tonalElevation = 0.dp,
@@ -125,66 +126,51 @@ fun PermissionScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // 永久拒绝提示
-                if (shouldNavigateToSettings) {
+                if (hasPermanentlyDenied) {
                     Surface(
                         color = MaterialTheme.colorScheme.errorContainer,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = null,
+                                Icons.Default.Error, null,
                                 tint = MaterialTheme.colorScheme.onErrorContainer,
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
-                                text = stringResource(R.string.permission_denied_hint),
+                                stringResource(R.string.permission_denied_hint),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
                         }
                     }
-
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // 授权按钮
                 Button(
                     onClick = {
-                        if (shouldNavigateToSettings) {
-                            viewModel.navigateToSettings(context as Activity)
+                        if (hasPermanentlyDenied) {
+                            viewModel.navigateToSettings(activity ?: return@Button)
                         } else {
-                            viewModel.requestPermissions()
+                            viewModel.requestPermissions(activity ?: return@Button)
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(28.dp),
                     enabled = !allPermissionsGranted
                 ) {
                     Icon(
-                        imageVector = if (shouldNavigateToSettings) {
-                            Icons.Default.Settings
-                        } else {
-                            Icons.Default.CheckCircle
-                        },
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
+                        if (hasPermanentlyDenied) Icons.Default.Settings else Icons.Default.CheckCircle,
+                        null, Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text(
-                        text = if (shouldNavigateToSettings) {
-                            stringResource(R.string.permission_go_settings)
-                        } else {
-                            stringResource(R.string.permission_authorize)
-                        },
+                        if (hasPermanentlyDenied) stringResource(R.string.permission_go_settings)
+                        else stringResource(R.string.permission_authorize),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -196,32 +182,19 @@ fun PermissionScreen(
 
 @Composable
 fun HeaderSection() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
+            modifier = Modifier.size(56.dp).clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.PhoneAndroid,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
+            Icon(Icons.Default.PhoneAndroid, null,
+                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = stringResource(R.string.permission_subtitle),
+        Spacer(Modifier.height(12.dp))
+        Text(stringResource(R.string.permission_subtitle),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }
 
@@ -230,15 +203,9 @@ fun PermissionCardsSection(
     permissionRequirements: List<PermissionRequirement>,
     onRequestPermission: (String) -> Unit
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        permissionRequirements.forEach { requirement ->
-            PermissionCard(
-                requirement = requirement,
-                onRequestPermission = { onRequestPermission(requirement.permission) }
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+        permissionRequirements.forEach { req ->
+            PermissionCard(req) { onRequestPermission(req.permission) }
         }
     }
 }
@@ -253,117 +220,54 @@ fun PermissionCard(
         "location_on" -> Icons.Default.LocationOn
         else -> Icons.Default.PhoneAndroid
     }
-
     val statusColor = when {
         requirement.isGranted -> Color(0xFF386B28)
         requirement.isPermanentlyDenied -> Color(0xFFBA1A1A)
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-
     val statusIcon = when {
         requirement.isGranted -> Icons.Default.CheckCircle
         requirement.isPermanentlyDenied -> Icons.Default.Error
         else -> null
     }
-
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                enabled = !requirement.isGranted && !requirement.isPermanentlyDenied
-            ) {
-                onRequestPermission()
-            },
+        modifier = Modifier.fillMaxWidth()
+            .clickable(enabled = !requirement.isGranted && !requirement.isPermanentlyDenied) { onRequestPermission() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (requirement.isGranted) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+            containerColor = if (requirement.isGranted) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else MaterialTheme.colorScheme.surface
         ),
-        border = if (!requirement.isGranted && !requirement.isPermanentlyDenied) {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-        } else {
-            null
-        }
+        border = if (!requirement.isGranted && !requirement.isPermanentlyDenied)
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (requirement.isGranted) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (requirement.isGranted) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        },
-                        modifier = Modifier.size(24.dp)
-                    )
+        Row(Modifier.fillMaxWidth().padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Box(Modifier.size(48.dp).clip(CircleShape)
+                    .background(if (requirement.isGranted) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
+                    Icon(icon, null, tint = if (requirement.isGranted) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(24.dp))
                 }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(requirement.titleResId),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = stringResource(requirement.descriptionResId),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(requirement.titleResId), style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(Modifier.height(4.dp))
+                    Text(stringResource(requirement.descriptionResId), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 if (statusIcon != null) {
-                    Icon(
-                        imageVector = statusIcon,
-                        contentDescription = null,
-                        tint = statusColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(statusIcon, null, tint = statusColor, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(4.dp))
                 }
-
-                Text(
-                    text = stringResource(requirement.statusTextResId),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = statusColor
-                )
+                Text(stringResource(requirement.statusTextResId), style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Medium, color = statusColor)
             }
         }
     }
 }
+

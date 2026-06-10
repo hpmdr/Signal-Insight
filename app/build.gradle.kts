@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -30,6 +29,17 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 使用与 release 相同的签名，确保 test APK 兼容已安装的 release 版
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.create("debugCustom") {
+                    keyAlias = keystoreProperties["keyAlias"].toString()
+                    keyPassword = keystoreProperties["keyPassword"].toString()
+                    storeFile = file(keystoreProperties["storeFile"].toString())
+                    storePassword = keystoreProperties["storePassword"].toString()
+                }
+            }
+        }
         release {
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.create("release") {

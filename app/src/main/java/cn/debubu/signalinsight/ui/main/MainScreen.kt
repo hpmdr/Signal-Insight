@@ -1,5 +1,6 @@
 package cn.debubu.signalinsight.ui.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -30,6 +31,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,13 +40,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.ui.cellular.CellularPage
 import cn.debubu.signalinsight.ui.cellular.CellularViewModel
-import cn.debubu.signalinsight.ui.cellular.SignalData
+import cn.debubu.signalinsight.data.cellular.MetricKey
+import cn.debubu.signalinsight.data.cellular.SignalData
 import cn.debubu.signalinsight.ui.cellular.BandExplainer
 import cn.debubu.signalinsight.ui.cellular.RsrpExplainer
 import cn.debubu.signalinsight.ui.cellular.RsrqExplainer
@@ -62,7 +68,7 @@ import kotlinx.coroutines.launch
  * 当非 null 时显示详情页，为 null 时显示主页面
  */
 data class ExplainerRoute(
-    val key: String,
+    val key: MetricKey,
     val signalData: SignalData
 )
 
@@ -141,9 +147,17 @@ fun MainScreen(
     var isCheckingPermissions by remember { mutableStateOf(true) }
     var previousPermissionsGranted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        permissionViewModel.checkAllPermissions(context as? android.app.Activity)
-        isCheckingPermissions = false
+    // 权限检查：首次进入 + 每次从后台返回（如从系统设置页授权后返回）都重新检测
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                permissionViewModel.checkAllPermissions(context as? android.app.Activity)
+                isCheckingPermissions = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(allPermissionsGranted) {
@@ -218,15 +232,14 @@ fun MainScreen(
                             text = if (isShowingExplainer) {
                                 val route = explainerRoute!!
                                 val titleResId = when (route.key) {
-                                    "Band" -> R.string.metric_band_label
-                                    "RSRP" -> R.string.metric_rsrp_label
-                                    "RSRQ" -> R.string.metric_rsrq_label
-                                    "SINR" -> R.string.metric_sinr_label
-                                    "RSSI" -> R.string.metric_rssi_label
-                                    "PCI" -> R.string.metric_pci_label
-                                    "EARFCN" -> R.string.metric_earfcn_label
-                                    "TAC" -> R.string.metric_tac_label
-                                    else -> R.string.app_bar_title
+                                    MetricKey.Band -> R.string.metric_band_label
+                                    MetricKey.RSRP -> R.string.metric_rsrp_label
+                                    MetricKey.RSRQ -> R.string.metric_rsrq_label
+                                    MetricKey.SINR -> R.string.metric_sinr_label
+                                    MetricKey.RSSI -> R.string.metric_rssi_label
+                                    MetricKey.PCI -> R.string.metric_pci_label
+                                    MetricKey.EARFCN -> R.string.metric_earfcn_label
+                                    MetricKey.TAC -> R.string.metric_tac_label
                                 }
                                 "${stringResource(titleResId)} ${stringResource(R.string.explainer_detail_title_suffix)}"
                             } else {
@@ -292,6 +305,9 @@ fun MainScreen(
                     .padding(paddingValues)
             ) { route ->
                 if (route != null) {
+                    // ★ 拦截系统返回键：回到主页面而非退出 App
+                    BackHandler(onBack = { explainerRoute = null })
+
                     // ★ 详情页（无 Scaffold，TopAppBar 已由外层统一管理）
                     Column(
                         modifier = Modifier
@@ -299,17 +315,22 @@ fun MainScreen(
                             .padding(top = 16.dp)
                     ) {
                         when (route.key) {
-                            "Band" -> BandExplainer(currentBand = route.signalData.band, onClose = { explainerRoute = null })
-                            "RSRP" -> RsrpExplainer(currentRsrp = route.signalData.dbm, onClose = { explainerRoute = null })
-                            "RSRQ" -> RsrqExplainer(currentRsrq = route.signalData.rsrq, onClose = { explainerRoute = null })
-                            "SINR" -> SinrExplainer(currentSinr = route.signalData.sinr, onClose = { explainerRoute = null })
-                            "RSSI" -> RssiExplainer(currentRssi = route.signalData.rssi, onClose = { explainerRoute = null })
-                            "PCI" -> PciExplainer(currentPci = route.signalData.pci, onClose = { explainerRoute = null })
-                            "EARFCN" -> EarfcnExplainer(currentEarfcn = route.signalData.earfcn, onClose = { explainerRoute = null })
-                            "TAC" -> TacExplainer(currentTac = route.signalData.tac, onClose = { explainerRoute = null })
+                            MetricKey.Band -> BandExplainer(currentBand = route.signalData.band, onClose = { explainerRoute = null })
+                            MetricKey.RSRP -> RsrpExplainer(currentRsrp = route.signalData.dbm, onClose = { explainerRoute = null })
+                            MetricKey.RSRQ -> RsrqExplainer(currentRsrq = route.signalData.rsrq, onClose = { explainerRoute = null })
+                            MetricKey.SINR -> SinrExplainer(currentSinr = route.signalData.sinr, onClose = { explainerRoute = null })
+                            MetricKey.RSSI -> RssiExplainer(currentRssi = route.signalData.rssi, onClose = { explainerRoute = null })
+                            MetricKey.PCI -> PciExplainer(currentPci = route.signalData.pci, onClose = { explainerRoute = null })
+                            MetricKey.EARFCN -> EarfcnExplainer(currentEarfcn = route.signalData.earfcn, onClose = { explainerRoute = null })
+                            MetricKey.TAC -> TacExplainer(currentTac = route.signalData.tac, onClose = { explainerRoute = null })
                         }
                     }
                 } else {
+                    // ★ 拦截系统返回键：关于/设置页返回信号页，而非退出 App
+                    if (selectedDestination != Destination.Cellular) {
+                        BackHandler(onBack = { selectedDestination = Destination.Cellular })
+                    }
+
                     // ★ 主页面（权限检查 → 信号页/关于/设置）
                     if (isCheckingPermissions) {
                         androidx.compose.material3.CircularProgressIndicator(

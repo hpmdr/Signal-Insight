@@ -425,3 +425,46 @@ data class NrSignalModel(
     val frequency: Double = 0.0,
     val pci: Int = 0
 )
+
+// ─── Compose UI 数据模型（ViewModel → UI 传输） ───
+
+/**
+ * 信号摘要数据 — 从 ViewModel 传往 Compose UI 层的轻量快照
+ * 所有字段均有安全默认值，确保未插卡时也能正常渲染
+ */
+data class SignalData(
+    val dbm: Int = -120,
+    val progress: Float = 0f,
+    val operatorName: String = "Unknown",
+    val networkType: String = "Unknown",
+    val rsrp: Int = -120,
+    val rsrq: Int = -20,
+    val sinr: Int = -20,
+    val rssi: Int = -120,
+    val pci: Int = 0,
+    val earfcn: Int = 0,
+    val band: String = "",
+    val tac: Int = 0
+)
+
+/**
+ * 邻小区表格数据模型 — 用于 Compose UI 中的邻小区列表展示
+ */
+data class NeighborCellTableModel(
+    val pci: Int,
+    val earfcn: Int,
+    val band: String,
+    val rsrp: Int,
+    val rsrq: Int,
+    val sinr: Int
+)
+
+// ─── 指标路由枚举 — 替代硬编码字符串 "Band"/"RSRP"/... ───
+
+/**
+ * 信号指标键枚举
+ * 用于路由科普详情页，替代魔法字符串
+ */
+enum class MetricKey {
+    Band, RSRP, RSRQ, SINR, RSSI, PCI, EARFCN, TAC;
+}

@@ -5,9 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModelProvider
 import cn.debubu.signalinsight.ui.cellular.CellularViewModel
 import cn.debubu.signalinsight.ui.main.MainScreen
@@ -15,30 +12,22 @@ import cn.debubu.signalinsight.ui.permission.PermissionViewModel
 import cn.debubu.signalinsight.ui.theme.SignalInsightTheme
 
 class MainActivity : ComponentActivity() {
-    
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.values.all { it }
-        if (!allGranted) {
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
         val application = application as SignalInsightApplication
         val cellularViewModel = ViewModelProvider(
             this,
             CellularViewModelFactory(application.cellularRepository, application)
         )[CellularViewModel::class.java]
-        
+
         val permissionViewModel = ViewModelProvider(
             this,
             PermissionViewModelFactory(application.permissionManager)
         )[PermissionViewModel::class.java]
-        
+
         setContent {
             SignalInsightTheme {
                 MainScreen(
@@ -72,13 +61,5 @@ class PermissionViewModelFactory(
             return PermissionViewModel(permissionManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SignalInsightTheme {
-
     }
 }

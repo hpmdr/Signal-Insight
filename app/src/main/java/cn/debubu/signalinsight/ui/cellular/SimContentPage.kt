@@ -52,6 +52,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
+import cn.debubu.signalinsight.data.cellular.MetricKey
+import cn.debubu.signalinsight.data.cellular.NeighborCellTableModel
+import cn.debubu.signalinsight.data.cellular.SignalData
 
 /**
  * 单张 SIM 卡的内容页面 — 包含信号环、指标网格、邻小区列表。
@@ -68,8 +71,8 @@ import cn.debubu.signalinsight.R
 fun SimContentPage(
     signalData: SignalData,
     neighborCells: List<NeighborCellTableModel>,
-    metricsDatabase: Map<String, MetricInfo>,
-    onMetricClick: (String) -> Unit,
+    metricsDatabase: Map<MetricKey, MetricInfo>,
+    onMetricClick: (MetricKey) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -97,7 +100,7 @@ fun SimContentPage(
             signalData = signalData,
             statusColor = statusColor,
             statusLabel = statusLabel,
-            onClick = { onMetricClick("RSRP") }
+            onClick = { onMetricClick(MetricKey.RSRP) }
         )
 
         // ===== 指标网格 =====
@@ -211,7 +214,7 @@ private fun SignalRingCard(
 @Composable
 private fun MetricGridCard(
     signalData: SignalData,
-    onMetricClick: (String) -> Unit
+    onMetricClick: (MetricKey) -> Unit
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -242,16 +245,16 @@ private fun MetricGridCard(
             // 两行指标
             val rows = listOf(
                 listOf(
-                    Metric("RSRP", signalData.rsrp.toString(), "dBm"),
-                    Metric("RSRQ", signalData.rsrq.toString(), "dB"),
-                    Metric("SINR", signalData.sinr.toString(), "dB"),
-                    Metric("RSSI", signalData.rssi.toString(), "dBm")
+                    Metric(MetricKey.RSRP, "RSRP", signalData.rsrp.toString(), "dBm"),
+                    Metric(MetricKey.RSRQ, "RSRQ", signalData.rsrq.toString(), "dB"),
+                    Metric(MetricKey.SINR, "SINR", signalData.sinr.toString(), "dB"),
+                    Metric(MetricKey.RSSI, "RSSI", signalData.rssi.toString(), "dBm")
                 ),
                 listOf(
-                    Metric("Band", signalData.band, ""),
-                    Metric("PCI", signalData.pci.toString(), ""),
-                    Metric("EARFCN", signalData.earfcn.toString(), ""),
-                    Metric("TAC", signalData.tac.toString(), "")
+                    Metric(MetricKey.Band, "Band", signalData.band, ""),
+                    Metric(MetricKey.PCI, "PCI", signalData.pci.toString(), ""),
+                    Metric(MetricKey.EARFCN, "EARFCN", signalData.earfcn.toString(), ""),
+                    Metric(MetricKey.TAC, "TAC", signalData.tac.toString(), "")
                 )
             )
 
@@ -261,7 +264,7 @@ private fun MetricGridCard(
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { onMetricClick(item.label) }
+                                .clickable { onMetricClick(item.key) }
                                 .padding(vertical = 10.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
