@@ -43,7 +43,11 @@
 ### 项目配置文件
 - **local.properties**：sdk.dir=C:/Users/hpmdr/app/Android
 
-## 构建命令
+## 测试
+- **测试框架**：Compose UI Test (ui-test-junit4)
+- **测试文件**：`app/src/androidTest/.../PermissionFlowTest.kt`
+- **测试覆盖**：权限流程 UI 测试（初始渲染、点击、拒绝、授权跳转）
+- **运行命令**：`./gradlew connectedDebugAndroidTest`（需手机连接 ADB）
 
 ### 清理构建
 ```bash

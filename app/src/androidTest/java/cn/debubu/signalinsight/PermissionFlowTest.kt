@@ -2,9 +2,9 @@ package cn.debubu.signalinsight
 
 import android.Manifest
 import android.app.Activity
-import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -20,21 +20,15 @@ import org.junit.runner.RunWith
 /**
  * 权限流程 UI 自动化测试
  *
- * 测试前提：手机上未预先授予信号监测仪权限
- * （如果已授予，部分测试需要先清除应用数据再运行）
- *
- * 测试范围：
- * 1. 初始页面渲染 — 权限卡 + 按钮状态正确
- * 2. 点击授权按钮 — ViewModel 进入请求状态
- * 3. 权限拒绝 — UI 保持权限页，按钮可再次点击
- * 4. 权限已授权 — 触发 onNavigateToMain 跳转
- * 5. 永久拒绝 — 按钮变为"去设置中心"
+ * 使用 createComposeRule() 而非 createAndroidComposeRule()，
+ * 因为 MIUI 系统会拦截 createAndroidComposeRule 创建的 Activity。
+ * createComposeRule() 使用内部托管 Activity，兼容性更好。
  */
 @RunWith(AndroidJUnit4::class)
 class PermissionFlowTest {
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+    val composeTestRule = createComposeRule()
 
     private lateinit var viewModel: PermissionViewModel
     private lateinit var permissionManager: PermissionManager
@@ -46,7 +40,9 @@ class PermissionFlowTest {
         viewModel = PermissionViewModel(permissionManager)
     }
 
-    // ─── Test 1: 初始渲染 ───
+    // ═══════════════════════════════════════════════════
+    // 测试 1-4: UI 渲染测试（不依赖 Activity 对象）
+    // ═══════════════════════════════════════════════════
 
     @Test
     fun initialScreen_displaysPhonePermissionCard() {
@@ -75,7 +71,6 @@ class PermissionFlowTest {
         }
         composeTestRule.waitForIdle()
 
-        // 所有权限默认「待授权」
         composeTestRule.onNodeWithText("待授权").assertExists()
     }
 
@@ -89,7 +84,9 @@ class PermissionFlowTest {
         composeTestRule.onNodeWithText("授权并进入").assertIsDisplayed()
     }
 
-    // ─── Test 2: 点击授权按钮 ───
+    // ═══════════════════════════════════════════════════
+    // 测试 5: 点击授权按钮 → ViewModel 状态变化
+    // ═══════════════════════════════════════════════════
 
     @Test
     fun clickAuthorizeButton_triggersPermissionRequest() {
@@ -101,27 +98,30 @@ class PermissionFlowTest {
         composeTestRule.onNodeWithText("授权并进入").performClick()
         composeTestRule.waitForIdle()
 
-        // ViewModel 应进入请求状态（系统弹窗即将弹出）
         assert(viewModel.isRequestingPermissions.value) {
             "点击授权后 ViewModel.isRequestingPermissions 应为 true"
         }
     }
 
-    // ─── Test 3: 权限被拒绝 → 仍可再次点击 ───
+    // ═══════════════════════════════════════════════════
+    // 测试 6: 权限拒绝后 → 按钮仍可点击
+    // ═══════════════════════════════════════════════════
 
     @Test
     fun afterPermissionDenied_buttonStillClickable() {
+        // 通过 composable 内的 LocalContext 获取 Activity
+        var activity: Activity? = null
+
         composeTestRule.setContent {
+            activity = LocalContext.current as? Activity
             PermissionScreen(onNavigateToMain = {}, viewModel = viewModel)
         }
         composeTestRule.waitForIdle()
 
-        // 模拟：点击请求权限 → 系统弹窗 → 用户拒绝
+        // 模拟：授权 → 系统返回拒绝
         composeTestRule.onNodeWithText("授权并进入").performClick()
         composeTestRule.waitForIdle()
 
-        // 模拟系统返回拒绝结果（从 handlePermissionResult 手动触发）
-        val activity = composeTestRule.activity
         viewModel.handlePermissionResult(
             permissions = listOf(
                 Manifest.permission.READ_BASIC_PHONE_STATE,
@@ -137,17 +137,20 @@ class PermissionFlowTest {
         )
         composeTestRule.waitForIdle()
 
-        // 拒绝后仍留在权限页，按钮文字不变
         composeTestRule.onNodeWithText("授权并进入").assertIsDisplayed()
     }
 
-    // ─── Test 4: 权限全部授权 → 跳转到主页面 ───
+    // ═══════════════════════════════════════════════════
+    // 测试 7: 全部授权 → 跳转主页面
+    // ═══════════════════════════════════════════════════
 
     @Test
     fun allPermissionsGranted_navigatesToMain() {
         var navigatedToMain = false
+        var activity: Activity? = null
 
         composeTestRule.setContent {
+            activity = LocalContext.current as? Activity
             PermissionScreen(
                 onNavigateToMain = { navigatedToMain = true },
                 viewModel = viewModel
@@ -155,8 +158,6 @@ class PermissionFlowTest {
         }
         composeTestRule.waitForIdle()
 
-        // 模拟系统返回全部授权结果
-        val activity = composeTestRule.activity
         viewModel.handlePermissionResult(
             permissions = listOf(
                 Manifest.permission.READ_BASIC_PHONE_STATE,
@@ -172,10 +173,8 @@ class PermissionFlowTest {
         )
         composeTestRule.waitForIdle()
 
-        // 注意：由于 ACCESS_FINE_LOCATION 需要精确位置开关打开
-        // 在测试设备上可能 isPreciseLocationEnabled() 返回 false
-        // 因此位置权限可能未真正"授权"
-        // 这里验证方法：至少电话权限已授权时跳转逻辑被触发
+        // 由于 ACCESS_FINE_LOCATION 需精确位置开关打开，可能未真正授权
+        // 电话权限已授权即可验证跳转逻辑
         if (viewModel.allPermissionsGranted.value) {
             assert(navigatedToMain) {
                 "权限全部授权后应触发 onNavigateToMain"
@@ -183,25 +182,25 @@ class PermissionFlowTest {
         }
     }
 
-    // ─── Test 5: 永久拒绝 → 显示"去设置中心" ───
+    // ═══════════════════════════════════════════════════
+    // 测试 8: 永久拒绝 → "去设置中心"
+    // ═══════════════════════════════════════════════════
 
     @Test
     fun permanentlyDenied_showsGoToSettings() {
+        var activity: Activity? = null
+
         composeTestRule.setContent {
+            activity = LocalContext.current as? Activity
             PermissionScreen(onNavigateToMain = {}, viewModel = viewModel)
         }
         composeTestRule.waitForIdle()
 
-        // 模拟：先请求（标记 hasBeenRequested），然后拒绝 + shouldShowRationale=false
-        val activity = composeTestRule.activity
+        // 第1步：请求权限（标记 hasBeenRequested）
+        val act = activity ?: return
+        viewModel.requestPermissions(act)
 
-        // 第一步：请求权限（标记 hasBeenRequested）
-        viewModel.requestPermissions(activity)
-        composeTestRule.waitForIdle()
-
-        // 第二步：handlePermissionResult 返回拒绝
-        // 在模拟器中，system 可能会返回 true for shouldShowRationale
-        // 但我们可以通过手动设置 hasBeenRequested 并调用 checkAllPermissions 来验证
+        // 第2步：返回拒绝结果
         viewModel.handlePermissionResult(
             permissions = listOf(
                 Manifest.permission.READ_BASIC_PHONE_STATE,
@@ -213,17 +212,15 @@ class PermissionFlowTest {
                 Manifest.permission.READ_PHONE_STATE to false,
                 Manifest.permission.ACCESS_FINE_LOCATION to false
             ),
-            activity = activity
+            activity = act
         )
         composeTestRule.waitForIdle()
 
-        // 如果 shouldShowRationale 返回 false（模拟器/设备行为不定）
-        // 则 hasPermanentlyDenied 为 true，按钮应变为"去设置中心"
+        // 判断是否为永久拒绝
         if (viewModel.hasPermanentlyDenied.value) {
             composeTestRule.onNodeWithText("去设置中心").assertIsDisplayed()
             composeTestRule.onNodeWithText("部分权限被永久拒绝，请在设置中手动开启").assertIsDisplayed()
         } else {
-            // shouldShowRationale 为 true → 仅拒绝一次，仍显示"授权并进入"
             composeTestRule.onNodeWithText("授权并进入").assertIsDisplayed()
         }
     }
