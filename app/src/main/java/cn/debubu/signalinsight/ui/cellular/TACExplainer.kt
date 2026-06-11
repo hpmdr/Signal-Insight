@@ -42,6 +42,14 @@ fun TacExplainer(currentTac: Int, onClose: () -> Unit) {
         SectionCard(R.string.tac_explain_title, Icons.Default.Search) {
             Text(stringResource(R.string.tac_explain_basic), style = MaterialTheme.typography.bodyMedium, lineHeight = 22.sp)
         }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.metric_net_tac),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+            lineHeight = 16.sp,
+            modifier = Modifier.padding(start = 4.dp)
+        )
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.tac_update_title, Icons.Default.Place) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -72,16 +80,29 @@ fun TacExplainer(currentTac: Int, onClose: () -> Unit) {
         }
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.tac_assessment_title, Icons.Default.Star) {
-            val (bg, hint) = if (currentTac > 0) {
-                MaterialTheme.colorScheme.primaryContainer to R.string.tac_assessment_stable
+            if (currentTac == Int.MAX_VALUE) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("N/A", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                        Spacer(Modifier.height(4.dp))
+                        Text(stringResource(R.string.metric_not_available), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
             } else {
-                MaterialTheme.colorScheme.tertiaryContainer to R.string.tac_assessment_changed
-            }
-            Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("TAC $currentTac", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-                    Spacer(Modifier.height(4.dp))
-                    Text(stringResource(hint), style = MaterialTheme.typography.bodySmall)
+                val (bg, hint) = if (currentTac > 0) {
+                    MaterialTheme.colorScheme.primaryContainer to R.string.tac_assessment_stable
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant to R.string.tac_assessment_changed
+                }
+                Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("TAC $currentTac", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                        Spacer(Modifier.height(4.dp))
+                        Text(stringResource(hint), style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }

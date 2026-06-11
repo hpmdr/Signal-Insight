@@ -15,8 +15,10 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
@@ -65,6 +67,8 @@ import cn.debubu.signalinsight.ui.cellular.EarfcnExplainer
 import cn.debubu.signalinsight.ui.cellular.TacExplainer
 import cn.debubu.signalinsight.ui.permission.PermissionScreen
 import cn.debubu.signalinsight.ui.permission.PermissionViewModel
+import cn.debubu.signalinsight.ui.settings.SettingsScreen
+import cn.debubu.signalinsight.ui.settings.ThemeViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -84,8 +88,8 @@ data class NavigationItem(
 
 enum class Destination {
     Cellular,
-    About,
-    Settings
+    Settings,
+    About
 }
 
 @Composable
@@ -108,37 +112,23 @@ fun AboutScreen() {
     }
 }
 
-@Composable
-fun SettingsScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-        Text(
-            text = stringResource(R.string.settings_placeholder),
-            style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
-        )
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     cellularViewModel: CellularViewModel,
-    permissionViewModel: PermissionViewModel
+    permissionViewModel: PermissionViewModel,
+    themeViewModel: ThemeViewModel
 ) {
     val context = LocalContext.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // 侧栏打开时，返回键关闭侧栏而非退出 App
+    if (drawerState.currentValue == DrawerValue.Open) {
+        BackHandler(onBack = {
+            scope.launch { drawerState.close() }
+        })
+    }
 
     // 底部导航选中项
     var selectedDestination: Destination by remember { mutableStateOf(Destination.Cellular) }
@@ -190,14 +180,14 @@ fun MainScreen(
             destination = Destination.Cellular
         ),
         NavigationItem(
-            title = stringResource(R.string.menu_about),
-            icon = Icons.Default.Info,
-            destination = Destination.About
-        ),
-        NavigationItem(
             title = stringResource(R.string.menu_settings),
             icon = Icons.Default.Settings,
             destination = Destination.Settings
+        ),
+        NavigationItem(
+            title = stringResource(R.string.menu_about),
+            icon = Icons.Default.Info,
+            destination = Destination.About
         )
     )
 
@@ -208,7 +198,7 @@ fun MainScreen(
         drawerState = drawerState,
         gesturesEnabled = !isShowingExplainer,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
@@ -377,8 +367,8 @@ fun MainScreen(
                                     explainerRoute = ExplainerRoute(key, signalData)
                                 }
                             )
+                            Destination.Settings -> SettingsScreen(viewModel = themeViewModel)
                             Destination.About -> AboutScreen()
-                            Destination.Settings -> SettingsScreen()
                         }
                     } else {
                         PermissionScreen(

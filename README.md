@@ -9,54 +9,54 @@
 
 ```mermaid
 flowchart TB
-    subgraph Android["Android 系统层"]
+    subgraph Android["Android System Layer"]
         TM[TelephonyManager]
-        SC[SubscriptionManager<br/>SIM卡订阅管理]
-        TC[TelephonyCallback<br/>CellInfoListener]
+        SC[SubscriptionManager]
+        TC[CellInfoListener]
     end
 
-    subgraph Data["数据层 · CellularRepository.kt"]
-        CF[callbackFlow<br/>协程回调流]
-        EC[extractCellularData<br/>解析CellInfo]
-        FI[fromCellInfo<br/>按网络类型分流]
+    subgraph Data["Data Layer"]
+        CF["callbackFlow"]
+        EC["extractCellularData()"]
+        FI["fromCellInfo() type dispatch"]
     end
 
-    subgraph Model["数据模型 · CellularSignalModel.kt"]
-        L4G[CellInfoLte<br/>rsrp/rsrq/rssnr/rssi/pci/earfcn/band/tac]
-        NR[CellInfoNr<br/>ssRsrp/ssRsrq/ssSinr/pci/nrarfcn/band/tac]
-        W3G[CellInfoWcdma<br/>dbm/psc/uarfcn/lac]
-        G2G[CellInfoGsm<br/>dbm/rssi/cid/lac]
+    subgraph Model["Network Type Dispatch"]
+        L4G["4G LTE: rsrp / rsrq / rssnr / rssi / pci / earfcn / band / tac"]
+        NR["5G NR: ssRsrp / ssRsrq / ssSinr / pci / nrarfcn / band / tac"]
+        W3G["3G WCDMA: dbm / psc / uarfcn / lac"]
+        G2G["2G GSM: dbm / rssi / cid / lac"]
     end
 
-    subgraph ViewModel["ViewModel · CellularViewModel.kt"]
-        COLL[collect { sim1, sim2 -> }]
-        SF[.map{}.stateIn()<br/>StateFlow&lt;SignalData&gt;]
-        LIFE[生命周期管理<br/>pause/resumeDataCollection]
+    subgraph ViewModel["ViewModel Layer"]
+        COLL["collect { sim1, sim2 }"]
+        SF["StateFlow&lt;SignalData&gt;"]
+        LIFE["Lifecycle: pause ON_PAUSE / resume ON_RESUME"]
     end
 
-    subgraph UI["UI 层 · Compose"]
-        CS[collectAsState<br/>Compose响应式状态]
-        CP[CellularPage<br/>双卡HorizontalPager]
-        SG[SimContentPage<br/>信号环 + 指标网格]
-        NT[5G → SS-RSRP/SS-RSRQ/SS-SINR<br/>4G → RSRP/RSRQ/SINR<br/>不可用 → N/A]
+    subgraph UI["Compose UI Layer"]
+        CS["collectAsState()"]
+        CP["CellularPage - Dual SIM HorizontalPager"]
+        SG["SimContentPage: Signal Ring + Metric Grid"]
+        NT["5G = SS-RSRP | 4G = RSRP | N/A = unavailable"]
     end
 
     TM --> SC
-    SC -->|getSubscriptionIdForSlot| TC
+    SC --> TC
     TC -->|onCellInfoChanged| CF
     CF --> EC
     EC --> FI
 
-    FI -->|is CellInfoLte| L4G
-    FI -->|is CellInfoNr| NR
-    FI -->|is CellInfoWcdma| W3G
-    FI -->|is CellInfoGsm| G2G
+    FI -->|CellInfoLte| L4G
+    FI -->|CellInfoNr| NR
+    FI -->|CellInfoWcdma| W3G
+    FI -->|CellInfoGsm| G2G
 
-    L4G & NR & W3G & G2G -->|Flow 发射| COLL
-    COLL -->|MutableStateFlow| SF
-    LIFE -->|ON_PAUSE → 暂停<br/>ON_RESUME → 恢复| COLL
+    L4G & NR & W3G & G2G --> COLL
+    COLL --> SF
+    LIFE --> COLL
 
-    SF -->|WhileSubscribed| CS
+    SF --> CS
     CS --> CP
     CP --> SG
     SG --> NT

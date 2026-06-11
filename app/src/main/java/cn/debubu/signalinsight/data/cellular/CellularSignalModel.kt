@@ -191,12 +191,14 @@ data class CellularSignalInfo(
                     val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
                         ?: cellIdentityWcdma.operatorAlphaLong?.toString()
                         ?: "Unknown"
-                    // WCDMA — 仅 dbm/pci(psc)/earfcn/tac 可用，RSRP/RSRQ/SINR/RSSI 不适用
+                    // WCDMA — 仅 dbm/rssi/pci(psc)/earfcn/tac 可用，RSRP/RSRQ/SINR 不适用
+                    // RSSI: CellSignalStrengthWcdma 的 getRssi() 已在较新 API 中移除，用 dbm 作为等效值
                     CellularSignalInfo(
                         simSlotId = simSlotId,
                         operatorName = resolvedOperator,
                         networkType = "3G WCDMA",
                         dbm = signalStrengthWcdma.dbm.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
+                        rssi = signalStrengthWcdma.dbm.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
                         pci = cellIdentityWcdma.psc,
                         earfcn = cellIdentityWcdma.uarfcn,
                         tac = cellIdentityWcdma.lac,

@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -37,6 +38,14 @@ fun PciExplainer(currentPci: Int, onClose: () -> Unit) {
         SectionCard(R.string.pci_explain_title, Icons.Default.Search) {
             Text(stringResource(R.string.pci_explain_basic), style = MaterialTheme.typography.bodyMedium, lineHeight = 22.sp)
         }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.metric_net_pci),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+            lineHeight = 16.sp,
+            modifier = Modifier.padding(start = 4.dp)
+        )
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.pci_handover_title, Icons.Default.Info) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -65,16 +74,29 @@ fun PciExplainer(currentPci: Int, onClose: () -> Unit) {
         }
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.pci_assessment_title, Icons.Default.Star) {
-            val (bg, hint) = if (currentPci > 0) {
-                MaterialTheme.colorScheme.primaryContainer to R.string.pci_assessment_stable
+            if (currentPci == Int.MAX_VALUE) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("N/A", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                        Spacer(Modifier.height(4.dp))
+                        Text(stringResource(R.string.metric_not_available), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
             } else {
-                MaterialTheme.colorScheme.tertiaryContainer to R.string.pci_assessment_changed
-            }
-            Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                    Text("$currentPci", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-                    Spacer(Modifier.height(4.dp))
-                    Text(stringResource(hint), style = MaterialTheme.typography.bodySmall)
+                val (bg, hint) = if (currentPci > 0) {
+                    MaterialTheme.colorScheme.primaryContainer to R.string.pci_assessment_stable
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant to R.string.pci_assessment_changed
+                }
+                Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("$currentPci", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                        Spacer(Modifier.height(4.dp))
+                        Text(stringResource(hint), style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }

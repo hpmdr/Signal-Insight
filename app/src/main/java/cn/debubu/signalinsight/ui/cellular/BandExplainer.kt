@@ -44,6 +44,14 @@ fun BandExplainer(currentBand: String, onClose: () -> Unit) {
         SectionCard(R.string.band_explain_title, Icons.Default.Search) {
             Text(stringResource(R.string.band_explain_basic), style = MaterialTheme.typography.bodyMedium, lineHeight = 22.sp)
         }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.metric_net_band),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+            lineHeight = 16.sp,
+            modifier = Modifier.padding(start = 4.dp)
+        )
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.band_current_title, Icons.Default.SignalCellularAlt) { CurrentBandDisplay(currentBand) }
         Spacer(Modifier.height(16.dp))

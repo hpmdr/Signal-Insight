@@ -20,6 +20,25 @@
     <!-- 设置页面 (SettingsScreen) -->
     <string name="settings_title">设置</string>
     <string name="settings_placeholder">设置功能开发中...</string>
+    <string name="settings_display">显示设置</string>
+    <string name="settings_dynamic_color">使用系统主题色</string>
+    <string name="settings_dynamic_color_hint">从壁纸提取主题色，开启后自定义配色会自动关闭。部分系统可能不支持</string>
+    <string name="settings_theme_presets">主题配色</string>
+    <string name="settings_theme_presets_hint">选择你喜欢的主题颜色，实时生效</string>
+
+    <!-- 主题预设名称 -->
+    <string name="theme_signal_blue">信号蓝</string>
+    <string name="theme_tech_cyan">科技青</string>
+    <string name="theme_dark_navy">深海军蓝</string>
+    <string name="theme_deep_teal">深青绿</string>
+    <string name="theme_matrix_green">极客绿</string>
+    <string name="theme_lime">青柠绿</string>
+    <string name="theme_gold">金色</string>
+    <string name="theme_amber">琥珀橙</string>
+    <string name="theme_rose_red">玫瑰红</string>
+    <string name="theme_pink">粉红</string>
+    <string name="theme_purple">典雅紫</string>
+    <string name="theme_steel">钢铁灰</string>
 
     <!-- 权限页面 (Permission) -->
     <string name="permission_title">权限授权</string>
@@ -311,4 +330,17 @@
     <string name="tac_assessment_title">当前 TAC 评估</string>
     <string name="tac_assessment_stable">当前 TAC 稳定。你所在的跟踪区域没有变化。</string>
     <string name="tac_assessment_changed">TAC 已更新。你已进入新的跟踪区域。</string>
+
+    <string name="metric_not_available">当前网络不支持此指标</string>
+
+    <!-- 参数网络兼容性说明 -->
+    <string name="metric_net_prefix">📡 网络兼容性：</string>
+    <string name="metric_net_pci">PCI 在所有网络类型（2G/3G/4G/5G）中均可用（5G/4G 称 PCI，3G 称 PSC，2G 称 CID）</string>
+    <string name="metric_net_earfcn">EARFCN 在 4G LTE、5G NR 和 3G WCDMA 网络中可用，2G GSM 不支持此参数</string>
+    <string name="metric_net_tac">TAC 在 4G LTE 和 5G NR 网络中使用。3G WCDMA 和 2G GSM 使用 LAC（位置区码）作为等效值</string>
+    <string name="metric_net_rsrp">RSRP/SS-RSRP 在 4G LTE 和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
+    <string name="metric_net_rsrq">RSRQ/SS-RSRQ 在 4G LTE 和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
+    <string name="metric_net_sinr">SINR/SS-SINR 在 4G LTE（使用 RSSNR）和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
+    <string name="metric_net_rssi">RSSI 在 2G GSM 和 4G LTE 中可通过 API 获取。5G NR 底层协议也有 RSSI（用于计算 SS-RSRQ），但 Google 因 TDD 动态波束导致总功率波动剧烈、参考价值低，未对应用层开放接口</string>
+    <string name="metric_net_band">频段信息在 4G LTE 和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
 </resources>

@@ -48,6 +48,14 @@ fun RsrpExplainer(currentRsrp: Int, onClose: () -> Unit) {
                 lineHeight = 22.sp
             )
         }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.metric_net_rsrp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+            lineHeight = 16.sp,
+            modifier = Modifier.padding(start = 4.dp)
+        )
         Spacer(Modifier.height(16.dp))
 
         SectionCard(R.string.rsrp_range_title, Icons.Default.SignalCellularAlt) {
@@ -113,10 +121,23 @@ private fun RsrpFactors() {
 
 @Composable
 private fun RsrpAssessment(currentRsrp: Int) {
+    if (currentRsrp == Int.MAX_VALUE) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(Modifier.padding(12.dp)) {
+                Text("N/A", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.metric_not_available), style = MaterialTheme.typography.bodySmall, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
+            }
+        }
+        return
+    }
     val (bgColor, hintResId) = when {
         currentRsrp > -85 -> MaterialTheme.colorScheme.primaryContainer to R.string.rsrp_assessment_excellent
-        currentRsrp > -95 -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) to R.string.rsrp_assessment_good
-        currentRsrp > -105 -> MaterialTheme.colorScheme.tertiaryContainer to R.string.rsrp_assessment_fair
+        currentRsrp > -95 -> MaterialTheme.colorScheme.primaryContainer to R.string.rsrp_assessment_good
+        currentRsrp > -105 -> MaterialTheme.colorScheme.surfaceVariant to R.string.rsrp_assessment_fair
         currentRsrp > -115 -> MaterialTheme.colorScheme.errorContainer to R.string.rsrp_assessment_poor
         else -> MaterialTheme.colorScheme.errorContainer to R.string.rsrp_assessment_weak
     }

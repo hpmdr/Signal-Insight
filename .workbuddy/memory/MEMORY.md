@@ -151,24 +151,25 @@ CellInfo（系统 API） → CellInfoLte / CellInfoNr / CellInfoWcdma / CellInfo
 
 ```
                     RSRP         RSRQ         SINR          RSSI        PCI          EARFCN       BAND         TAC
-5G NR (SS-)        ssRsrp→      ssRsrq→      ssSinr→      ❌ 不适用   pci          nrarfcn      bands[0]     tac
-                   csiRsrp↑     csiRsrq↑     csiSinr↑                                              or nxxx
+5G NR (SS-)        ssRsrp→      ssRsrq→      ssSinr→      ❌ 无 API  pci          nrarfcn      bands[0]     tac
+                   csiRsrp↑     csiRsrq↑     csiSinr↑      ⚠️ NR 协议层有 RSSI                        or nxxx
+                                                             (RSRQ 的分母)，但因 TDD 波束
+                                                             使总功率波动剧烈，Google 未开放接口
 
-4G LTE             rsrp         rsrq         rssnr        rssi        pci          earfcn       bands[0]     tac
-                                                                                                            or Bxx
+4G LTE             rsrp         rsrq         rssnr        ✅ 可用    pci          earfcn       bands[0]     tac
+                                                             (返回 [-113,-51])       or Bxx
 
-3G WCDMA           ❌            ❌            ❌           ❌          psc          uarfcn       ❌           lac
-2G GSM             ❌            ❌            ❌           rssi        cid          ❌           ❌           lac
+3G WCDMA           ❌            ❌            ❌           ❌@hide    psc          uarfcn       ❌           lac
+                                                             (系统API，第三方不可用)
 
-注：❌ 表示该网络类型无此指标（字段保持 Int.MAX_VALUE）
-    ↑ 表示降级方案（SS 不可用时回退到 CSI）
+2G GSM             ❌            ❌            ❌           ✅ 可用    cid          ❌           ❌           lac
 ```
 
 关键处理：
-- **5G NR**: `Int.MAX_VALUE` 检测 → 三级降级（SS → CSI → MAX_VALUE）
-- **4G LTE**: `rssnr` 作为 SINR 等效值；`rssi` 有 `Int.MAX_VALUE` 检测
-- **3G WCDMA**: 仅 `dbm`/`psc`/`uarfcn`/`lac` 可用
-- **2G GSM**: 仅 `dbm`/`rssi`/`cid`/`lac` 可用
+- **5G NR**: `Int.MAX_VALUE` 检测 → 三级降级（SS → CSI → MAX_VALUE）。RSSI 在 NR 协议层存在（作为 RSRQ 的分母：RSRQ = N×RSRP/RSSI），但因 TDD 动态波束导致总功率波动剧烈、参考价值低，Google 未对应用层开放接口。App 显示 N/A，详情页在兼容性说明中解释了原因。
+- **4G LTE**: `rssnr` 作为 SINR 等效值；RSSI 可用（getRssi() 返回 [-113,-51] dBm 或 UNAVAILABLE）。
+- **3G WCDMA**: 仅 `dbm`/`psc`/`uarfcn`/`lac` 可用。RSRP/RSRQ/SINR/RSSI 均不适用（getRssi() 是 @hide 系统 API）。
+- **2G GSM**: 仅 `dbm`/`rssi`(真实值)/`cid`/`lac` 可用。
 
 #### 第三步：ViewModel 数据处理（CellularViewModel.kt）
 

@@ -41,6 +41,14 @@ fun RsrqExplainer(currentRsrq: Int, onClose: () -> Unit) {
         SectionCard(R.string.rsrq_explain_title, Icons.Default.Search) {
             Text(stringResource(R.string.rsrq_explain_basic), style = MaterialTheme.typography.bodyMedium, lineHeight = 22.sp)
         }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.metric_net_rsrq),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+            lineHeight = 16.sp,
+            modifier = Modifier.padding(start = 4.dp)
+        )
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.rsrq_range_title, Icons.Default.SignalCellularAlt) { RsrqRangeTable() }
         Spacer(Modifier.height(16.dp))
@@ -96,9 +104,22 @@ private fun RsrqJointJudgment() {
 
 @Composable
 private fun RsrqAssessment(currentRsrq: Int) {
+    if (currentRsrq == Int.MAX_VALUE) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(Modifier.padding(12.dp)) {
+                Text("N/A", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.metric_not_available), style = MaterialTheme.typography.bodySmall, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
+            }
+        }
+        return
+    }
     val (bg, hint) = when {
         currentRsrq > -10 -> MaterialTheme.colorScheme.primaryContainer to R.string.rsrq_assessment_good
-        currentRsrq > -15 -> MaterialTheme.colorScheme.tertiaryContainer to R.string.rsrq_assessment_fair
+        currentRsrq > -15 -> MaterialTheme.colorScheme.surfaceVariant to R.string.rsrq_assessment_fair
         else -> MaterialTheme.colorScheme.errorContainer to R.string.rsrq_assessment_poor
     }
     Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {

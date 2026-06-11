@@ -20,6 +20,25 @@
     <!-- SettingsScreen -->
     <string name="settings_title">Settings</string>
     <string name="settings_placeholder">Settings feature is under development...</string>
+    <string name="settings_display">Display</string>
+    <string name="settings_dynamic_color">System theme color</string>
+    <string name="settings_dynamic_color_hint">Extract colors from wallpaper. Disables custom preset. May not work on all devices</string>
+    <string name="settings_theme_presets">Theme presets</string>
+    <string name="settings_theme_presets_hint">Pick your preferred accent color</string>
+
+    <!-- Theme presets -->
+    <string name="theme_signal_blue">Signal Blue</string>
+    <string name="theme_tech_cyan">Tech Cyan</string>
+    <string name="theme_dark_navy">Dark Navy</string>
+    <string name="theme_deep_teal">Deep Teal</string>
+    <string name="theme_matrix_green">Geek Green</string>
+    <string name="theme_lime">Lime</string>
+    <string name="theme_gold">Gold</string>
+    <string name="theme_amber">Amber</string>
+    <string name="theme_rose_red">Rose Red</string>
+    <string name="theme_pink">Pink</string>
+    <string name="theme_purple">Elegant Purple</string>
+    <string name="theme_steel">Steel</string>
 
     <!-- Permission -->
     <string name="permission_title">Permission Authorization</string>
@@ -240,4 +259,17 @@
     <string name="tac_assessment_title">Current TAC Assessment</string>
     <string name="tac_assessment_stable">Current TAC is stable. Your location area has not changed.</string>
     <string name="tac_assessment_changed">TAC has changed. You have entered a new tracking area.</string>
+
+    <string name="metric_not_available">Not available on current network</string>
+
+    <!-- Network compatibility info -->
+    <string name="metric_net_prefix">📡 Network compatibility: </string>
+    <string name="metric_net_pci">PCI is available on all networks (2G/3G/4G/5G), named differently per protocol (PCI/PSC/CID)</string>
+    <string name="metric_net_earfcn">EARFCN is available on 4G LTE, 5G NR, and 3G WCDMA. 2G GSM does not support this parameter</string>
+    <string name="metric_net_tac">TAC is used on 4G LTE and 5G NR. 3G WCDMA and 2G GSM use LAC (Location Area Code) instead</string>
+    <string name="metric_net_rsrp">RSRP/SS-RSRP is available on 4G LTE and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
+    <string name="metric_net_rsrq">RSRQ/SS-RSRQ is available on 4G LTE and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
+    <string name="metric_net_sinr">SINR is available on 4G LTE (via RSSNR) and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
+    <string name="metric_net_rssi">RSSI is available via API on 2G GSM and 4G LTE. 5G NR has RSSI in its protocol (used to compute SS-RSRQ), but Google chose not to expose it to apps due to TDD/beamforming causing unreliable wide fluctuations</string>
+    <string name="metric_net_band">Band info is available on 4G LTE and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
 </resources>

@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import cn.debubu.signalinsight.ui.cellular.CellularViewModel
 import cn.debubu.signalinsight.ui.main.MainScreen
 import cn.debubu.signalinsight.ui.permission.PermissionViewModel
+import cn.debubu.signalinsight.ui.settings.ThemeViewModel
 import cn.debubu.signalinsight.ui.theme.SignalInsightTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,11 +29,14 @@ class MainActivity : ComponentActivity() {
             PermissionViewModelFactory(application.permissionManager)
         )[PermissionViewModel::class.java]
 
+        val themeViewModel = ThemeViewModel(application.themeManager)
+
         setContent {
-            SignalInsightTheme {
+            SignalInsightTheme(themeManager = application.themeManager) {
                 MainScreen(
                     cellularViewModel = cellularViewModel,
-                    permissionViewModel = permissionViewModel
+                    permissionViewModel = permissionViewModel,
+                    themeViewModel = themeViewModel
                 )
             }
         }
