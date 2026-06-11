@@ -78,11 +78,13 @@ fun SimContentPage(
 
     // 信号强度状态色 & 文字标签
     val statusColor = when {
+        signalData.dbm == Int.MAX_VALUE -> MaterialTheme.colorScheme.outline
         signalData.dbm > -85 -> Color(0xFF386B28)
         signalData.dbm > -105 -> Color(0xFF6C5D00)
         else -> Color(0xFFBA1A1A)
     }
     val statusLabel = when {
+        signalData.dbm == Int.MAX_VALUE -> ""
         signalData.dbm > -85 -> context.getString(R.string.signal_excellent)
         signalData.dbm > -105 -> context.getString(R.string.signal_fair)
         else -> context.getString(R.string.signal_poor)
@@ -110,7 +112,7 @@ fun SimContentPage(
         )
 
         // ===== 邻小区列表 =====
-        NeighborCellsCard(neighborCells = neighborCells)
+        NeighborCellsCard(neighborCells = neighborCells, is5gNetwork = signalData.networkType.contains("5G"))
     }
 }
 
@@ -141,7 +143,7 @@ private fun SignalRingCard(
             contentAlignment = Alignment.Center
         ) {
             val animatedRsrp by animateIntAsState(
-                targetValue = signalData.dbm,
+                targetValue = if (signalData.dbm != Int.MAX_VALUE) signalData.dbm else -120,
                 animationSpec = tween(1000)
             )
             val progress by animateFloatAsState(
@@ -166,21 +168,24 @@ private fun SignalRingCard(
             }
 
             // 中央文字
+            val isDbmValid = signalData.dbm != Int.MAX_VALUE
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "$animatedRsrp",
+                        text = if (isDbmValid) "$animatedRsrp" else "N/A",
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Black,
                         color = statusColor,
                         letterSpacing = (-2).sp
                     )
-                    Text(
-                        "dBm",
-                        Modifier.padding(bottom = 10.dp, start = 2.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    if (isDbmValid) {
+                        Text(
+                            "dBm",
+                            Modifier.padding(bottom = 10.dp, start = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
                 }
                 Text(
                     text = "${signalData.operatorName} ${signalData.networkType}",
@@ -242,19 +247,24 @@ private fun MetricGridCard(
                 )
             }
 
-            // 两行指标
+            // 两行指标 — 根据网络类型调整标签和可用性
+            val is5gNet = signalData.networkType.contains("5G")
+            val na = "N/A"
+
+            fun displayValue(value: Int): String = if (value != Int.MAX_VALUE) value.toString() else na
+
             val rows = listOf(
                 listOf(
-                    Metric(MetricKey.RSRP, "RSRP", signalData.rsrp.toString(), "dBm"),
-                    Metric(MetricKey.RSRQ, "RSRQ", signalData.rsrq.toString(), "dB"),
-                    Metric(MetricKey.SINR, "SINR", signalData.sinr.toString(), "dB"),
-                    Metric(MetricKey.RSSI, "RSSI", signalData.rssi.toString(), "dBm")
+                    Metric(MetricKey.RSRP, if (is5gNet) "SS-RSRP" else "RSRP", displayValue(signalData.rsrp), "dBm"),
+                    Metric(MetricKey.RSRQ, if (is5gNet) "SS-RSRQ" else "RSRQ", displayValue(signalData.rsrq), "dB"),
+                    Metric(MetricKey.SINR, if (is5gNet) "SS-SINR" else "SINR", displayValue(signalData.sinr), "dB"),
+                    Metric(MetricKey.RSSI, "RSSI", displayValue(signalData.rssi), "dBm")
                 ),
                 listOf(
-                    Metric(MetricKey.Band, "Band", signalData.band, ""),
-                    Metric(MetricKey.PCI, "PCI", signalData.pci.toString(), ""),
-                    Metric(MetricKey.EARFCN, "EARFCN", signalData.earfcn.toString(), ""),
-                    Metric(MetricKey.TAC, "TAC", signalData.tac.toString(), "")
+                    Metric(MetricKey.Band, "Band", signalData.band.ifEmpty { na }, ""),
+                    Metric(MetricKey.PCI, "PCI", displayValue(signalData.pci), ""),
+                    Metric(MetricKey.EARFCN, "EARFCN", displayValue(signalData.earfcn), ""),
+                    Metric(MetricKey.TAC, "TAC", displayValue(signalData.tac), "")
                 )
             )
 
@@ -355,7 +365,7 @@ private fun MetricGridCard(
  * 邻小区列表卡片 — 表头 + 邻区行
  */
 @Composable
-private fun NeighborCellsCard(neighborCells: List<NeighborCellTableModel>) {
+private fun NeighborCellsCard(neighborCells: List<NeighborCellTableModel>, is5gNetwork: Boolean) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(24.dp),
@@ -383,12 +393,14 @@ private fun NeighborCellsCard(neighborCells: List<NeighborCellTableModel>) {
                 )
             }
 
-            // 表头
+            // 表头 — 5G 时 RSRP/RSRQ/SINR 加 SS- 前缀
             val headers = listOf(
                 stringResource(R.string.column_pci),
                 stringResource(R.string.column_frequency),
                 stringResource(R.string.column_band),
-                "RSRP", "RSRQ", "SINR"
+                if (is5gNetwork) "SS-RSRP" else "RSRP",
+                if (is5gNetwork) "SS-RSRQ" else "RSRQ",
+                if (is5gNetwork) "SS-SINR" else "SINR"
             )
             Row(
                 Modifier

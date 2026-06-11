@@ -105,25 +105,159 @@ MainScreen.kt（主容器）
   │       │   └── NavigationBar（底部，文字+滑动指示条）
   │       ├── About → AboutScreen
   │       └── Settings → SettingsScreen
-  └── selectedExplainerKey != null → ExplainerDetailScreen（全屏详情页）
-      └── when(key):
-          ├── BandExplainer.kt
-          ├── RSRPExplainer.kt
-          ├── RSRQExplainer.kt
-          ├── SINRExplainer.kt
-          ├── RSSIExplainer.kt
-          ├── PCIExplainer.kt
-          ├── EARFCNExplainer.kt
-          └── TACExplainer.kt
+  └── explainerRoute != null → AnimatedContent 转场动画
+      └── when(route.key): BandExplainer / RSRPExplainer / ...（8 个科普组件）
 ```
 
-### 数据流
+### 数据流架构（完整链路）
+
 ```
-TelephonyManager → TelephonyCallback → callbackFlow
-  → Flow<CellularData> → combine(SIM1, SIM2)
-  → ViewModel.collect → mutableStateOf
-  → Compose 渲染 → Explainer 读取当前值
+┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌───────────┐
+│ Telephony   │──→  │ CellularRepository│──→  │ CellularViewModel │──→  │ Compose   │
+│ Manager API │     │ (callbackFlow)   │     │ (StateFlow)      │     │ UI        │
+└─────────────┘     └──────────────────┘     └──────────────────┘     └───────────┘
 ```
+
+#### 第一步：系统接口监听（CellularRepository.kt）
+
+使用 `TelephonyManager` + `TelephonyCallback.CellInfoListener`：
+
+```kotlin
+// 为每个 SIM 卡槽创建独立的 callbackFlow（slotId=0 为 SIM1, slotId=1 为 SIM2）
+fun getCellularDataFlow(slotId: Int): Flow<CellularData> = callbackFlow {
+    // 1. 通过 SubscriptionManager 获取 subscriptionId
+    // 2. 创建 TelephonyManager.createForSubscriptionId(subscriptionId)
+    // 3. 注册 telephonyManager.registerTelephonyCallback(cellInfoListener)
+    // 4. Listener.onCellInfoChanged() → extractCellularData() → trySend()
+    // 5. 返回初始 CellInfo: telephonyManager.allCellInfo
+    // 6. awaitClose → 注销监听器
+}
+
+// 双卡合并
+fun getDualSimCellularDataFlow(): Flow<Pair<CellularData, CellularData>> {
+    return getCellularDataFlow(0).combine(getCellularDataFlow(1)) { sim1, sim2 -> sim1 to sim2 }
+}
+```
+
+#### 第二步：数据提取（extractCellularData → CellularSignalInfo.fromCellInfo）
+
+```
+CellInfo（系统 API） → CellInfoLte / CellInfoNr / CellInfoWcdma / CellInfoGsm
+                         ↓
+                    CellularSignalInfo（统一数据类）
+```
+
+各网络类型参数提取规则（基于 Android 官方 API 参考文档）：
+
+```
+                    RSRP         RSRQ         SINR          RSSI        PCI          EARFCN       BAND         TAC
+5G NR (SS-)        ssRsrp→      ssRsrq→      ssSinr→      ❌ 不适用   pci          nrarfcn      bands[0]     tac
+                   csiRsrp↑     csiRsrq↑     csiSinr↑                                              or nxxx
+
+4G LTE             rsrp         rsrq         rssnr        rssi        pci          earfcn       bands[0]     tac
+                                                                                                            or Bxx
+
+3G WCDMA           ❌            ❌            ❌           ❌          psc          uarfcn       ❌           lac
+2G GSM             ❌            ❌            ❌           rssi        cid          ❌           ❌           lac
+
+注：❌ 表示该网络类型无此指标（字段保持 Int.MAX_VALUE）
+    ↑ 表示降级方案（SS 不可用时回退到 CSI）
+```
+
+关键处理：
+- **5G NR**: `Int.MAX_VALUE` 检测 → 三级降级（SS → CSI → MAX_VALUE）
+- **4G LTE**: `rssnr` 作为 SINR 等效值；`rssi` 有 `Int.MAX_VALUE` 检测
+- **3G WCDMA**: 仅 `dbm`/`psc`/`uarfcn`/`lac` 可用
+- **2G GSM**: 仅 `dbm`/`rssi`/`cid`/`lac` 可用
+
+#### 第三步：ViewModel 数据处理（CellularViewModel.kt）
+
+```kotlin
+// 原始数据（来自 Repository）
+private val _sim1Data = MutableStateFlow<CellularData?>(null)
+private val _sim2Data = MutableStateFlow<CellularData?>(null)
+private val _activeSim = MutableStateFlow(1)
+
+// 收集数据
+init {
+    viewModelScope.launch(Dispatchers.IO) {
+        repository.getDualSimCellularDataFlow().collect { (sim1, sim2) ->
+            _sim1Data.value = sim1
+            _sim2Data.value = sim2
+        }
+    }
+}
+
+// 转换为 UI 数据模型
+val sim1SignalData: StateFlow<SignalData> = _sim1Data
+    .map { it?.servingCell.toSignalData() }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SignalData())
+
+// toSignalData() 使用默认参数，Int.MAX_VALUE 表示不可用
+private fun CellularSignalInfo?.toSignalData(): SignalData = this?.let { cell ->
+    SignalData(
+        dbm = cell.dbm,
+        progress = if (cell.dbm != Int.MAX_VALUE) ((cell.dbm + 120) / 60f).coerceIn(0f, 1f) else 0f,
+        operatorName = cell.operatorName,
+        networkType = cell.networkType,
+        rsrp = cell.rsrp, rsrq = cell.rsrq, sinr = cell.sinr,
+        rssi = cell.rssi, pci = cell.pci, earfcn = cell.earfcn,
+        band = cell.band, tac = cell.tac,
+    )
+} ?: SignalData()
+```
+
+#### 第四步：UI 渲染（SimContentPage.kt）
+
+```kotlin
+val sim1Data by viewModel.sim1SignalData.collectAsState()
+
+// 信号环：显示 dbm 值
+// 5G → "SS-RSRP: -98" | 4G → "RSRP: -93" | 无信号 → "N/A"
+
+// 指标网格：8 个 Metric 卡片
+val is5gNet = signalData.networkType.contains("5G")
+fun displayValue(value: Int): String = if (value != Int.MAX_VALUE) value.toString() else "N/A"
+
+Metric(MetricKey.RSRP, if (is5gNet) "SS-RSRP" else "RSRP", displayValue(rsrp), "dBm")
+Metric(MetricKey.RSRQ, if (is5gNet) "SS-RSRQ" else "RSRQ", displayValue(rsrq), "dB")
+Metric(MetricKey.SINR, if (is5gNet) "SS-SINR" else "SINR", displayValue(sinr), "dB")
+```
+
+#### 生命周期适配
+
+```kotlin
+// MainScreen.kt 中的 LifecycleEventObserver
+ON_RESUME → permissionViewModel.checkAllPermissions() + cellularViewModel.resumeDataCollection()
+ON_PAUSE  → cellularViewModel.pauseDataCollection()
+```
+
+#### 关键数据模型
+
+```kotlin
+// 原始数据模型（Repository 层）
+data class CellularSignalInfo(
+    val operatorName: String, val networkType: String,
+    val dbm: Int, val rsrp: Int, val rsrq: Int, val sinr: Int,
+    val rssi: Int, val pci: Int, val earfcn: Int, val band: String, val tac: Int,
+    // 不可用字段为 Int.MAX_VALUE
+)
+
+// UI 数据模型（ViewModel → UI 层）
+data class SignalData(
+    val dbm: Int, val progress: Float, val operatorName: String, val networkType: String,
+    val rsrp: Int, val rsrq: Int, val sinr: Int, val rssi: Int,
+    val pci: Int, val earfcn: Int, val band: String, val tac: Int,
+    // 不可用字段为 Int.MAX_VALUE，UI 显示 "N/A"
+)
+```
+
+#### ⚠️ StateFlow → Compose 常见陷阱
+
+1. **`derivedStateOf` 不能冷读 `StateFlow.value`** — 必须通过 `collectAsState()` 转换
+2. **`SnapshotStateList` 元素修改** — 必须用 `list[index] = item.copy(...)` 替换整个元素
+3. **`WhileSubscribed(5000)`** — 最后一个订阅者消失后 5 秒内仍保持上游活跃，适合快速切后台/前台
+4. **双卡数据独立** — `sim1SignalData` / `sim2SignalData` 各自通过 `.map {}.stateIn()` 派生
 
 ## 国际化
 - 默认语言：中文（values/strings.xml）

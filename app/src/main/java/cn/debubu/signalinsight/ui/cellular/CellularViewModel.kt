@@ -101,6 +101,21 @@ class CellularViewModel(
         Log.d(TAG, "数据收集已重新启动")
     }
 
+    /** 暂停数据收集（app 进入后台时调用，节省电量） */
+    fun pauseDataCollection() {
+        dataCollectionJob?.cancel()
+        dataCollectionJob = null
+        Log.d(TAG, "数据收集已暂停 - app 进入后台")
+    }
+
+    /** 恢复数据收集（app 回到前台时调用） */
+    fun resumeDataCollection() {
+        if (dataCollectionJob == null || dataCollectionJob?.isActive != true) {
+            startDataCollection()
+            Log.d(TAG, "数据收集已恢复 - app 回到前台")
+        }
+    }
+
     private fun startDataCollection() {
         dataCollectionJob = viewModelScope.launch(Dispatchers.IO) {
             repository.getDualSimCellularDataFlow().collect { (sim1Data, sim2Data) ->
@@ -162,7 +177,9 @@ class CellularViewModel(
 private fun CellularSignalInfo?.toSignalData(): SignalData = this?.let { cell ->
     SignalData(
         dbm = cell.dbm,
-        progress = ((cell.dbm + 120) / 60f).coerceIn(0f, 1f),
+        progress = if (cell.dbm != Int.MAX_VALUE) {
+            ((cell.dbm + 120) / 60f).coerceIn(0f, 1f)
+        } else 0f,
         operatorName = cell.operatorName,
         networkType = cell.networkType,
         rsrp = cell.rsrp,

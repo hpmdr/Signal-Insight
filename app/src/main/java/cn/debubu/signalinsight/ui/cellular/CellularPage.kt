@@ -123,12 +123,21 @@ fun CellularPage(
     val sim2Data by viewModel.sim2SignalData.collectAsState()
     val sim2Neighbors by viewModel.sim2NeighborCells.collectAsState()
 
-    // ---- SIM 选项（响应式派生，数据到达后自动更新） ----
+    // ---- SIM 选项（从已收集的 state 派生，响应式更新） ----
+    val noSimText = remember { context.getString(R.string.operator_no_sim) }
     val simOptions by remember {
         derivedStateOf {
             listOf(
-                SimStatus(1, viewModel.getSimOperatorName(1), viewModel.isSimInserted(1)),
-                SimStatus(2, viewModel.getSimOperatorName(2), viewModel.isSimInserted(2))
+                SimStatus(
+                    1,
+                    if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
+                    sim1Data.operatorName != "Unknown"
+                ),
+                SimStatus(
+                    2,
+                    if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
+                    sim2Data.operatorName != "Unknown"
+                )
             )
         }
     }

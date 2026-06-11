@@ -2,6 +2,10 @@ package cn.debubu.signalinsight.ui.main
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -148,12 +152,24 @@ fun MainScreen(
     var previousPermissionsGranted by remember { mutableStateOf(false) }
 
     // 权限检查：首次进入 + 每次从后台返回（如从系统设置页授权后返回）都重新检测
+    // 数据收集：前台时收集，后台时暂停，避免不必要的电量消耗
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                permissionViewModel.checkAllPermissions(context as? android.app.Activity)
-                isCheckingPermissions = false
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    permissionViewModel.checkAllPermissions(context as? android.app.Activity)
+                    isCheckingPermissions = false
+                    // 回到前台时恢复数据收集
+                    if (allPermissionsGranted) {
+                        cellularViewModel.resumeDataCollection()
+                    }
+                }
+                Lifecycle.Event.ON_PAUSE -> {
+                    // 进入后台时暂停数据收集
+                    cellularViewModel.pauseDataCollection()
+                }
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -290,13 +306,29 @@ fun MainScreen(
                 targetState = explainerRoute,
                 transitionSpec = {
                     if (targetState != null) {
-                        // 进入详情页：从右滑入 + 淡入，主页向左滑出
-                        (slideInHorizontally { w -> w } + fadeIn(tween(300))) togetherWith
-                            (slideOutHorizontally { w -> -w / 4 } + fadeOut(tween(250)))
+                        // 进入详情页：新页从右弹簧滑入 + 渐入，旧页快速淡出
+                        (slideInHorizontally(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ) { w -> w } +
+                                fadeIn(animationSpec = tween(180, delayMillis = 60))) togetherWith
+                            (slideOutHorizontally(animationSpec = tween(120)) { w -> -w / 4 } +
+                                    fadeOut(animationSpec = tween(80))) using
+                            SizeTransform(clip = false)
                     } else {
-                        // 返回主页：详情页向右滑出，主页从左侧滑入
-                        (slideInHorizontally { w -> -w / 4 } + fadeIn(tween(300))) togetherWith
-                            (slideOutHorizontally { w -> w } + fadeOut(tween(250)))
+                        // 返回主页：主页从左侧弹簧滑入 + 渐入，详情页快速淡出
+                        (slideInHorizontally(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ) { w -> -w / 4 } +
+                                fadeIn(animationSpec = tween(180, delayMillis = 60))) togetherWith
+                            (slideOutHorizontally(animationSpec = tween(120)) { w -> w } +
+                                    fadeOut(animationSpec = tween(80))) using
+                            SizeTransform(clip = false)
                     }
                 },
                 label = "mainPageTransition",

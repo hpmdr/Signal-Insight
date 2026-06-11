@@ -51,15 +51,15 @@ data class CellularSignalInfo(
     val simSlotId: Int = 0,
     val operatorName: String = "Unknown",
     val networkType: String = "Unknown",
-    val dbm: Int = -120,
-    val rsrp: Int = -120,
-    val rsrq: Int = -20,
-    val sinr: Int = -20,
-    val rssi: Int = -120,
-    val pci: Int = 0,
-    val earfcn: Int = 0,
+    val dbm: Int = Int.MAX_VALUE,
+    val rsrp: Int = Int.MAX_VALUE,
+    val rsrq: Int = Int.MAX_VALUE,
+    val sinr: Int = Int.MAX_VALUE,
+    val rssi: Int = Int.MAX_VALUE,
+    val pci: Int = Int.MAX_VALUE,
+    val earfcn: Int = Int.MAX_VALUE,
     val band: String = "",
-    val tac: Int = 0,
+    val tac: Int = Int.MAX_VALUE,
     val isPrimary: Boolean = false
 ) {
     companion object {
@@ -109,7 +109,7 @@ data class CellularSignalInfo(
                     val cellBand = cellIdentityLte.bands.firstOrNull()?.toString()
                         ?: "B${cellIdentityLte.earfcn / 1000}"
                     val lteSinr = signalStrengthLte.rssnr.let {
-                        if (it != Int.MAX_VALUE) it else -20
+                        if (it != Int.MAX_VALUE) it else Int.MAX_VALUE
                     }
                     val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
                         ?: cellIdentityLte.operatorAlphaLong?.toString()
@@ -118,11 +118,11 @@ data class CellularSignalInfo(
                         simSlotId = simSlotId,
                         operatorName = resolvedOperator,
                         networkType = "4G LTE",
-                        dbm = signalStrengthLte.dbm,
-                        rsrp = signalStrengthLte.rsrp,
-                        rsrq = signalStrengthLte.rsrq,
+                        dbm = signalStrengthLte.dbm.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
+                        rsrp = signalStrengthLte.rsrp.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
+                        rsrq = signalStrengthLte.rsrq.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
                         sinr = lteSinr,
-                        rssi = signalStrengthLte.rssi,
+                        rssi = signalStrengthLte.rssi.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
                         pci = cellIdentityLte.pci,
                         earfcn = cellIdentityLte.earfcn,
                         band = cellBand,
@@ -145,7 +145,7 @@ data class CellularSignalInfo(
                     } else if (signalStrengthNr.csiRsrp != invalidValue) {
                         signalStrengthNr.csiRsrp
                     } else {
-                        -120
+                        Int.MAX_VALUE
                     }
 
                     val rsrq = if (signalStrengthNr.ssRsrq != invalidValue) {
@@ -153,7 +153,7 @@ data class CellularSignalInfo(
                     } else if (signalStrengthNr.csiRsrq != invalidValue) {
                         signalStrengthNr.csiRsrq
                     } else {
-                        -20
+                        Int.MAX_VALUE
                     }
 
                     val sinr = if (signalStrengthNr.ssSinr != invalidValue) {
@@ -161,21 +161,23 @@ data class CellularSignalInfo(
                     } else if (signalStrengthNr.csiSinr != invalidValue) {
                         signalStrengthNr.csiSinr
                     } else {
-                        -20
+                        Int.MAX_VALUE
                     }
 
                     val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
                         ?: cellIdentityNr.operatorAlphaLong?.toString()
                         ?: "Unknown"
 
+                    // 5G NR — RSSI 不存在（NR 无此概念），rsrp/rsrq/sinr 基于 SSB 测量
                     CellularSignalInfo(
                         simSlotId = simSlotId,
                         operatorName = resolvedOperator,
                         networkType = "5G NR",
-                        dbm = signalStrengthNr.dbm,
+                        dbm = signalStrengthNr.dbm.let { if (it != invalidValue) it else Int.MAX_VALUE },
                         rsrp = rsrp,
                         rsrq = rsrq,
                         sinr = sinr,
+                        // RSSI 不适用于 5G NR，保持 Int.MAX_VALUE
                         pci = cellIdentityNr.pci,
                         earfcn = cellIdentityNr.nrarfcn,
                         band = cellBand,
@@ -189,11 +191,12 @@ data class CellularSignalInfo(
                     val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
                         ?: cellIdentityWcdma.operatorAlphaLong?.toString()
                         ?: "Unknown"
+                    // WCDMA — 仅 dbm/pci(psc)/earfcn/tac 可用，RSRP/RSRQ/SINR/RSSI 不适用
                     CellularSignalInfo(
                         simSlotId = simSlotId,
                         operatorName = resolvedOperator,
                         networkType = "3G WCDMA",
-                        dbm = signalStrengthWcdma.dbm,
+                        dbm = signalStrengthWcdma.dbm.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
                         pci = cellIdentityWcdma.psc,
                         earfcn = cellIdentityWcdma.uarfcn,
                         tac = cellIdentityWcdma.lac,
@@ -206,12 +209,13 @@ data class CellularSignalInfo(
                     val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
                         ?: cellIdentityGsm.operatorAlphaLong?.toString()
                         ?: "Unknown"
+                    // GSM — 仅 dbm 和 rssi 可用，RSRP/RSRQ/SINR 不适用
                     CellularSignalInfo(
                         simSlotId = simSlotId,
                         operatorName = resolvedOperator,
                         networkType = "2G GSM",
-                        dbm = signalStrengthGsm.dbm,
-                        rssi = signalStrengthGsm.rssi,
+                        dbm = signalStrengthGsm.dbm.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
+                        rssi = signalStrengthGsm.rssi.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
                         pci = cellIdentityGsm.cid,
                         tac = cellIdentityGsm.lac,
                         isPrimary = isPrimary
@@ -289,7 +293,7 @@ data class NeighborCellInfo(
                         rsrp = signalStrengthLte.rsrp,
                         rsrq = signalStrengthLte.rsrq,
                         sinr = lteSinr,
-                        rssi = signalStrengthLte.rssi,
+                        rssi = signalStrengthLte.rssi.let { if (it != Int.MAX_VALUE) it else signalStrengthLte.dbm },
                         earfcn = cellIdentityLte.earfcn,
                         band = cellBand,
                         isServing = isServing
@@ -430,21 +434,23 @@ data class NrSignalModel(
 
 /**
  * 信号摘要数据 — 从 ViewModel 传往 Compose UI 层的轻量快照
- * 所有字段均有安全默认值，确保未插卡时也能正常渲染
+ *
+ * 当字段值为 Int.MAX_VALUE 时，表示该指标在当前网络类型下不可用，
+ * UI 应显示 "N/A" 而非具体数值。
  */
 data class SignalData(
-    val dbm: Int = -120,
+    val dbm: Int = Int.MAX_VALUE,
     val progress: Float = 0f,
     val operatorName: String = "Unknown",
     val networkType: String = "Unknown",
-    val rsrp: Int = -120,
-    val rsrq: Int = -20,
-    val sinr: Int = -20,
-    val rssi: Int = -120,
-    val pci: Int = 0,
-    val earfcn: Int = 0,
+    val rsrp: Int = Int.MAX_VALUE,
+    val rsrq: Int = Int.MAX_VALUE,
+    val sinr: Int = Int.MAX_VALUE,
+    val rssi: Int = Int.MAX_VALUE,
+    val pci: Int = Int.MAX_VALUE,
+    val earfcn: Int = Int.MAX_VALUE,
     val band: String = "",
-    val tac: Int = 0
+    val tac: Int = Int.MAX_VALUE
 )
 
 /**
