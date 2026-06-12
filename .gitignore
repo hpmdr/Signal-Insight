@@ -16,3 +16,9 @@ local.properties
 /.idea/codeStyles
 /.idea/vcs.xml
 .kotlin
+
+# ── 签名文件（含密码，禁止提交） ──
+keystore.properties
+
+# ── 调试截图（每次 adb pull 产生的临时文件） ──
+screen_*.png
