@@ -233,6 +233,42 @@ ON_RESUME → permissionViewModel.checkAllPermissions() + cellularViewModel.resu
 ON_PAUSE  → cellularViewModel.pauseDataCollection()
 ```
 
+### MIUI 兼容：双监听器模式（重要架构决策）
+
+**问题**：MIUI/Xiaomi 设备上 `TelephonyCallback.CellInfoListener` 回调的 `CellSignalStrengthLte.rssnr` 返回 `Int.MAX_VALUE`，无法读取 SINR。
+
+**方案**：CellInfo + PhoneStateListener 双路监听
+
+```kotlin
+// 1. CellInfo 监听器（主数据源）
+val callback = object : TelephonyCallback(), TelephonyCallback.CellInfoListener {
+    override fun onCellInfoChanged(list: List<CellInfo>) {
+        extractCellularData(list, slotId, operatorName, _lteSinrFallback)
+    }
+}
+
+// 2. PhoneStateListener（SINR 备用，MIUI 兼容）
+@Suppress("DEPRECATION")
+val ssListener = object : PhoneStateListener(context.mainExecutor) {
+    // API 31+ 移除了 Looper 构造函数，必须用 Executor
+    override fun onSignalStrengthsChanged(signalStrength: SignalStrength?) {
+        for (css in signalStrength?.cellSignalStrengths ?: emptyList()) {
+            if (css is CellSignalStrengthLte && css.rssnr != Int.MAX_VALUE) {
+                _lteSinrFallback = css.rssnr
+            }
+        }
+    }
+}
+tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
+```
+
+**关键约束**：
+- `PhoneStateListener(context.mainExecutor)` — API 31+ 必需
+- `_lteSinrFallback` 为类级 `var`，可被后续 CellInfo 回调读取
+- **备用值仅用于服务小区**（`CellularSignalInfo.fromCellInfo()`）。邻小区不使用备用值，因为 SignalStrength 回调返回的是设备级别的 LTE RSSNR 聚合值，无法区分各邻小区，直接应用会在 UI 上显示出所有邻小区 SINR 相同的不良体验
+- `fromCellInfo()` 三级降级：`rssnr → lteRssnrFallback → Int.MAX_VALUE`
+- 已验证：MIUI 上服务小区 RSSNR = 21 dB 正确回退
+
 #### 关键数据模型
 
 ```kotlin

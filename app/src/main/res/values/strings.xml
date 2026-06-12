@@ -225,7 +225,10 @@
     <string name="metric_band_full">工作频段 (Frequency Band)</string>
     <string name="metric_band_desc">频段是无线通信中划分出来的特定频率范围，就像高速公路上的不同车道。</string>
     <string name="metric_band_impact">低频段穿墙能力强但网速慢；高频段（如 n78）网速极快但穿透力弱。</string>
-    <string name="metric_band_tip">n78 是目前最主流的 5G 高速频段。</string>
+    <string name="metric_band_tip_5g_high">n78/n79 是目前最主流的 5G 高速频段，网速极快但穿透力较弱，室外使用体验最佳。</string>
+    <string name="metric_band_tip_5g_mid">n41 是 5G 主力频段，兼顾覆盖与速度，是国内 5G 网络的核心频段。</string>
+    <string name="metric_band_tip_lte_mid">B1/B3/B39/B40/B41 是 4G 主力频段，覆盖广、速率均衡，是目前移动网络的中坚力量。</string>
+    <string name="metric_band_tip_low">%s 属于低频段，信号覆盖广、穿墙能力强，但网速相对较慢，适合室内和远距离场景。</string>
     <string name="band_explain_title">什么是频段？</string>
     <string name="band_explain_basic">频段是无线通信中划分出来的特定频率范围，就像高速公路上的不同车道。每个频段都有自己独特的特性：频率高低决定了信号的覆盖范围、穿透能力和传输速度。</string>
     <string name="band_current_title">当前连接频段</string>
@@ -343,4 +346,9 @@
     <string name="metric_net_sinr">SINR/SS-SINR 在 4G LTE（使用 RSSNR）和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
     <string name="metric_net_rssi">RSSI 在 2G GSM 和 4G LTE 中可通过 API 获取。5G NR 底层协议也有 RSSI（用于计算 SS-RSRQ），但 Google 因 TDD 动态波束导致总功率波动剧烈、参考价值低，未对应用层开放接口</string>
     <string name="metric_net_band">频段信息在 4G LTE 和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
+
+    <!-- 信号综合分析页 (SignalOverviewScreen) -->
+    <string name="overview_title">信号综合诊断</string>
+    <string name="overview_diagnosis_title">诊断分析</string>
+    <string name="overview_metrics_title">关键指标速览</string>
 </resources>

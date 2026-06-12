@@ -34,6 +34,9 @@ class CellularRepository constructor(
         context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
     }
 
+    /** SINR 备用值 — 从 SignalStrength 回调获取（MIUI 设备 CellInfo 不返回 RSSNR） */
+    private var _lteSinrFallback: Int = Int.MAX_VALUE
+
     /**
      * 获取指定 SIM 卡槽的 TelephonyManager
      *
@@ -128,7 +131,8 @@ class CellularRepository constructor(
         cellInfoList: List<CellInfo>,
         slotId: Int,
         isPrimary: Boolean,
-        operatorName: String = "未知"
+        operatorName: String = "未知",
+        lteSinrFallback: Int = Int.MAX_VALUE
     ): CellularData {
         if (cellInfoList.isEmpty()) {
             Log.w(TAG, "CellInfo 列表为空 - SIM 卡槽: $slotId, 是否为主卡: $isPrimary")
@@ -147,7 +151,7 @@ class CellularRepository constructor(
 
         for (cellInfo in cellInfoList) {
             if (cellInfo.isRegistered) {
-                servingCell = CellularSignalInfo.fromCellInfo(cellInfo, slotId, isPrimary, operatorName)
+                servingCell = CellularSignalInfo.fromCellInfo(cellInfo, slotId, isPrimary, operatorName, lteSinrFallback)
                 Log.d(
                     TAG,
                     "服务小区信息 - SIM 卡槽: $slotId, PCI: ${servingCell.pci}, RSRP: ${servingCell.rsrp} dBm, 运营商: ${servingCell.operatorName}, 频段: ${servingCell.band}, 网络类型: ${servingCell.networkType}"
@@ -157,7 +161,7 @@ class CellularRepository constructor(
                 neighborCells.add(neighborCell)
                 Log.d(
                     TAG,
-                    "邻小区信息 - SIM 卡槽: $slotId, PCI: ${neighborCell.pci}, RSRP: ${neighborCell.rsrp} dBm, 频段: ${neighborCell.band}"
+                    "邻小区信息 - SIM 卡槽: $slotId, PCI: ${neighborCell.pci}, RSRP: ${neighborCell.rsrp} dBm, SINR: ${neighborCell.sinr}, 频段: ${neighborCell.band}"
                 )
 
             }
@@ -271,6 +275,21 @@ class CellularRepository constructor(
         var currentCallback: TelephonyCallback? = null
         var lastData: CellularData? = null
 
+        // SignalStrength 备用监听器（用于 MIUI 等 CellInfo 不返回 RSSNR 的设备）
+        @Suppress("DEPRECATION")
+        val ssListener = object : android.telephony.PhoneStateListener(context.mainExecutor) {
+            override fun onSignalStrengthsChanged(signalStrength: android.telephony.SignalStrength?) {
+                if (signalStrength != null) {
+                    for (css in signalStrength.cellSignalStrengths) {
+                        if (css is android.telephony.CellSignalStrengthLte && css.rssnr != Int.MAX_VALUE) {
+                            _lteSinrFallback = css.rssnr
+                            Log.d(TAG, "SignalStrength RSSNR 备用值更新: ${css.rssnr}")
+                        }
+                    }
+                }
+            }
+        }
+
         fun registerCallback(subscriptionId: Int) {
             if (subscriptionId == SubscriptionManager.INVALID_SUBSCRIPTION_ID ||
                 subscriptionId == Int.MAX_VALUE
@@ -336,7 +355,7 @@ class CellularRepository constructor(
                         TAG,
                         "CellInfo 变化回调 - SIM 卡槽: $slotId, CellInfo 数量: ${cellInfoList.size}"
                     )
-                    val data = extractCellularData(cellInfoList, slotId, slotId == 0, operatorName)
+                    val data = extractCellularData(cellInfoList, slotId, slotId == 0, operatorName, _lteSinrFallback)
                     if (lastData != data) {
                         lastData = data
                         trySend(data)
@@ -354,6 +373,8 @@ class CellularRepository constructor(
 
             try {
                 tm.registerTelephonyCallback(context.mainExecutor, callback)
+                @Suppress("DEPRECATION")
+                tm.listen(ssListener, android.telephony.PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
 
                 val initialCellInfo = tm.allCellInfo ?: emptyList()
                 Log.d(
@@ -361,7 +382,7 @@ class CellularRepository constructor(
                     "初始 CellInfo - SIM 卡槽: $slotId, SubscriptionId: $subscriptionId, 数量: ${initialCellInfo.size}"
                 )
 
-                val initialData = extractCellularData(initialCellInfo, slotId, slotId == 0, operatorName)
+                val initialData = extractCellularData(initialCellInfo, slotId, slotId == 0, operatorName, _lteSinrFallback)
                 if (lastData != initialData) {
                     lastData = initialData
                     trySend(initialData)
@@ -419,6 +440,8 @@ class CellularRepository constructor(
                         currentTm?.unregisterTelephonyCallback(it)
                         Log.d(TAG, "注销 CellInfo 监听器 - SIM 卡槽: $slotId")
                     }
+                    @Suppress("DEPRECATION")
+                    currentTm?.listen(ssListener, android.telephony.PhoneStateListener.LISTEN_NONE)
                     subscriptionManager.removeOnSubscriptionsChangedListener(subscriptionListener)
                     Log.d(TAG, "移除订阅监听器 - SIM 卡槽: $slotId")
                 } catch (e: Exception) {
@@ -439,6 +462,8 @@ class CellularRepository constructor(
                         currentTm?.unregisterTelephonyCallback(it)
                         Log.d(TAG, "注销 CellInfo 监听器 - SIM 卡槽: $slotId")
                     }
+                    @Suppress("DEPRECATION")
+                    currentTm?.listen(ssListener, android.telephony.PhoneStateListener.LISTEN_NONE)
                 } catch (e: Exception) {
                     Log.e(TAG, "注销监听器失败 - SIM 卡槽: $slotId", e)
                 }

@@ -112,7 +112,7 @@ data class SimStatus(
 fun CellularPage(
     modifier: Modifier = Modifier,
     viewModel: CellularViewModel,
-    onOpenExplainer: (key: MetricKey, signalData: SignalData) -> Unit = { _, _ -> }
+    onOpenExplainer: (key: MetricKey) -> Unit = { }
 ) {
     val context = LocalContext.current
     val activeSim by viewModel.activeSim.collectAsState()
@@ -179,7 +179,7 @@ fun CellularPage(
             MetricKey.Band to MetricInfo(
                 R.string.metric_band_label, R.string.metric_band_full,
                 R.string.metric_band_desc, R.string.metric_band_impact,
-                tipResId = R.string.metric_band_tip
+                tipResId = R.string.metric_band_tip_5g_high
             ),
             MetricKey.PCI to MetricInfo(
                 R.string.metric_pci_label, R.string.metric_pci_full,
@@ -236,13 +236,13 @@ fun CellularPage(
                     signalData = sim1Data,
                     neighborCells = sim1Neighbors,
                     metricsDatabase = metricsDatabase,
-                    onMetricClick = { key -> onOpenExplainer(key, sim1Data) }
+                    onMetricClick = { key -> onOpenExplainer(key) }
                 )
                 2 -> SimContentPage(
                     signalData = sim2Data,
                     neighborCells = sim2Neighbors,
                     metricsDatabase = metricsDatabase,
-                    onMetricClick = { key -> onOpenExplainer(key, sim2Data) }
+                    onMetricClick = { key -> onOpenExplainer(key) }
                 )
             }
         }

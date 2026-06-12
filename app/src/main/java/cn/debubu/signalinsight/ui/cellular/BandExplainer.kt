@@ -34,11 +34,26 @@ import cn.debubu.signalinsight.R
 
 @Composable
 fun BandExplainer(currentBand: String, onClose: () -> Unit) {
+    // 根据当前频段计算动态提示文本
+    val bandTipText = when {
+        currentBand.startsWith("n78") || currentBand.startsWith("n79") ->
+            stringResource(R.string.metric_band_tip_5g_high)
+        currentBand.startsWith("n41") ->
+            stringResource(R.string.metric_band_tip_5g_mid)
+        currentBand.startsWith("B1") || currentBand.startsWith("B3") ||
+        currentBand.startsWith("B39") || currentBand.startsWith("B40") || currentBand.startsWith("B41") ->
+            stringResource(R.string.metric_band_tip_lte_mid)
+        currentBand.any { it.isDigit() } ->
+            stringResource(R.string.metric_band_tip_low, currentBand)
+        else -> ""
+    }
+
     MetricExplainerShell(
         icon = Icons.Default.CellTower,
         labelResId = R.string.metric_band_label,
         fullResId = R.string.metric_band_full,
-        tipResId = R.string.metric_band_tip,
+        tipResId = R.string.metric_band_tip_5g_high,
+        tipText = bandTipText,
         onClose = onClose
     ) {
         SectionCard(R.string.band_explain_title, Icons.Default.Search) {

@@ -102,7 +102,7 @@ fun SimContentPage(
             signalData = signalData,
             statusColor = statusColor,
             statusLabel = statusLabel,
-            onClick = { onMetricClick(MetricKey.RSRP) }
+            onClick = { onMetricClick(MetricKey.OVERVIEW) }
         )
 
         // ===== 指标网格 =====
@@ -460,7 +460,7 @@ private fun NeighborCellsCard(neighborCells: List<NeighborCellTableModel>, is5gN
                             })
                         Text(cell.rsrq.toString(), Modifier.weight(1f), textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodySmall)
-                        Text(cell.sinr.toString(), Modifier.weight(1f), textAlign = TextAlign.Center,
+                        Text(cell.sinr.let { if (it != Int.MAX_VALUE) it.toString() else "N/A" }, Modifier.weight(1f), textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodySmall)
                     }
                     if (index < neighborCells.size - 1) {

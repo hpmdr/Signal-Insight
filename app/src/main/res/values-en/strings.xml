@@ -154,7 +154,10 @@
     <string name="metric_band_full">Frequency Band</string>
     <string name="metric_band_desc">A frequency band is a specific range of radio frequencies allocated for wireless communication.</string>
     <string name="metric_band_impact">Lower bands penetrate walls better but deliver slower speeds; higher bands like n78 offer extremely fast speeds but poor penetration.</string>
-    <string name="metric_band_tip">n78 is currently the most widely used high-speed 5G band.</string>
+    <string name="metric_band_tip_5g_high">n78/n79 are the most mainstream high-speed 5G bands — extremely fast but with weaker penetration, best used outdoors.</string>
+    <string name="metric_band_tip_5g_mid">n41 is the主力 5G band, balancing coverage and speed — the core of China\'s 5G network.</string>
+    <string name="metric_band_tip_lte_mid">B1/B3/B39/B40/B41 are 4G主力 bands, offering broad coverage and balanced speeds — the backbone of mobile networks.</string>
+    <string name="metric_band_tip_low">%s is a low-frequency band with wide coverage and strong wall penetration, but relatively slower speeds — ideal for indoor and long-distance use.</string>
     <string name="band_explain_title">What is a Band?</string>
     <string name="band_explain_basic">A frequency band is a specific range of radio frequencies allocated for wireless communication, like different lanes on a highway. Each band has unique characteristics: higher frequencies offer faster speeds but shorter range and weaker penetration.</string>
     <string name="band_current_title">Current Band</string>
@@ -272,4 +275,9 @@
     <string name="metric_net_sinr">SINR is available on 4G LTE (via RSSNR) and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
     <string name="metric_net_rssi">RSSI is available via API on 2G GSM and 4G LTE. 5G NR has RSSI in its protocol (used to compute SS-RSRQ), but Google chose not to expose it to apps due to TDD/beamforming causing unreliable wide fluctuations</string>
     <string name="metric_net_band">Band info is available on 4G LTE and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
+
+    <!-- Signal Overview Screen -->
+    <string name="overview_title">Signal Diagnosis</string>
+    <string name="overview_diagnosis_title">Diagnosis</string>
+    <string name="overview_metrics_title">Key Metrics</string>
 </resources>

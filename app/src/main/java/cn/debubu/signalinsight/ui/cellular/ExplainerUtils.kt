@@ -72,6 +72,7 @@ fun MetricExplainerShell(
     labelResId: Int,
     fullResId: Int,
     tipResId: Int,
+    tipText: String? = null,
     onClose: () -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -131,7 +132,7 @@ fun MetricExplainerShell(
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    stringResource(tipResId),
+                    tipText ?: stringResource(tipResId),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                     fontWeight = FontWeight.Medium

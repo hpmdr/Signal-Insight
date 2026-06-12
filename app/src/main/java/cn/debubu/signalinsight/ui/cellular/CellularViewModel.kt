@@ -42,9 +42,9 @@ class CellularViewModel(
 
     private val _sim1Data = MutableStateFlow<CellularData?>(null)
     private val _sim2Data = MutableStateFlow<CellularData?>(null)
-    private val _activeSim = MutableStateFlow(1)
 
     /** 当前选中的 SIM 卡槽 (1 或 2) */
+    private val _activeSim = MutableStateFlow(1)
     val activeSim: StateFlow<Int> = _activeSim.asStateFlow()
 
     private var dataCollectionJob: Job? = null
@@ -118,14 +118,77 @@ class CellularViewModel(
 
     private fun startDataCollection() {
         dataCollectionJob = viewModelScope.launch(Dispatchers.IO) {
+            var firstValidDataArrived = false
             repository.getDualSimCellularDataFlow().collect { (sim1Data, sim2Data) ->
-                _sim1Data.value = sim1Data
-                _sim2Data.value = sim2Data
+                val sim1Valid = isSimValid(sim1Data)
+                val sim2Valid = isSimValid(sim2Data)
 
-                Log.d(TAG, "SIM 1: ${sim1Data.servingCell?.operatorName}, 邻小区: ${sim1Data.neighborCells.size}")
-                Log.d(TAG, "SIM 2: ${sim2Data.servingCell?.operatorName}, 邻小区: ${sim2Data.neighborCells.size}")
+                // ── 防抖保护 ──
+                // 网络切换（5G↔4G）时系统会短暂发送空 CellInfo，导致 UI 闪烁 N/A。
+                // 只有在「数据有效」或「从未有过有效数据」时才更新状态。
+                val sim1HasValidEver = _sim1Data.value?.let { isSimValid(it) } ?: false
+                val sim2HasValidEver = _sim2Data.value?.let { isSimValid(it) } ?: false
+
+                if (sim1Valid || !sim1HasValidEver) {
+                    _sim1Data.value = sim1Data
+                }
+                if (sim2Valid || !sim2HasValidEver) {
+                    _sim2Data.value = sim2Data
+                }
+
+                Log.d(TAG, "SIM 1: ${sim1Data.servingCell?.operatorName} (valid=$sim1Valid)")
+                Log.d(TAG, "SIM 2: ${sim2Data.servingCell?.operatorName} (valid=$sim2Valid)")
+
+                // 首次有效数据到达时自动选择默认卡槽
+                if (!firstValidDataArrived && (sim1Valid || sim2Valid)) {
+                    firstValidDataArrived = true
+                    selectDefaultSim(sim1Data, sim2Data)
+                } else if (firstValidDataArrived) {
+                    autoSwitchIfNeeded(sim1Data, sim2Data)
+                }
             }
         }
+    }
+
+    /**
+     * 根据插卡状态自动选择默认显示的 SIM 卡槽
+     * - 仅卡 1 插卡 → 显示卡 1
+     * - 仅卡 2 插卡 → 显示卡 2
+     * - 双卡均已插 → 保持默认 1
+     * - 均未插卡   → 保持默认 1
+     */
+    private fun selectDefaultSim(sim1Data: CellularData?, sim2Data: CellularData?) {
+        val sim1Valid = isSimValid(sim1Data)
+        val sim2Valid = isSimValid(sim2Data)
+
+        _activeSim.value = when {
+            !sim1Valid && sim2Valid -> 2
+            else -> 1
+        }
+        Log.d(TAG, "自动选择卡槽 ${_activeSim.value} (SIM1=$sim1Valid, SIM2=$sim2Valid)")
+    }
+
+    /**
+     * 运行时检测：如果当前选中的卡失去信号，且另一张卡有效，自动切换
+     */
+    private fun autoSwitchIfNeeded(sim1Data: CellularData?, sim2Data: CellularData?) {
+        val sim1Valid = isSimValid(sim1Data)
+        val sim2Valid = isSimValid(sim2Data)
+        val current = _activeSim.value
+
+        if (current == 1 && !sim1Valid && sim2Valid) {
+            _activeSim.value = 2
+            Log.d(TAG, "卡 1 失去信号，自动切换到卡 2")
+        } else if (current == 2 && !sim2Valid && sim1Valid) {
+            _activeSim.value = 1
+            Log.d(TAG, "卡 2 失去信号，自动切换到卡 1")
+        }
+    }
+
+    /** 判断指定卡槽的 CellularData 是否有效（有实际信号且运营商可识别） */
+    private fun isSimValid(data: CellularData?): Boolean {
+        val name = data?.servingCell?.operatorName
+        return name != null && name != "未插卡" && name != "No SIM" && name != "Unknown"
     }
 
     // ─── 卡槽切换 ────────────────────────────────────────────────
@@ -157,16 +220,17 @@ class CellularViewModel(
     fun isSimInserted(simId: Int): Boolean {
         val simData = if (simId == 1) _sim1Data.value else _sim2Data.value
         val operatorName = simData?.servingCell?.operatorName
-        return operatorName != null && operatorName != "No SIM"
+        return operatorName != null && operatorName != "未插卡" && operatorName != "No SIM"
     }
 
     /** 获取已插入的 SIM 卡运营商名称列表 */
     fun getSimOptions(): List<String> {
         val sim1Name = _sim1Data.value?.servingCell?.operatorName
         val sim2Name = _sim2Data.value?.servingCell?.operatorName
+        fun isValid(name: String?) = name != null && name != "未插卡" && name != "No SIM" && name != "Unknown"
         return listOfNotNull(
-            if (sim1Name != null && sim1Name != "No SIM") sim1Name else null,
-            if (sim2Name != null && sim2Name != "No SIM") sim2Name else null
+            if (isValid(sim1Name)) sim1Name else null,
+            if (isValid(sim2Name)) sim2Name else null
         )
     }
 }

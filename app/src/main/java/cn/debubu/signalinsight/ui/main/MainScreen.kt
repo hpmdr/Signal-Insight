@@ -1,17 +1,11 @@
 package cn.debubu.signalinsight.ui.main
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +22,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
@@ -44,6 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -52,18 +49,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import cn.debubu.signalinsight.R
-import cn.debubu.signalinsight.ui.cellular.CellularPage
-import cn.debubu.signalinsight.ui.cellular.CellularViewModel
 import cn.debubu.signalinsight.data.cellular.MetricKey
 import cn.debubu.signalinsight.data.cellular.SignalData
 import cn.debubu.signalinsight.ui.cellular.BandExplainer
+import cn.debubu.signalinsight.ui.cellular.CellularPage
+import cn.debubu.signalinsight.ui.cellular.CellularViewModel
+import cn.debubu.signalinsight.ui.cellular.EarfcnExplainer
+import cn.debubu.signalinsight.ui.cellular.PciExplainer
 import cn.debubu.signalinsight.ui.cellular.RsrpExplainer
 import cn.debubu.signalinsight.ui.cellular.RsrqExplainer
-import cn.debubu.signalinsight.ui.cellular.SinrExplainer
 import cn.debubu.signalinsight.ui.cellular.RssiExplainer
-import cn.debubu.signalinsight.ui.cellular.PciExplainer
-import cn.debubu.signalinsight.ui.cellular.EarfcnExplainer
+import cn.debubu.signalinsight.ui.cellular.SignalOverviewScreen
+import cn.debubu.signalinsight.ui.cellular.SinrExplainer
 import cn.debubu.signalinsight.ui.cellular.TacExplainer
 import cn.debubu.signalinsight.ui.permission.PermissionScreen
 import cn.debubu.signalinsight.ui.permission.PermissionViewModel
@@ -72,25 +77,22 @@ import cn.debubu.signalinsight.ui.settings.ThemeViewModel
 import kotlinx.coroutines.launch
 
 /**
- * 详情页路由状态：用 Pair 封装，避免 AnimatedContent 动画期间状态被清空导致崩溃
- * 当非 null 时显示详情页，为 null 时显示主页面
+ * 导航路由常量
  */
-data class ExplainerRoute(
-    val key: MetricKey,
-    val signalData: SignalData
-)
+object NavRoutes {
+    const val CELLULAR = "cellular"
+    const val SETTINGS = "settings"
+    const val ABOUT = "about"
+    const val EXPLAINER = "explainer/{metricKey}"
+
+    fun explainer(metricKey: MetricKey): String = "explainer/${metricKey.name}"
+}
 
 data class NavigationItem(
     val title: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val destination: Destination
+    val route: String
 )
-
-enum class Destination {
-    Cellular,
-    Settings,
-    About
-}
 
 @Composable
 fun AboutScreen() {
@@ -101,15 +103,54 @@ fun AboutScreen() {
     ) {
         Text(
             text = stringResource(R.string.about_title),
-            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = stringResource(R.string.about_content),
-            style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge
         )
     }
+}
+
+/**
+ * 根据 MetricKey 渲染对应的详解页内容（不包含导航外壳）
+ */
+@Composable
+fun ExplainerContent(metricKey: MetricKey, signalData: SignalData, onClose: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 16.dp)
+    ) {
+        when (metricKey) {
+            MetricKey.OVERVIEW -> SignalOverviewScreen(signalData = signalData, onClose = onClose)
+            MetricKey.Band -> BandExplainer(currentBand = signalData.band, onClose = onClose)
+            MetricKey.RSRP -> RsrpExplainer(currentRsrp = signalData.dbm, onClose = onClose)
+            MetricKey.RSRQ -> RsrqExplainer(currentRsrq = signalData.rsrq, onClose = onClose)
+            MetricKey.SINR -> SinrExplainer(currentSinr = signalData.sinr, onClose = onClose)
+            MetricKey.RSSI -> RssiExplainer(currentRssi = signalData.rssi, onClose = onClose)
+            MetricKey.PCI -> PciExplainer(currentPci = signalData.pci, onClose = onClose)
+            MetricKey.EARFCN -> EarfcnExplainer(currentEarfcn = signalData.earfcn, onClose = onClose)
+            MetricKey.TAC -> TacExplainer(currentTac = signalData.tac, onClose = onClose)
+        }
+    }
+}
+
+/**
+ * 获取对应 MetricKey 的 TopAppBar 标题资源 ID
+ */
+private fun titleResIdForMetricKey(key: MetricKey): Int = when (key) {
+    MetricKey.OVERVIEW -> R.string.overview_title
+    MetricKey.Band -> R.string.metric_band_label
+    MetricKey.RSRP -> R.string.metric_rsrp_label
+    MetricKey.RSRQ -> R.string.metric_rsrq_label
+    MetricKey.SINR -> R.string.metric_sinr_label
+    MetricKey.RSSI -> R.string.metric_rssi_label
+    MetricKey.PCI -> R.string.metric_pci_label
+    MetricKey.EARFCN -> R.string.metric_earfcn_label
+    MetricKey.TAC -> R.string.metric_tac_label
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,29 +161,26 @@ fun MainScreen(
     themeViewModel: ThemeViewModel
 ) {
     val context = LocalContext.current
+    val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
-    // 侧栏打开时，返回键关闭侧栏而非退出 App
+    // 判断当前是否为详解页（用于控制抽屉手势 + TopAppBar 标题）
+    val isShowingExplainer = currentRoute?.startsWith("explainer") == true
+
+    // 侧栏打开时，返回键关闭侧栏
     if (drawerState.currentValue == DrawerValue.Open) {
-        BackHandler(onBack = {
-            scope.launch { drawerState.close() }
-        })
+        BackHandler(onBack = { scope.launch { drawerState.close() } })
     }
-
-    // 底部导航选中项
-    var selectedDestination: Destination by remember { mutableStateOf(Destination.Cellular) }
-
-    // ---- 详情页路由：用 ExplainerRoute? 封装，动画期间状态不会丢失 ----
-    var explainerRoute by remember { mutableStateOf<ExplainerRoute?>(null) }
 
     // 权限状态
     val allPermissionsGranted by permissionViewModel.allPermissionsGranted
     var isCheckingPermissions by remember { mutableStateOf(true) }
     var previousPermissionsGranted by remember { mutableStateOf(false) }
 
-    // 权限检查：首次进入 + 每次从后台返回（如从系统设置页授权后返回）都重新检测
-    // 数据收集：前台时收集，后台时暂停，避免不必要的电量消耗
+    // 生命周期管理
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -150,13 +188,11 @@ fun MainScreen(
                 Lifecycle.Event.ON_RESUME -> {
                     permissionViewModel.checkAllPermissions(context as? android.app.Activity)
                     isCheckingPermissions = false
-                    // 回到前台时恢复数据收集
                     if (allPermissionsGranted) {
                         cellularViewModel.resumeDataCollection()
                     }
                 }
                 Lifecycle.Event.ON_PAUSE -> {
-                    // 进入后台时暂停数据收集
                     cellularViewModel.pauseDataCollection()
                 }
                 else -> {}
@@ -173,49 +209,65 @@ fun MainScreen(
         previousPermissionsGranted = allPermissionsGranted
     }
 
-    val destinations: List<NavigationItem> = listOf(
+    // 侧边菜单项
+    val navItems = listOf(
         NavigationItem(
             title = stringResource(R.string.menu_signal_monitor),
             icon = Icons.Default.Home,
-            destination = Destination.Cellular
+            route = NavRoutes.CELLULAR
         ),
         NavigationItem(
             title = stringResource(R.string.menu_settings),
             icon = Icons.Default.Settings,
-            destination = Destination.Settings
+            route = NavRoutes.SETTINGS
         ),
         NavigationItem(
             title = stringResource(R.string.menu_about),
             icon = Icons.Default.Info,
-            destination = Destination.About
+            route = NavRoutes.ABOUT
         )
     )
 
-    // 详情页是否显示
-    val isShowingExplainer = explainerRoute != null
+    // 当前详解页的 MetricKey（用于 TopAppBar 标题）
+    val currentMetricKey = navBackStackEntry
+        ?.arguments?.getString("metricKey")
+        ?.let { try { MetricKey.valueOf(it) } catch (_: Exception) { null } }
+
+    // 当前详解页标题
+    val explainerTitle = currentMetricKey?.let { key ->
+        val resId = titleResIdForMetricKey(key)
+        if (key == MetricKey.OVERVIEW) stringResource(resId)
+        else "${stringResource(resId)} ${stringResource(R.string.explainer_detail_title_suffix)}"
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = !isShowingExplainer,
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.menu_title),
-                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-
-                    destinations.forEach { item ->
+                    navItems.forEach { item ->
                         NavigationDrawerItem(
                             label = { Text(item.title) },
                             icon = { Icon(item.icon, contentDescription = null) },
-                            selected = selectedDestination == item.destination,
+                            selected = currentRoute == item.route,
                             onClick = {
-                                selectedDestination = item.destination
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        // 避免在返回栈中重复添加同一目的地
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
                                 scope.launch { drawerState.close() }
                             },
                             modifier = Modifier.padding(vertical = 4.dp)
@@ -225,29 +277,13 @@ fun MainScreen(
             }
         }
     ) {
-        // ─── 架构说明 ───
-        // Scaffold 只有一层，始终存在
-        // TopAppBar 根据是否显示详情页动态切换标题和导航图标
-        // AnimatedContent 只包裹内容区域（Below TopAppBar），不包裹 Scaffold
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
                         Text(
-                            // 详情页时显示 "XXX详解"，否则显示默认标题
                             text = if (isShowingExplainer) {
-                                val route = explainerRoute!!
-                                val titleResId = when (route.key) {
-                                    MetricKey.Band -> R.string.metric_band_label
-                                    MetricKey.RSRP -> R.string.metric_rsrp_label
-                                    MetricKey.RSRQ -> R.string.metric_rsrq_label
-                                    MetricKey.SINR -> R.string.metric_sinr_label
-                                    MetricKey.RSSI -> R.string.metric_rssi_label
-                                    MetricKey.PCI -> R.string.metric_pci_label
-                                    MetricKey.EARFCN -> R.string.metric_earfcn_label
-                                    MetricKey.TAC -> R.string.metric_tac_label
-                                }
-                                "${stringResource(titleResId)} ${stringResource(R.string.explainer_detail_title_suffix)}"
+                                explainerTitle ?: ""
                             } else {
                                 if (allPermissionsGranted) {
                                     stringResource(R.string.app_bar_title)
@@ -260,22 +296,14 @@ fun MainScreen(
                     },
                     navigationIcon = {
                         if (isShowingExplainer) {
-                            // 详情页：显示返回箭头
-                            androidx.compose.material3.IconButton(
-                                onClick = { explainerRoute = null }
-                            ) {
+                            IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     imageVector = Icons.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.back)
                                 )
                             }
                         } else {
-                            // 主页面：显示菜单按钮
-                            androidx.compose.material3.IconButton(
-                                onClick = {
-                                    scope.launch { drawerState.open() }
-                                }
-                            ) {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                 Icon(
                                     imageVector = Icons.Default.Menu,
                                     contentDescription = stringResource(R.string.open_menu)
@@ -284,98 +312,107 @@ fun MainScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer,
-                        navigationIconContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 )
             }
         ) { paddingValues ->
-            // ---- 内容区域：AnimatedContent 只包裹这里 ----
-            AnimatedContent(
-                targetState = explainerRoute,
-                transitionSpec = {
-                    if (targetState != null) {
-                        // 进入详情页：新页从右弹簧滑入 + 渐入，旧页快速淡出
-                        (slideInHorizontally(
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        ) { w -> w } +
-                                fadeIn(animationSpec = tween(180, delayMillis = 60))) togetherWith
-                            (slideOutHorizontally(animationSpec = tween(120)) { w -> -w / 4 } +
-                                    fadeOut(animationSpec = tween(80))) using
-                            SizeTransform(clip = false)
-                    } else {
-                        // 返回主页：主页从左侧弹簧滑入 + 渐入，详情页快速淡出
-                        (slideInHorizontally(
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        ) { w -> -w / 4 } +
-                                fadeIn(animationSpec = tween(180, delayMillis = 60))) togetherWith
-                            (slideOutHorizontally(animationSpec = tween(120)) { w -> w } +
-                                    fadeOut(animationSpec = tween(80))) using
-                            SizeTransform(clip = false)
-                    }
-                },
-                label = "mainPageTransition",
+            // NavHost 接管所有页面切换和动画
+            NavHost(
+                navController = navController,
+                startDestination = NavRoutes.CELLULAR,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-            ) { route ->
-                if (route != null) {
-                    // ★ 拦截系统返回键：回到主页面而非退出 App
-                    BackHandler(onBack = { explainerRoute = null })
-
-                    // ★ 详情页（无 Scaffold，TopAppBar 已由外层统一管理）
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 16.dp)
-                    ) {
-                        when (route.key) {
-                            MetricKey.Band -> BandExplainer(currentBand = route.signalData.band, onClose = { explainerRoute = null })
-                            MetricKey.RSRP -> RsrpExplainer(currentRsrp = route.signalData.dbm, onClose = { explainerRoute = null })
-                            MetricKey.RSRQ -> RsrqExplainer(currentRsrq = route.signalData.rsrq, onClose = { explainerRoute = null })
-                            MetricKey.SINR -> SinrExplainer(currentSinr = route.signalData.sinr, onClose = { explainerRoute = null })
-                            MetricKey.RSSI -> RssiExplainer(currentRssi = route.signalData.rssi, onClose = { explainerRoute = null })
-                            MetricKey.PCI -> PciExplainer(currentPci = route.signalData.pci, onClose = { explainerRoute = null })
-                            MetricKey.EARFCN -> EarfcnExplainer(currentEarfcn = route.signalData.earfcn, onClose = { explainerRoute = null })
-                            MetricKey.TAC -> TacExplainer(currentTac = route.signalData.tac, onClose = { explainerRoute = null })
-                        }
-                    }
-                } else {
-                    // ★ 拦截系统返回键：关于/设置页返回信号页，而非退出 App
-                    if (selectedDestination != Destination.Cellular) {
-                        BackHandler(onBack = { selectedDestination = Destination.Cellular })
-                    }
-
-                    // ★ 主页面（权限检查 → 信号页/关于/设置）
+            ) {
+                // ── 主页面：信号监测 ──
+                composable(
+                    route = NavRoutes.CELLULAR,
+                    enterTransition = { fadeIn(animationSpec = tween(250)) },
+                    exitTransition = { fadeOut(animationSpec = tween(150)) }
+                ) {
                     if (isCheckingPermissions) {
                         androidx.compose.material3.CircularProgressIndicator(
                             modifier = Modifier.padding(16.dp)
                         )
                     } else if (allPermissionsGranted) {
-                        when (selectedDestination) {
-                            Destination.Cellular -> CellularPage(
-                                modifier = Modifier.fillMaxSize(),
-                                viewModel = cellularViewModel,
-                                onOpenExplainer = { key, signalData ->
-                                    explainerRoute = ExplainerRoute(key, signalData)
-                                }
-                            )
-                            Destination.Settings -> SettingsScreen(viewModel = themeViewModel)
-                            Destination.About -> AboutScreen()
-                        }
+                        CellularPage(
+                            modifier = Modifier.fillMaxSize(),
+                            viewModel = cellularViewModel,
+                            onOpenExplainer = { key ->
+                                navController.navigate(NavRoutes.explainer(key))
+                            }
+                        )
                     } else {
                         PermissionScreen(
                             onNavigateToMain = { },
                             viewModel = permissionViewModel
                         )
                     }
+                }
+
+                // ── 主页面：设置 ──
+                composable(
+                    route = NavRoutes.SETTINGS,
+                    enterTransition = { fadeIn(animationSpec = tween(250)) },
+                    exitTransition = { fadeOut(animationSpec = tween(150)) }
+                ) {
+                    BackHandler {
+                        navController.popBackStack(NavRoutes.CELLULAR, inclusive = false)
+                    }
+                    SettingsScreen(viewModel = themeViewModel)
+                }
+
+                // ── 主页面：关于 ──
+                composable(
+                    route = NavRoutes.ABOUT,
+                    enterTransition = { fadeIn(animationSpec = tween(250)) },
+                    exitTransition = { fadeOut(animationSpec = tween(150)) }
+                ) {
+                    BackHandler {
+                        navController.popBackStack(NavRoutes.CELLULAR, inclusive = false)
+                    }
+                    AboutScreen()
+                }
+
+                // ── 详解页 ──
+                composable(
+                    route = NavRoutes.EXPLAINER,
+                    arguments = listOf(navArgument("metricKey") { type = NavType.StringType }),
+                    enterTransition = {
+                        slideInHorizontally(animationSpec = tween(300)) { w -> w } +
+                                fadeIn(animationSpec = tween(250))
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(animationSpec = tween(250)) { w -> -w / 4 } +
+                                fadeOut(animationSpec = tween(200))
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(animationSpec = tween(300)) { w -> -w / 4 } +
+                                fadeIn(animationSpec = tween(250))
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(animationSpec = tween(250)) { w -> w } +
+                                fadeOut(animationSpec = tween(200))
+                    }
+                ) { backStackEntry ->
+                    val metricKeyStr = backStackEntry.arguments?.getString("metricKey") ?: "RSRP"
+                    val metricKey = try {
+                        MetricKey.valueOf(metricKeyStr)
+                    } catch (_: Exception) {
+                        MetricKey.RSRP
+                    }
+                    val signalData by cellularViewModel.currentSignalData.collectAsState()
+
+                    BackHandler { navController.popBackStack() }
+
+                    ExplainerContent(
+                        metricKey = metricKey,
+                        signalData = signalData,
+                        onClose = { navController.popBackStack() }
+                    )
                 }
             }
         }

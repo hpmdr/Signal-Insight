@@ -101,7 +101,7 @@ data class CellularSignalInfo(
          *   }
          * };
          */
-        fun fromCellInfo(cellInfo: CellInfo, simSlotId: Int, isPrimary: Boolean, operatorName: String = "Unknown"): CellularSignalInfo {
+        fun fromCellInfo(cellInfo: CellInfo, simSlotId: Int, isPrimary: Boolean, operatorName: String = "Unknown", lteRssnrFallback: Int = Int.MAX_VALUE): CellularSignalInfo {
             val signalStrength = when (cellInfo) {
                 is CellInfoLte -> {
                     val signalStrengthLte = cellInfo.cellSignalStrength
@@ -109,7 +109,10 @@ data class CellularSignalInfo(
                     val cellBand = cellIdentityLte.bands.firstOrNull()?.toString()
                         ?: "B${cellIdentityLte.earfcn / 1000}"
                     val lteSinr = signalStrengthLte.rssnr.let {
-                        if (it != Int.MAX_VALUE) it else Int.MAX_VALUE
+                        // CellInfo 路径返回 MAX_VALUE 时，尝试 SignalStrength 路径的备用值
+                        if (it != Int.MAX_VALUE) it
+                        else if (lteRssnrFallback != Int.MAX_VALUE) lteRssnrFallback
+                        else Int.MAX_VALUE
                     }
                     val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
                         ?: cellIdentityLte.operatorAlphaLong?.toString()
@@ -288,7 +291,7 @@ data class NeighborCellInfo(
                     val cellBand = cellIdentityLte.bands.firstOrNull()?.toString()
                         ?: "B${cellIdentityLte.earfcn / 1000}"
                     val lteSinr = signalStrengthLte.rssnr.let {
-                        if (it != Int.MAX_VALUE) it else -20
+                        if (it != Int.MAX_VALUE) it else Int.MAX_VALUE
                     }
                     NeighborCellInfo(
                         pci = cellIdentityLte.pci,
@@ -313,7 +316,7 @@ data class NeighborCellInfo(
                     } else if (signalStrengthNr.csiRsrp != invalidValue) {
                         signalStrengthNr.csiRsrp
                     } else {
-                        -120
+                        Int.MAX_VALUE
                     }
 
                     val rsrq = if (signalStrengthNr.ssRsrq != invalidValue) {
@@ -321,7 +324,7 @@ data class NeighborCellInfo(
                     } else if (signalStrengthNr.csiRsrq != invalidValue) {
                         signalStrengthNr.csiRsrq
                     } else {
-                        -20
+                        Int.MAX_VALUE
                     }
 
                     val sinr = if (signalStrengthNr.ssSinr != invalidValue) {
@@ -329,7 +332,7 @@ data class NeighborCellInfo(
                     } else if (signalStrengthNr.csiSinr != invalidValue) {
                         signalStrengthNr.csiSinr
                     } else {
-                        -20
+                        Int.MAX_VALUE
                     }
 
                     NeighborCellInfo(
@@ -474,5 +477,5 @@ data class NeighborCellTableModel(
  * 用于路由科普详情页，替代魔法字符串
  */
 enum class MetricKey {
-    Band, RSRP, RSRQ, SINR, RSSI, PCI, EARFCN, TAC;
+    Band, RSRP, RSRQ, SINR, RSSI, PCI, EARFCN, TAC, OVERVIEW;
 }
