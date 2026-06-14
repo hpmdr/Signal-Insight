@@ -13,8 +13,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -44,15 +48,20 @@ import cn.debubu.signalinsight.data.theme.ThemePreset
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
-    viewModel: ThemeViewModel
+    viewModel: ThemeViewModel,
+    modifier: Modifier = Modifier
 ) {
     val settings by viewModel.settings.collectAsState()
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp)
+            .padding(
+                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 20.dp,
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp + 20.dp,
+                start = 20.dp, end = 20.dp
+            )
     ) {
         // ── 标题 ──
         Text(

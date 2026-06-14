@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24.0"
+    android:viewportHeight="24.0">
+
+    <!-- SIM卡极简外轮廓 (线宽 2dp，右上切角) -->
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"
+        android:pathData="M5,3 C5,2.45 5.45,2 6,2 H14 L19,7 V21 C19,21.55 18.55,22 18,22 H6 C5.45,22 5,21.55 5,21 Z" />
+
+    <!-- 居中加粗数字 2 -->
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M9.5,10.5 C9.5,9.2 10.6,8.2 12,8.2 C13.4,8.2 14.5,9.2 14.5,10.5 C14.5,11.8 13.2,12.8 12,13.8 L9.5,16 V17 H14.5" />
+
+</vector>

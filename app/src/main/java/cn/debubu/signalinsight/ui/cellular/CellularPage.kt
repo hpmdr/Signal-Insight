@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -45,9 +46,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,6 +61,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
@@ -142,61 +146,6 @@ fun CellularPage(
         }
     }
 
-    // ---- 指标元数据（静态数据，仅创建一次） ----
-    val metricsDatabase = remember {
-        mapOf(
-            MetricKey.RSRP to MetricInfo(
-                R.string.metric_rsrp_label, R.string.metric_rsrp_full,
-                R.string.metric_rsrp_desc, R.string.metric_rsrp_impact,
-                range = listOf(
-                    RangeStep(R.string.range_rsrp_weak, "<-110", Color(0xFFBA1A1A)),
-                    RangeStep(R.string.range_rsrp_fair, "-100~-80", Color(0xFF6C5D00)),
-                    RangeStep(R.string.range_rsrp_excellent, ">-80dBm", Color(0xFF386B28))
-                )
-            ),
-            MetricKey.RSRQ to MetricInfo(
-                R.string.metric_rsrq_label, R.string.metric_rsrq_full,
-                R.string.metric_rsrq_desc, R.string.metric_rsrq_impact,
-                range = listOf(
-                    RangeStep(R.string.range_rsrq_poor, "<-20dB", Color(0xFFBA1A1A)),
-                    RangeStep(R.string.range_rsrq_medium, "-15~-10", Color(0xFF6C5D00)),
-                    RangeStep(R.string.range_rsrq_good, ">-10dB", Color(0xFF386B28))
-                )
-            ),
-            MetricKey.SINR to MetricInfo(
-                R.string.metric_sinr_label, R.string.metric_sinr_full,
-                R.string.metric_sinr_desc, R.string.metric_sinr_impact,
-                range = listOf(
-                    RangeStep(R.string.range_sinr_poor, "<0dB", Color(0xFFBA1A1A)),
-                    RangeStep(R.string.range_sinr_fair, "0~20dB", Color(0xFF6C5D00)),
-                    RangeStep(R.string.range_sinr_good, ">20dB", Color(0xFF386B28))
-                )
-            ),
-            MetricKey.RSSI to MetricInfo(
-                R.string.metric_rssi_label, R.string.metric_rssi_full,
-                R.string.metric_rssi_desc, R.string.metric_rssi_impact
-            ),
-            MetricKey.Band to MetricInfo(
-                R.string.metric_band_label, R.string.metric_band_full,
-                R.string.metric_band_desc, R.string.metric_band_impact,
-                tipResId = R.string.metric_band_tip_5g_high
-            ),
-            MetricKey.PCI to MetricInfo(
-                R.string.metric_pci_label, R.string.metric_pci_full,
-                R.string.metric_pci_desc, R.string.metric_pci_impact,
-                tipResId = R.string.metric_pci_tip
-            ),
-            MetricKey.EARFCN to MetricInfo(
-                R.string.metric_earfcn_label, R.string.metric_earfcn_full,
-                R.string.metric_earfcn_desc, R.string.metric_earfcn_impact
-            ),
-            MetricKey.TAC to MetricInfo(
-                R.string.metric_tac_label, R.string.metric_tac_full,
-                R.string.metric_tac_desc, R.string.metric_tac_impact
-            )
-        )
-    }
-
     // ---- Pager 状态（当前页面索引 = activeSim - 1） ----
     val pagerState = rememberPagerState(
         initialPage = activeSim - 1,
@@ -220,110 +169,23 @@ fun CellularPage(
         }
     }
 
-    // ---- 布局 ----
-    Column(modifier = modifier.fillMaxSize()) {
-
-        // 内容区域 — HorizontalPager
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) { page ->
-            val simId = page + 1
-            when (simId) {
-                1 -> SimContentPage(
-                    signalData = sim1Data,
-                    neighborCells = sim1Neighbors,
-                    metricsDatabase = metricsDatabase,
-                    onMetricClick = { key -> onOpenExplainer(key) }
-                )
-                2 -> SimContentPage(
-                    signalData = sim2Data,
-                    neighborCells = sim2Neighbors,
-                    metricsDatabase = metricsDatabase,
-                    onMetricClick = { key -> onOpenExplainer(key) }
-                )
-            }
-        }
-
-        // 底部导航栏 — 文字 + 底部滑动指示条（方案 D）
-        NavigationBar(
-            containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
-        ) {
-            var containerWidth by remember { mutableStateOf(0.dp) }
-            val density = LocalDensity.current
-            val tabCount = simOptions.size.coerceAtLeast(1)
-
-            // 指示条：宽度为屏幕宽度的 1/4，居中于每个 tab
-            val tabWidth = if (containerWidth > 0.dp) containerWidth / tabCount else 0.dp
-            val barWidth = if (containerWidth > 0.dp) containerWidth / 4 else 0.dp
-            val targetOffset = tabWidth * pagerState.currentPage + (tabWidth - barWidth) / 2
-            val animatedOffset by animateDpAsState(
-                targetValue = targetOffset,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                ),
-                label = "IndicatorSlide"
+    // ---- 布局 —— 只渲染内容，NavigationBar 已移至 Scaffold.bottomBar ----
+    HorizontalPager(
+        state = pagerState,
+        modifier = modifier.fillMaxSize()
+    ) { page ->
+        val simId = page + 1
+        when (simId) {
+            1 -> SimContentPage(
+                signalData = sim1Data,
+                neighborCells = sim1Neighbors,
+                onMetricClick = { key -> onOpenExplainer(key) }
             )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .onGloballyPositioned { coords ->
-                        containerWidth = with(density) { coords.size.width.toDp() }
-                    }
-            ) {
-                // 文字按钮
-                Row(modifier = Modifier.fillMaxSize()) {
-                    simOptions.forEachIndexed { index, sim ->
-                        val isSelected = pagerState.currentPage == index
-                        val textColor by animateColorAsState(
-                            targetValue = if (isSelected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            label = "TabTextColor"
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    scope.launch { pagerState.animateScrollToPage(index) }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = sim.name,
-                                fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = textColor
-                            )
-                        }
-                    }
-                }
-
-                // 底部短横线指示条（居中于每个 tab，弹簧动画滑动）
-                Box(
-                    modifier = Modifier
-                        .offset(x = animatedOffset, y = (-8).dp)
-                        .width(barWidth)
-                        .height(3.dp)
-                        .align(Alignment.BottomStart)
-                        .background(
-                            MaterialTheme.colorScheme.primary,
-                            RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp)
-                        )
-                )
-            }
+            2 -> SimContentPage(
+                signalData = sim2Data,
+                neighborCells = sim2Neighbors,
+                onMetricClick = { key -> onOpenExplainer(key) }
+            )
         }
     }
 

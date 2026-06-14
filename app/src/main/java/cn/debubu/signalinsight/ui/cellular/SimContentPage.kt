@@ -1,6 +1,5 @@
 package cn.debubu.signalinsight.ui.cellular
 
-import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
@@ -20,8 +19,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,6 +39,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -63,15 +67,12 @@ import cn.debubu.signalinsight.data.cellular.SignalData
  *
  * @param signalData     当前 SIM 的信号摘要数据
  * @param neighborCells  当前 SIM 的邻小区列表
- * @param metricsDatabase 指标元数据映射（从 CellularPage 传入，避免重复创建）
  * @param onMetricClick  用户点击某个指标方格时的回调
- * @param onToast        显示 Toast 的回调（SIM 未就绪时）
  */
 @Composable
 fun SimContentPage(
     signalData: SignalData,
     neighborCells: List<NeighborCellTableModel>,
-    metricsDatabase: Map<MetricKey, MetricInfo>,
     onMetricClick: (MetricKey) -> Unit,
 ) {
     val context = LocalContext.current
@@ -90,11 +91,18 @@ fun SimContentPage(
         else -> context.getString(R.string.signal_poor)
     }
 
+    // rememberSaveable 确保从详情页返回后恢复滚动位置
+    val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
+
+    // 动态获取状态栏 + 系统导航栏高度
+    val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 20.dp
+    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp + 20.dp
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .verticalScroll(scrollState)
+            .padding(top = topPadding, bottom = bottomPadding, start = 16.dp, end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // ===== 信号环 =====

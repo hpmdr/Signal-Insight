@@ -17,5 +17,9 @@ local.properties
 /.idea/vcs.xml
 .kotlin
 
-# ── 调试截图（每次 adb pull 产生的临时文件） ──
-screen_*.png
+# ── 调试截图（根目录下的临时截图文件） ──
+/*.png
+nul*
+
+# ── WorkBuddy 内部文件 ──
+.workbuddy/

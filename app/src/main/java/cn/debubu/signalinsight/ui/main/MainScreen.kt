@@ -1,18 +1,38 @@
 package cn.debubu.signalinsight.ui.main
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
@@ -26,6 +46,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -36,17 +57,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -95,11 +125,16 @@ data class NavigationItem(
 )
 
 @Composable
-fun AboutScreen() {
+fun AboutScreen(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(
+                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 20.dp,
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp + 20.dp,
+                start = 16.dp, end = 16.dp
+            )
     ) {
         Text(
             text = stringResource(R.string.about_title),
@@ -120,9 +155,7 @@ fun AboutScreen() {
 @Composable
 fun ExplainerContent(metricKey: MetricKey, signalData: SignalData, onClose: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 16.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
         when (metricKey) {
             MetricKey.OVERVIEW -> SignalOverviewScreen(signalData = signalData, onClose = onClose)
@@ -166,6 +199,8 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    // 70% 透明度 = 30% 不透明度的 bar 背景，形成毛玻璃效果
+    val barScrim = Color.Black.copy(alpha = 0.30f)
 
     // 判断当前是否为详解页（用于控制抽屉手势 + TopAppBar 标题）
     val isShowingExplainer = currentRoute?.startsWith("explainer") == true
@@ -278,6 +313,7 @@ fun MainScreen(
         }
     ) {
         Scaffold(
+            contentWindowInsets = WindowInsets(0),
             topBar = {
                 TopAppBar(
                     title = {
@@ -312,20 +348,22 @@ fun MainScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        containerColor = barScrim,
+                        scrolledContainerColor = barScrim,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
+            },
+            bottomBar = {
+                SimSwitchBar(cellularViewModel, barScrim)
             }
         ) { paddingValues ->
-            // NavHost 接管所有页面切换和动画
             NavHost(
                 navController = navController,
                 startDestination = NavRoutes.CELLULAR,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
             ) {
                 // ── 主页面：信号监测 ──
                 composable(
@@ -418,3 +456,94 @@ fun MainScreen(
         }
     }
 }
+
+/**
+ * 底部 SIM 卡切换栏 — 放在 Scaffold.bottomBar 中，符合 Material 3 规范。
+ * 半透明背景 + 滑动指示条，通过 ViewModel 切换 SIM，与 CellularPage 的 Pager 自动同步。
+ */
+@Composable
+private fun SimSwitchBar(viewModel: CellularViewModel, barScrim: Color) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val activeSim by viewModel.activeSim.collectAsState()
+    val sim1Data by viewModel.sim1SignalData.collectAsState()
+    val sim2Data by viewModel.sim2SignalData.collectAsState()
+
+    val noSimText = context.getString(R.string.operator_no_sim)
+
+    val simOptions = listOf(
+        SimBarItem(1, if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
+            sim1Data.operatorName != "Unknown"),
+        SimBarItem(2, if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
+            sim2Data.operatorName != "Unknown")
+    )
+
+    var containerWidthPx by rememberSaveable { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+
+    NavigationBar(
+        containerColor = barScrim,
+        tonalElevation = 0.dp
+    ) {
+        val tabCount = 2
+        val containerDp = with(density) { containerWidthPx.toDp() }
+        val tabWidth = if (containerWidthPx > 0f) containerDp / tabCount else 0.dp
+        val barWidth = if (containerWidthPx > 0f) containerDp / 4 else 0.dp
+        val activeIndex = if (activeSim == 1) 0 else 1
+        val targetOffset = tabWidth * activeIndex + (tabWidth - barWidth) / 2
+
+        val animatedOffset by animateDpAsState(
+            targetValue = targetOffset,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+            label = "SimBarSlide"
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .onGloballyPositioned { containerWidthPx = it.size.width.toFloat() }
+        ) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                simOptions.forEach { sim ->
+                    val isSelected = (sim.id == activeSim)
+                    val contentColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        label = "SimBarColor"
+                    )
+                    val iconAlpha = if (sim.isReady) 1f else 0.5f
+                    val iconRes = if (sim.id == 1) R.drawable.ic_sim_1 else R.drawable.ic_sim_2
+
+                    Box(
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                            .clickable(MutableInteractionSource(), null) {
+                                scope.launch { viewModel.switchSim(sim.id) }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.alpha(iconAlpha)
+                        ) {
+                            Icon(painterResource(iconRes), "SIM ${sim.id}", Modifier.size(18.dp), tint = contentColor)
+                            Text(sim.name, fontSize = 14.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = contentColor)
+                        }
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier.offset(x = animatedOffset, y = (-8).dp)
+                    .width(barWidth).height(3.dp).align(Alignment.BottomStart)
+                    .background(MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+            )
+        }
+    }
+}
+
+private data class SimBarItem(val id: Int, val name: String, val isReady: Boolean)
