@@ -21,6 +21,9 @@ jobs:
       - name: 设置 Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: 设置 gradlew 执行权限
+        run: chmod +x gradlew
+
       # 构建未签名的 Release APK
       - name: 构建 APK
         run: ./gradlew assembleRelease
