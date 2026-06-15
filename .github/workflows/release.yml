@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,4 +53,4 @@ jobs:
           name: SignalInsight ${{ github.ref_name }}
           body_path: CHANGELOG.md
           files: app/build/outputs/apk/release/app-release.apk
-          generate_release_notes: false
+          generate_release_notes: true
