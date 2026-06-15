@@ -24,27 +24,24 @@ jobs:
       - name: 设置 gradlew 执行权限
         run: chmod +x gradlew
 
-      - name: 安装 build-tools 36.0.0
-        run: |
-          echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;36.0.0" > /dev/null 2>&1
-
-      # 构建未签名的 Release APK
-      - name: 构建 APK
-        run: ./gradlew assembleRelease
-
-      # 签名（使用 GitHub Secrets 中的 base64 密钥）
-      # 官方 Market 方案：https://github.com/marketplace/actions/sign-android-release
-      - name: 签名 APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+      # 从 GitHub Secrets 恢复签名密钥和配置
+      # Gradle 构建时自动读取 keystore.properties → 签名 Release APK
+      - name: 解码签名密钥
         env:
-          BUILD_TOOLS_VERSION: "36.0.0"
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEY }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > app/release.jks
+
+      - name: 写入签名配置
+        run: |
+          echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" > keystore.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
+          echo "storeFile=app/release.jks" >> keystore.properties
+
+      # 构建已签名的 Release APK（gradle 自动使用 keystore.properties 签名）
+      - name: 构建并签名 Release APK
+        run: ./gradlew assembleRelease
 
       # 重命名并创建 GitHub Release
       - name: 创建 Release
@@ -52,5 +49,5 @@ jobs:
         with:
           name: SignalInsight ${{ github.ref_name }}
           body_path: CHANGELOG.md
-          files: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          files: app/build/outputs/apk/release/app-release.apk
           generate_release_notes: true
