@@ -24,6 +24,10 @@ jobs:
       - name: 设置 gradlew 执行权限
         run: chmod +x gradlew
 
+      - name: 安装 build-tools 36.0.0
+        run: |
+          echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;36.0.0" > /dev/null 2>&1
+
       # 构建未签名的 Release APK
       - name: 构建 APK
         run: ./gradlew assembleRelease
@@ -39,6 +43,8 @@ jobs:
           alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "36.0.0"
 
       # 重命名并创建 GitHub Release
       - name: 创建 Release
