@@ -13,12 +13,14 @@ flowchart TB
         TM[TelephonyManager]
         SC[SubscriptionManager]
         TC[CellInfoListener]
+        SS[PhoneStateListener]
     end
 
     subgraph Data["Data Layer"]
         CF["callbackFlow"]
         EC["extractCellularData()"]
         FI["fromCellInfo() type dispatch"]
+        SFB["_lteSinrFallback (MIUI 兼容)"]
     end
 
     subgraph Model["Network Type Dispatch"]
@@ -39,11 +41,15 @@ flowchart TB
         CP["CellularPage - Dual SIM HorizontalPager"]
         SG["SimContentPage: Signal Ring + Metric Grid"]
         NT["5G = SS-RSRP | 4G = RSRP | N/A = unavailable"]
+        SO["SignalOverviewScreen: 综合评分 + 诊断"]
     end
 
     TM --> SC
     SC --> TC
+    SC --> SS
     TC -->|onCellInfoChanged| CF
+    SS -->|onSignalStrengthsChanged| SFB
+    SFB -.->|备用 SINR| EC
     CF --> EC
     EC --> FI
 
@@ -59,16 +65,18 @@ flowchart TB
     SF --> CS
     CS --> CP
     CP --> SG
+    SG --> SO
     SG --> NT
 ```
 
 ### 核心流程说明
 
 1. **系统监听**：`TelephonyManager` + `TelephonyCallback.CellInfoListener` 注册回调，监听基站信号变化
-2. **数据提取**：`callbackFlow` 将回调转为协程 Flow，`extractCellularData()` 解析 `CellInfo` 列表
-3. **类型分流**：`fromCellInfo()` 根据 `CellInfo` 实际类型（LTE/NR/WCDMA/GSM）分别提取可用参数
-4. **ViewModel 处理**：通过 `MutableStateFlow` → `.map{}.stateIn()` 转为不可变 UI 状态
-5. **Compose 渲染**：`collectAsState()` 收集 StateFlow，驱动 UI 响应式更新
+2. **MIUI 兼容**：额外注册 `PhoneStateListener`，解决 MIUI 设备上 CellInfo 不返回 LTE RSSNR 的问题，通过 SignalStrength 路径获取备用 SINR
+3. **数据提取**：`callbackFlow` 将回调转为协程 Flow，`extractCellularData()` 解析 `CellInfo` 列表
+4. **类型分流**：`fromCellInfo()` 根据 `CellInfo` 实际类型（LTE/NR/WCDMA/GSM）分别提取可用参数
+5. **ViewModel 处理**：通过 `MutableStateFlow` → `.map{}.stateIn()` 转为不可变 UI 状态
+6. **Compose 渲染**：`collectAsState()` 收集 StateFlow，驱动 UI 响应式更新
 
 ### 各网络类型参数差异
 
@@ -89,12 +97,14 @@ flowchart TB
 
 ### 📊 实时信号监测
 - **双卡同时监测**：HorizontalPager 左右滑动切换 SIM 卡
+- **弹性水滴切换器**：底部 SIM 切换采用独立双边界弹簧动画，模拟液滴拉伸吸附效果
 - **信号环形进度条**：绿/黄/红三色直观指示信号强度
 - **8 大核心指标网格**：按网络类型自适应标签（5G 显示 SS-RSRP，4G 显示 RSRP）
 - **不可用指标自动隐藏**：3G/2G 不支持的参数显示 N/A
+- **信号综合分析**：点击信号环进入综合评分页面，含评分环+诊断说明+短板建议
 
 ### 📖 参数科普解读
-点击每个指标格块进入全屏详情页（带 AnimatedContent 转场动画）：
+点击每个指标格块进入全屏详情页：
 
 | 指标 | 科普内容 |
 |------|---------|
@@ -102,7 +112,7 @@ flowchart TB
 | **RSRQ / SS-RSRQ** | 信号质量分级 + RSRP/RSRQ 联合判断 |
 | **SINR / SS-SINR** | 信噪比 → 下载速度映射表 + 评估 |
 | **RSSI** | RSSI vs RSRP 对比 + 什么时候参考 RSSI |
-| **Band** | 运营商频段分布表（移动/联通/电信/广电） |
+| **Band** | 运营商频段分布表（移动/联通/电信/广电），根据当前频段动态显示提示 |
 | **PCI** | 基站切换原理 + PCI Mod 3 干扰 |
 | **EARFCN** | 频率换算公式 + 运营商频点范围 |
 | **TAC** | TAC 更新场景 + 作用说明 |
@@ -113,7 +123,8 @@ flowchart TB
 
 ### 🎨 主题
 - Material Design 3（Material You）
-- 支持浅色/深色模式
+- 支持浅色/深色模式 + 动态取色
+- 支持多套预设配色方案
 
 ---
 
@@ -123,11 +134,12 @@ flowchart TB
 |------|------|------|
 | 语言 | Kotlin | 2.4.0 |
 | UI 框架 | Jetpack Compose + Material 3 | BOM 2026.05.00 |
+| 导航 | Jetpack Navigation Compose | 2.9.8 |
 | 架构 | MVVM (Repository + ViewModel + StateFlow) | - |
 | 异步 | Kotlin Coroutines + Flow + StateFlow | - |
 | 构建系统 | Gradle | 9.5.1 |
 | AGP | Android Gradle Plugin | 9.2.0 |
-| 动画 | AnimatedContent (spring+tween+SizeTransform) | - |
+| 动画 | spring + tween + AnimatedContent + AnimatedVisibility | - |
 | 测试 | Compose UI Test (ui-test-junit4) | - |
 | 编译 SDK | Android 16 (API 36) | - |
 | 最低支持 | Android 12 (API 31) | - |
@@ -140,27 +152,51 @@ flowchart TB
 app/src/main/java/cn/debubu/signalinsight/
 ├── data/
 │   ├── cellular/
-│   │   ├── CellularRepository.kt        # TelephonyManager + callbackFlow
-│   │   └── CellularSignalModel.kt       # 数据模型 + 各网络类型参数解析
-│   └── permission/
-│       └── PermissionManager.kt         # 权限管理（含永久拒绝检测）
+│   │   ├── CellularRepository.kt          # TelephonyManager + callbackFlow + PhoneStateListener
+│   │   ├── CellularSignalModel.kt         # 数据模型 + 各网络类型参数解析
+│   │   └── SignalQualityEvaluator.kt      # 综合评分算法
+│   ├── permission/
+│   │   └── PermissionManager.kt           # 权限管理（含永久拒绝检测）
+│   └── theme/
+│       └── ThemeManager.kt                # 主题管理器（浅色/深色/配色方案）
 ├── ui/
 │   ├── cellular/
-│   │   ├── CellularPage.kt              # 双卡切换主页面（HorizontalPager）
-│   │   ├── CellularViewModel.kt         # 视图模型（StateFlow 驱动）
-│   │   ├── SimContentPage.kt            # 单卡信号内容（信号环+指标网格+邻小区）
+│   │   ├── CellularPage.kt                # 双卡切换主页面（HorizontalPager）
+│   │   ├── CellularViewModel.kt           # 视图模型（StateFlow 驱动）
+│   │   ├── SimContentPage.kt              # 单卡信号内容（信号环+指标网格+邻小区）
+│   │   ├── SignalOverviewScreen.kt        # 信号综合分析页（评分环+诊断）
 │   │   ├── BandExplainer.kt ~ TACExplainer.kt  # 8 个科普组件
-│   │   └── ExplainerUtils.kt            # 共享组件（SectionCard / MetricExplainerShell）
+│   │   └── ExplainerUtils.kt              # 共享组件（SectionCard / MetricExplainerShell）
+│   ├── components/
+│   │   └── ElasticSimSwitcher.kt          # 弹性水滴双卡槽切换器（双边界弹簧动画）
 │   ├── main/
-│   │   └── MainScreen.kt                # 主界面（Scaffold + AnimatedContent + 生命周期）
+│   │   └── MainScreen.kt                  # 主界面（NavHost + 侧边抽屉 + 生命周期）
 │   ├── permission/
-│   │   ├── PermissionScreen.kt          # 权限申请页面
-│   │   └── PermissionViewModel.kt       # 权限视图模型
+│   │   ├── PermissionScreen.kt            # 权限申请页面
+│   │   └── PermissionViewModel.kt         # 权限视图模型
+│   ├── settings/
+│   │   ├── SettingsScreen.kt              # 设置页面（主题切换）
+│   │   └── ThemeViewModel.kt              # 主题视图模型
 │   └── theme/
-│       ├── Color.kt / Theme.kt / Type.kt  # Material 3 主题
-├── MainActivity.kt                      # 应用入口
-└── SignalInsightApplication.kt          # Application 类（单例仓库）
+│       ├── Color.kt / Theme.kt / Type.kt   # Material 3 主题
+│       └── ColorSchemePresets.kt           # 预定义配色方案
+├── MainActivity.kt                        # 应用入口
+└── SignalInsightApplication.kt            # Application 类（单例仓库）
 ```
+
+---
+
+## 导航架构
+
+基于 **Jetpack Navigation Compose**，统一管理所有页面路由：
+
+| 路由 | 页面 | 动画 |
+|------|------|------|
+| `cellular` | 信号监测页 | fadeIn(250) / fadeOut(150) |
+| `settings` | 设置页 | fadeIn(250) / fadeOut(150) |
+| `about` | 关于页 | fadeIn(250) / fadeOut(150) |
+| `explainer/{metricKey}` | 参数详解页 | 右滑入 + 淡入 / 左滑出 + 淡出（对称） |
+| 底部 SIM 切换栏 | 仅在 cellular 页显示 | 延迟 300ms 闪现（等页面动画播完） |
 
 ---
 
@@ -190,15 +226,19 @@ cd SingnalInsight
 
 ### 签名配置
 
-创建 `keystore.properties`：
-```properties
-storePassword=你的密码
-keyPassword=你的密码
-keyAlias=你的别名
-storeFile=你的密钥库文件路径
-```
+项目内置了**公开测试密钥** `app/signal_insight.jks`（密码 `Android123`），克隆后可直接构建 Debug/Release 版本。
 
-已内置开发测试密钥 `app/signal_insight.jks`（密码 `Android123`），发布前请替换。
+如需使用自己的密钥：
+
+1. 生成自己的密钥库文件（如 `private-release.jks`），**不要提交到仓库**
+2. 在项目根目录创建 `private-keystore.properties`（已加入 `.gitignore`）：
+   ```properties
+   storePassword=你的密码
+   keyPassword=你的密码
+   keyAlias=你的别名
+   storeFile=private-release.jks
+   ```
+3. 构建系统会优先读取 `private-keystore.properties`，不存在时回退到公开密钥
 
 ---
 
@@ -214,17 +254,22 @@ storeFile=你的密钥库文件路径
 
 ---
 
-## 国际化
+## 开源协议
 
-- **中文**：`res/values/strings.xml`
-- **英文**：`res/values-en/strings.xml`
-- 使用 `stringResource(R.string.xxx)` 标准 Compose API
-
----
-
-## 许可证
+本项目基于 **Apache License 2.0** 协议开源，详见 [LICENSE](LICENSE) 文件。
 
 ```
-版权所有 © 2026 debumao
-本软件仅供学习和研究使用。未经许可，不得用于商业目的。
+Copyright 2026 hpmdr / debumao
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 ```
