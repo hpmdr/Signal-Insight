@@ -37,7 +37,7 @@ jobs:
           echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" > keystore.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
-          echo "storeFile=app/release.jks" >> keystore.properties
+          echo "storeFile=release.jks" >> keystore.properties
 
       # 构建已签名的 Release APK（gradle 自动使用 keystore.properties 签名）
       - name: 构建并签名 Release APK
