@@ -15,7 +15,7 @@
 
     <!-- AboutScreen -->
     <string name="about_title">About</string>
-    <string name="about_content">Signal Insight v1.0.0\n\nAn app for monitoring cellular network signal strength.</string>
+    <string name="about_content">Signal Insight v1.0.1\n\nAn app for monitoring cellular network signal strength.</string>
 
     <!-- SettingsScreen -->
     <string name="settings_title">Settings</string>

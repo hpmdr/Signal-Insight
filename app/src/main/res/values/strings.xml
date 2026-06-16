@@ -15,7 +15,7 @@
 
     <!-- 关于页面 (AboutScreen) -->
     <string name="about_title">关于</string>
-    <string name="about_content">信号监测仪 v1.0.0\n\n这是一个用于监测蜂窝网络信号强度的应用。</string>
+    <string name="about_content">信号监测仪 v1.0.1\n\n这是一个用于监测蜂窝网络信号强度的应用。</string>
 
     <!-- 设置页面 (SettingsScreen) -->
     <string name="settings_title">设置</string>
