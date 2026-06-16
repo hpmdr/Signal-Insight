@@ -2,24 +2,18 @@ package cn.debubu.signalinsight.ui.main
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,26 +51,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -100,6 +88,7 @@ import cn.debubu.signalinsight.ui.cellular.RssiExplainer
 import cn.debubu.signalinsight.ui.cellular.SignalOverviewScreen
 import cn.debubu.signalinsight.ui.cellular.SinrExplainer
 import cn.debubu.signalinsight.ui.cellular.TacExplainer
+import cn.debubu.signalinsight.ui.components.ElasticSimSwitcher
 import cn.debubu.signalinsight.ui.permission.PermissionScreen
 import cn.debubu.signalinsight.ui.permission.PermissionViewModel
 import cn.debubu.signalinsight.ui.settings.SettingsScreen
@@ -200,7 +189,7 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     // 70% 透明度 = 30% 不透明度的 bar 背景，形成毛玻璃效果
-    val barScrim = Color.Black.copy(alpha = 0.30f)
+    val barScrim = Color.Black.copy(alpha = 0.45f)
 
     // 判断当前是否为详解页（用于控制抽屉手势 + TopAppBar 标题）
     val isShowingExplainer = currentRoute?.startsWith("explainer") == true
@@ -214,6 +203,18 @@ fun MainScreen(
     val allPermissionsGranted by permissionViewModel.allPermissionsGranted
     var isCheckingPermissions by remember { mutableStateOf(true) }
     var previousPermissionsGranted by remember { mutableStateOf(false) }
+
+    // SIM 切换栏延迟显示：等页面过渡动画播完后才闪现（避免与返回动画重叠）
+    val showBottomBar = currentRoute == NavRoutes.CELLULAR && allPermissionsGranted
+    var delayedShow by remember { mutableStateOf(false) }
+    LaunchedEffect(showBottomBar) {
+        if (showBottomBar) {
+            kotlinx.coroutines.delay(300)
+            delayedShow = true
+        } else {
+            delayedShow = false
+        }
+    }
 
     // 生命周期管理
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -356,7 +357,11 @@ fun MainScreen(
                 )
             },
             bottomBar = {
-                SimSwitchBar(cellularViewModel, barScrim)
+                // 仅在信号页且权限已授予时显示 SIM 切换栏
+                // 延迟 300ms 出现，确保页面返回动画播完后再闪现
+                if (delayedShow) {
+                    SimSwitchBar(cellularViewModel, barScrim)
+                }
             }
         ) { paddingValues ->
             NavHost(
@@ -458,92 +463,26 @@ fun MainScreen(
 }
 
 /**
- * 底部 SIM 卡切换栏 — 放在 Scaffold.bottomBar 中，符合 Material 3 规范。
- * 半透明背景 + 滑动指示条，通过 ViewModel 切换 SIM，与 CellularPage 的 Pager 自动同步。
+ * 底部 SIM 卡切换栏 — 使用弹性水滴动画的 ElasticSimSwitcher。
+ * 通过 ViewModel 切换 SIM，与 CellularPage 的 Pager 自动同步。
  */
 @Composable
 private fun SimSwitchBar(viewModel: CellularViewModel, barScrim: Color) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
     val activeSim by viewModel.activeSim.collectAsState()
     val sim1Data by viewModel.sim1SignalData.collectAsState()
     val sim2Data by viewModel.sim2SignalData.collectAsState()
-
     val noSimText = context.getString(R.string.operator_no_sim)
 
-    val simOptions = listOf(
-        SimBarItem(1, if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
-            sim1Data.operatorName != "Unknown"),
-        SimBarItem(2, if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
-            sim2Data.operatorName != "Unknown")
+    ElasticSimSwitcher(
+        selectedSim = activeSim,
+        sim1Name = if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
+        sim2Name = if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
+        onSimSelected = { viewModel.switchSim(it) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(WindowInsets.navigationBars.asPaddingValues()),
+        containerColor = barScrim
     )
-
-    var containerWidthPx by rememberSaveable { mutableFloatStateOf(0f) }
-    val density = LocalDensity.current
-
-    NavigationBar(
-        containerColor = barScrim,
-        tonalElevation = 0.dp
-    ) {
-        val tabCount = 2
-        val containerDp = with(density) { containerWidthPx.toDp() }
-        val tabWidth = if (containerWidthPx > 0f) containerDp / tabCount else 0.dp
-        val barWidth = if (containerWidthPx > 0f) containerDp / 4 else 0.dp
-        val activeIndex = if (activeSim == 1) 0 else 1
-        val targetOffset = tabWidth * activeIndex + (tabWidth - barWidth) / 2
-
-        val animatedOffset by animateDpAsState(
-            targetValue = targetOffset,
-            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
-            label = "SimBarSlide"
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .onGloballyPositioned { containerWidthPx = it.size.width.toFloat() }
-        ) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                simOptions.forEach { sim ->
-                    val isSelected = (sim.id == activeSim)
-                    val contentColor by animateColorAsState(
-                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        label = "SimBarColor"
-                    )
-                    val iconAlpha = if (sim.isReady) 1f else 0.5f
-                    val iconRes = if (sim.id == 1) R.drawable.ic_sim_1 else R.drawable.ic_sim_2
-
-                    Box(
-                        modifier = Modifier.weight(1f).fillMaxHeight()
-                            .clickable(MutableInteractionSource(), null) {
-                                scope.launch { viewModel.switchSim(sim.id) }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.alpha(iconAlpha)
-                        ) {
-                            Icon(painterResource(iconRes), "SIM ${sim.id}", Modifier.size(18.dp), tint = contentColor)
-                            Text(sim.name, fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = contentColor)
-                        }
-                    }
-                }
-            }
-
-            Box(
-                modifier = Modifier.offset(x = animatedOffset, y = (-8).dp)
-                    .width(barWidth).height(3.dp).align(Alignment.BottomStart)
-                    .background(MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
-            )
-        }
-    }
 }
-
-private data class SimBarItem(val id: Int, val name: String, val isReady: Boolean)

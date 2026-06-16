@@ -5,8 +5,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// 读取签名配置
-val keystorePropertiesFile = rootProject.file("keystore.properties")
+// 读取签名配置：私有密钥优先，回退到公开测试密钥
+val privatePropsFile = rootProject.file("private-keystore.properties")
+val publicPropsFile = rootProject.file("keystore.properties")
+val keystorePropertiesFile = if (privatePropsFile.exists()) privatePropsFile else publicPropsFile
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
