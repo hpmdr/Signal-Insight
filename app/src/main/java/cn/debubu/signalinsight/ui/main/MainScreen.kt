@@ -5,6 +5,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -400,24 +402,24 @@ fun MainScreen(
                     AboutScreen()
                 }
 
-                // ── 详解页 ──
+                // ── 详解页（缩放放大动画） ──
                 composable(
                     route = NavRoutes.EXPLAINER,
                     arguments = listOf(navArgument("metricKey") { type = NavType.StringType }),
                     enterTransition = {
-                        slideInHorizontally(animationSpec = tween(300)) { w -> w } +
+                        scaleIn(animationSpec = tween(300), initialScale = 0.85f) +
                                 fadeIn(animationSpec = tween(250))
                     },
                     exitTransition = {
-                        slideOutHorizontally(animationSpec = tween(250)) { w -> -w / 4 } +
+                        scaleOut(animationSpec = tween(250), targetScale = 0.85f) +
                                 fadeOut(animationSpec = tween(200))
                     },
                     popEnterTransition = {
-                        slideInHorizontally(animationSpec = tween(300)) { w -> -w / 4 } +
+                        scaleIn(animationSpec = tween(300), initialScale = 0.85f) +
                                 fadeIn(animationSpec = tween(250))
                     },
                     popExitTransition = {
-                        slideOutHorizontally(animationSpec = tween(250)) { w -> w } +
+                        scaleOut(animationSpec = tween(250), targetScale = 0.85f) +
                                 fadeOut(animationSpec = tween(200))
                     }
                 ) { backStackEntry ->
