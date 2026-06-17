@@ -14,10 +14,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -72,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.data.cellular.MetricKey
+import cn.debubu.signalinsight.ui.components.ElasticSimSwitcher
 import cn.debubu.signalinsight.data.cellular.NeighborCellTableModel
 import cn.debubu.signalinsight.data.cellular.SignalData
 import kotlinx.coroutines.launch
@@ -169,24 +173,40 @@ fun CellularPage(
         }
     }
 
-    // ---- 布局 —— 只渲染内容，NavigationBar 已移至 Scaffold.bottomBar ----
-    HorizontalPager(
-        state = pagerState,
-        modifier = modifier.fillMaxSize()
-    ) { page ->
-        val simId = page + 1
-        when (simId) {
-            1 -> SimContentPage(
-                signalData = sim1Data,
-                neighborCells = sim1Neighbors,
-                onMetricClick = { key -> onOpenExplainer(key) }
-            )
-            2 -> SimContentPage(
-                signalData = sim2Data,
-                neighborCells = sim2Neighbors,
-                onMetricClick = { key -> onOpenExplainer(key) }
-            )
+    // ---- 布局：HorizontalPager + 底部弹性水滴 SIM 切换栏 ----
+    val barColor = Color.Black.copy(alpha = 0.45f)
+
+    Column(modifier = modifier.fillMaxSize()) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
+            val simId = page + 1
+            when (simId) {
+                1 -> SimContentPage(
+                    signalData = sim1Data,
+                    neighborCells = sim1Neighbors,
+                    onMetricClick = { key -> onOpenExplainer(key) }
+                )
+                2 -> SimContentPage(
+                    signalData = sim2Data,
+                    neighborCells = sim2Neighbors,
+                    onMetricClick = { key -> onOpenExplainer(key) }
+                )
+            }
         }
+
+        ElasticSimSwitcher(
+            selectedSim = activeSim,
+            sim1Name = if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
+            sim2Name = if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
+            onSimSelected = { viewModel.switchSim(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(WindowInsets.navigationBars.asPaddingValues()),
+            containerColor = barColor
+        )
     }
 
 }

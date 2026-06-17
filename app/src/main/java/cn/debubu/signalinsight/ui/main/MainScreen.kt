@@ -88,7 +88,6 @@ import cn.debubu.signalinsight.ui.cellular.RssiExplainer
 import cn.debubu.signalinsight.ui.cellular.SignalOverviewScreen
 import cn.debubu.signalinsight.ui.cellular.SinrExplainer
 import cn.debubu.signalinsight.ui.cellular.TacExplainer
-import cn.debubu.signalinsight.ui.components.ElasticSimSwitcher
 import cn.debubu.signalinsight.ui.permission.PermissionScreen
 import cn.debubu.signalinsight.ui.permission.PermissionViewModel
 import cn.debubu.signalinsight.ui.settings.SettingsScreen
@@ -203,18 +202,6 @@ fun MainScreen(
     val allPermissionsGranted by permissionViewModel.allPermissionsGranted
     var isCheckingPermissions by remember { mutableStateOf(true) }
     var previousPermissionsGranted by remember { mutableStateOf(false) }
-
-    // SIM 切换栏延迟显示：等页面过渡动画播完后才闪现（避免与返回动画重叠）
-    val showBottomBar = currentRoute == NavRoutes.CELLULAR && allPermissionsGranted
-    var delayedShow by remember { mutableStateOf(false) }
-    LaunchedEffect(showBottomBar) {
-        if (showBottomBar) {
-            kotlinx.coroutines.delay(300)
-            delayedShow = true
-        } else {
-            delayedShow = false
-        }
-    }
 
     // 生命周期管理
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -355,13 +342,6 @@ fun MainScreen(
                         navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
-            },
-            bottomBar = {
-                // 仅在信号页且权限已授予时显示 SIM 切换栏
-                // 延迟 300ms 出现，确保页面返回动画播完后再闪现
-                if (delayedShow) {
-                    SimSwitchBar(cellularViewModel, barScrim)
-                }
             }
         ) { paddingValues ->
             NavHost(
@@ -460,29 +440,4 @@ fun MainScreen(
             }
         }
     }
-}
-
-/**
- * 底部 SIM 卡切换栏 — 使用弹性水滴动画的 ElasticSimSwitcher。
- * 通过 ViewModel 切换 SIM，与 CellularPage 的 Pager 自动同步。
- */
-@Composable
-private fun SimSwitchBar(viewModel: CellularViewModel, barScrim: Color) {
-    val context = LocalContext.current
-    val activeSim by viewModel.activeSim.collectAsState()
-    val sim1Data by viewModel.sim1SignalData.collectAsState()
-    val sim2Data by viewModel.sim2SignalData.collectAsState()
-    val noSimText = context.getString(R.string.operator_no_sim)
-
-    ElasticSimSwitcher(
-        selectedSim = activeSim,
-        sim1Name = if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
-        sim2Name = if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
-        onSimSelected = { viewModel.switchSim(it) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .padding(WindowInsets.navigationBars.asPaddingValues()),
-        containerColor = barScrim
-    )
 }
