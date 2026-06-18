@@ -4,9 +4,9 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -118,7 +118,10 @@ fun SimContentPage(
             signalData = signalData,
             statusColor = statusColor,
             statusLabel = statusLabel,
-            onClick = { onMetricClick(MetricKey.OVERVIEW) }
+            onClick = { onMetricClick(MetricKey.OVERVIEW) },
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            sharedContentStates = sharedContentStates,
         )
 
         // ===== 指标网格 =====
@@ -147,13 +150,33 @@ private fun SignalRingCard(
     signalData: SignalData,
     statusColor: Color,
     statusLabel: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    sharedContentStates: Map<MetricKey, SharedTransitionScope.SharedContentState>? = null,
 ) {
+    val overviewSharedState = sharedContentStates?.get(MetricKey.OVERVIEW)
+    val modifier = if (sharedTransitionScope != null && overviewSharedState != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = overviewSharedState,
+                animatedVisibilityScope = animatedVisibilityScope,
+                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(),
+                boundsTransform = { _, _ ->
+                    tween(420, easing = CubicBezierEasing(0.1f, 0.8f, 0.1f, 1.0f))
+                }
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Surface(
         onClick = onClick,
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(28.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier
     ) {
         Box(
             modifier = Modifier
@@ -295,13 +318,14 @@ private fun MetricGridCard(
                 Row(modifier = Modifier.height(IntrinsicSize.Min)) {
                     rowItems.forEachIndexed { colIndex, item ->
                         val sharedState = sharedContentStates[item.key]!!
-                        Column(
+                        Box(
                             modifier = with(sharedTransitionScope) {
                                 Modifier
                                     .weight(1f)
                                     .sharedBounds(
                                         sharedContentState = sharedState,
                                         animatedVisibilityScope = animatedVisibilityScope,
+                                        resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(),
                                         boundsTransform = { _, _ ->
                                             tween(420, easing = CubicBezierEasing(0.1f, 0.8f, 0.1f, 1.0f))
                                         }
@@ -309,10 +333,8 @@ private fun MetricGridCard(
                                     .clickable { onMetricClick(item.key) }
                                     .padding(vertical = 10.dp)
                             },
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            contentAlignment = Alignment.Center
                         ) {
-                            // 内部列：文本容器防止拉伸缩放抖动
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center

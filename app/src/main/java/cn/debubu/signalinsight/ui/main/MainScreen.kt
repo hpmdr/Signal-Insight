@@ -48,6 +48,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -145,7 +146,15 @@ fun AboutScreen(modifier: Modifier = Modifier) {
 }
 
 /**
- * 根据 MetricKey 渲染对应的详解页内容（不包含导航外壳）
+ * 根据 MetricKey 渲染对应的详解页内容。
+ *
+ * 动画原理（模拟手机桌面启动/退出 App）：
+ *   - 栅格单元格上的 sharedBounds 和此处外层 Box 上的 sharedBounds
+ *     共享同一个 SharedContentState，Compose 自动插值两个 bounds
+ *   - 进入：Box 从栅格位置/尺寸 GPU 缩放到 fillMaxSize（420ms，CubicBezierEasing）
+ *   - 退出：Box 从 fillMaxSize 缩回栅格位置/尺寸
+ *   - 内容始终完整渲染（无延迟），靠 scaleToBounds 避免文字形变
+ *   - AppBar 由全局 Scaffold 提供；详情页本身布局与原始完全一致
  */
 @Composable
 fun SharedTransitionScope.ExplainerContent(
@@ -156,68 +165,34 @@ fun SharedTransitionScope.ExplainerContent(
     onClose: () -> Unit
 ) {
     val sharedContentState = sharedContentStates[metricKey]!!
-    val transition = animatedVisibilityScope.transition
-    val isTransitionFinished = transition.currentState == transition.targetState
 
-    Column(
+    Box(
         modifier = Modifier
+            .fillMaxSize()
             .sharedBounds(
                 sharedContentState = sharedContentState,
                 animatedVisibilityScope = animatedVisibilityScope,
+                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(),
                 boundsTransform = { _, _ ->
                     tween(420, easing = CubicBezierEasing(0.1f, 0.8f, 0.1f, 1.0f))
                 }
             )
-            .fillMaxSize()
-            .background(Color(0xFF0D0E12))
-            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha }
-            .verticalScroll(rememberScrollState())
+            .graphicsLayer {
+                // GPU 合成层 — 避免动画期间因重组导致掉帧
+                compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+            }
     ) {
-        // 顶部返回栏 — 过渡半程后淡入
-        AnimatedVisibility(
-            visible = isTransitionFinished,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(150))
-        ) {
-            Row(
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .fillMaxWidth()
-                    .background(Color(0xFF16171C))
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
-                }
-                Text(
-                    stringResource(titleResIdForMetricKey(metricKey)),
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // 核心内容 — 延迟滑入
-        AnimatedVisibility(
-            visible = isTransitionFinished,
-            enter = fadeIn(tween(300, delayMillis = 80)),
-            exit = fadeOut(tween(100))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                when (metricKey) {
-                    MetricKey.OVERVIEW -> SignalOverviewScreen(signalData = signalData, onClose = onClose)
-                    MetricKey.Band -> BandExplainer(currentBand = signalData.band, onClose = onClose)
-                    MetricKey.RSRP -> RsrpExplainer(currentRsrp = signalData.dbm, onClose = onClose)
-                    MetricKey.RSRQ -> RsrqExplainer(currentRsrq = signalData.rsrq, onClose = onClose)
-                    MetricKey.SINR -> SinrExplainer(currentSinr = signalData.sinr, onClose = onClose)
-                    MetricKey.RSSI -> RssiExplainer(currentRssi = signalData.rssi, onClose = onClose)
-                    MetricKey.PCI -> PciExplainer(currentPci = signalData.pci, onClose = onClose)
-                    MetricKey.EARFCN -> EarfcnExplainer(currentEarfcn = signalData.earfcn, onClose = onClose)
-                    MetricKey.TAC -> TacExplainer(currentTac = signalData.tac, onClose = onClose)
-                }
-            }
+        // ▼ 原始详情页内容，无注入的结构，布局与未加动画时完全一致
+        when (metricKey) {
+            MetricKey.OVERVIEW -> SignalOverviewScreen(signalData = signalData, onClose = onClose)
+            MetricKey.Band -> BandExplainer(currentBand = signalData.band, onClose = onClose)
+            MetricKey.RSRP -> RsrpExplainer(currentRsrp = signalData.dbm, onClose = onClose)
+            MetricKey.RSRQ -> RsrqExplainer(currentRsrq = signalData.rsrq, onClose = onClose)
+            MetricKey.SINR -> SinrExplainer(currentSinr = signalData.sinr, onClose = onClose)
+            MetricKey.RSSI -> RssiExplainer(currentRssi = signalData.rssi, onClose = onClose)
+            MetricKey.PCI -> PciExplainer(currentPci = signalData.pci, onClose = onClose)
+            MetricKey.EARFCN -> EarfcnExplainer(currentEarfcn = signalData.earfcn, onClose = onClose)
+            MetricKey.TAC -> TacExplainer(currentTac = signalData.tac, onClose = onClose)
         }
     }
 }
@@ -412,7 +387,7 @@ fun MainScreen(
                     .fillMaxSize()
                     .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha }
             ) {
-            //  为每个 MetricKey 创建共享内容状态
+            // ★ 在 SharedTransitionScope 内为每个 MetricKey 创建共享内容状态
             val sharedContentStates = MetricKey.entries.associate { key ->
                 key to this@SharedTransitionLayout.rememberSharedContentState(key = "param_card_${key.name}")
             }

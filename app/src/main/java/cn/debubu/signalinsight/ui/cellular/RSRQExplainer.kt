@@ -30,12 +30,13 @@ import cn.debubu.signalinsight.R
  * RSRQ（参考信号接收质量）详细科普
  */
 @Composable
-fun RsrqExplainer(currentRsrq: Int, onClose: () -> Unit) {
+fun RsrqExplainer(currentRsrq: Int, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     MetricExplainerShell(
         icon = Icons.Default.CellTower,
         labelResId = R.string.metric_rsrq_label,
         fullResId = R.string.metric_rsrq_full,
         tipResId = R.string.metric_rsrq_tip,
+        skipOuterPadding = skipOuterPadding,
         onClose = onClose
     ) {
         SectionCard(R.string.rsrq_explain_title, Icons.Default.Search) {

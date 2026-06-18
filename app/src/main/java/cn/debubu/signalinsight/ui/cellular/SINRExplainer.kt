@@ -30,12 +30,13 @@ import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
 
 @Composable
-fun SinrExplainer(currentSinr: Int, onClose: () -> Unit) {
+fun SinrExplainer(currentSinr: Int, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     MetricExplainerShell(
         icon = Icons.Default.CellTower,
         labelResId = R.string.metric_sinr_label,
         fullResId = R.string.metric_sinr_full,
         tipResId = R.string.metric_sinr_tip,
+        skipOuterPadding = skipOuterPadding,
         onClose = onClose
     ) {
         SectionCard(R.string.sinr_explain_title, Icons.Default.Search) {

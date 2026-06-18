@@ -1,9 +1,14 @@
 package cn.debubu.signalinsight.ui.cellular
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +36,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -39,6 +50,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,15 +69,19 @@ import cn.debubu.signalinsight.data.cellular.SignalQualityEvaluator
  * 综合页回答"信号怎么样"，单点页回答"这个参数是什么"。
  */
 @Composable
-fun SignalOverviewScreen(signalData: SignalData, onClose: () -> Unit) {
+fun SignalOverviewScreen(signalData: SignalData, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     val evaluation = SignalQualityEvaluator.evaluate(signalData)
 
-    Column(
-        modifier = Modifier
+    val modifier = if (skipOuterPadding) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 20.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp + 20.dp, start = 24.dp, end = 24.dp)
-    ) {
+    }
+
+    Column(modifier = modifier) {
         // ── 综合评分环 ──
         ScoreRing(evaluation = evaluation)
 
@@ -153,11 +170,63 @@ fun SignalOverviewScreen(signalData: SignalData, onClose: () -> Unit) {
 
 @Composable
 private fun ScoreRing(evaluation: SignalQualityEvaluator.Evaluation) {
-    val animatedProgress by animateFloatAsState(
-        targetValue = evaluation.totalScore / 100f,
-        animationSpec = tween(1500)
+    // ── ARC 动画：从 0 增长到实际分数（1500ms） ──
+    val arcProgress = remember { Animatable(0f) }
+    LaunchedEffect(evaluation.totalScore) {
+        arcProgress.animateTo(
+            targetValue = evaluation.totalScore / 100f,
+            animationSpec = tween(1500)
+        )
+    }
+
+    // ── 数字跳动：0 → 实际分数（500ms 计数 + 弹性弹跳） ──
+    val displayScore by animateIntAsState(
+        targetValue = evaluation.totalScore,
+        animationSpec = tween(500)
+    )
+    var bounceTrigger by remember { mutableIntStateOf(0) }
+    LaunchedEffect(evaluation.totalScore) {
+        kotlinx.coroutines.delay(500)
+        bounceTrigger++
+    }
+    val textScale by animateFloatAsState(
+        targetValue = if (bounceTrigger > 0) 1f else 0.9f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scoreBounce"
     )
 
+    // ── 能量脉冲波纹：3 圈依次扩散 ──
+    var ripple1 by remember { mutableIntStateOf(0) }
+    var ripple2 by remember { mutableIntStateOf(0) }
+    var ripple3 by remember { mutableIntStateOf(0) }
+    LaunchedEffect(evaluation.totalScore) {
+        kotlinx.coroutines.delay(500)
+        ripple1++
+        kotlinx.coroutines.delay(150)
+        ripple2++
+        kotlinx.coroutines.delay(150)
+        ripple3++
+    }
+    val ripple1P by animateFloatAsState(if (ripple1 > 0) 1f else 0f, tween(600), label = "r1")
+    val ripple2P by animateFloatAsState(if (ripple2 > 0) 1f else 0f, tween(600), label = "r2")
+    val ripple3P by animateFloatAsState(if (ripple3 > 0) 1f else 0f, tween(600), label = "r3")
+
+    // ── 状态标签延迟入场 ──
+    var showLabel by remember { mutableStateOf(false) }
+    LaunchedEffect(evaluation.totalScore) {
+        kotlinx.coroutines.delay(950)
+        showLabel = true
+    }
+    val labelAlpha by animateFloatAsState(
+        targetValue = if (showLabel) 1f else 0f,
+        animationSpec = tween(300),
+        label = "labelAlpha"
+    )
+
+    // ── 配色 ──
     val ringColor = when (evaluation.rating) {
         SignalQualityEvaluator.Rating.EXCELLENT -> Color(0xFF2E7D32)
         SignalQualityEvaluator.Rating.GOOD -> Color(0xFFF9A825)
@@ -166,76 +235,91 @@ private fun ScoreRing(evaluation: SignalQualityEvaluator.Evaluation) {
         SignalQualityEvaluator.Rating.WEAK -> Color(0xFF616161)
     }
 
+    // 与主页信号环完全一致的像素值（Canvas 内直接使用 px，不用 dp）
+    val strokePx = 45f    // 主页圆环宽度
+    val rippleMaxPx = 80f // 波纹最大扩散距离
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        androidx.compose.runtime.key(evaluation.totalScore) {
-            BoxWithAverage(
-                modifier = Modifier.size(180.dp),
+        key(evaluation.totalScore) {
+            Box(
+                modifier = Modifier.size(220.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Canvas(modifier = Modifier.size(180.dp)) {
-                    val strokeWidth = 16f
-                    val radius = (size.minDimension - strokeWidth) / 2
-                    val topLeft = Offset(
-                        (size.width - radius * 2) / 2,
-                        (size.height - radius * 2) / 2
-                    )
-                    val arcSize = Size(radius * 2, radius * 2)
+                Canvas(modifier = Modifier.size(220.dp)) {
+                    val radius = (size.minDimension - strokePx) / 2f
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
 
-                    // 背景弧
+                    // 背景弧（细灰线，半透明）
                     drawArc(
-                        color = Color(0xFFE0E0E0),
+                        color = ringColor.copy(alpha = 0.15f),
                         startAngle = 135f,
                         sweepAngle = 270f,
                         useCenter = false,
-                        topLeft = topLeft,
-                        size = arcSize,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        topLeft = Offset(cx - radius, cy - radius),
+                        size = Size(radius * 2, radius * 2),
+                        style = Stroke(width = strokePx, cap = StrokeCap.Round)
                     )
-                    // 前景弧
+
+                    // 前景弧（能量环）
                     drawArc(
                         color = ringColor,
                         startAngle = 135f,
-                        sweepAngle = 270f * animatedProgress,
+                        sweepAngle = 270f * arcProgress.value,
                         useCenter = false,
-                        topLeft = topLeft,
-                        size = arcSize,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        topLeft = Offset(cx - radius, cy - radius),
+                        size = Size(radius * 2, radius * 2),
+                        style = Stroke(width = strokePx, cap = StrokeCap.Round)
                     )
+
+                    // ── 脉冲波纹 ──
+                    fun drawRipple(progress: Float, delayFraction: Float) {
+                        if (progress <= 0f) return
+                        val p = (progress * (1f + delayFraction) - delayFraction).coerceIn(0f, 1f)
+                        val rippleR = radius + strokePx * 0.6f + rippleMaxPx * p
+                        val alpha = (1f - p).coerceAtLeast(0f) * 0.45f
+                        drawCircle(
+                            color = ringColor.copy(alpha = alpha),
+                            radius = rippleR,
+                            center = Offset(cx, cy),
+                            style = Stroke(width = strokePx * 0.6f)
+                        )
+                    }
+                    drawRipple(ripple1P, 0f)
+                    drawRipple(ripple2P, 0.25f)
+                    drawRipple(ripple3P, 0.4f)
                 }
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // 中心数字 + 弹跳
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.graphicsLayer {
+                        scaleX = textScale
+                        scaleY = textScale
+                    }
+                ) {
                     Text(
-                        "${evaluation.totalScore}",
-                        style = MaterialTheme.typography.displaySmall,
+                        text = "$displayScore",
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.Black,
                         color = ringColor
                     )
+                    Spacer(Modifier.height(2.dp))
                     Text(
-                        "${evaluation.rating.emoji} ${evaluation.rating.label}",
-                        style = MaterialTheme.typography.labelLarge,
+                        text = evaluation.rating.label,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ringColor
+                        color = ringColor,
+                        modifier = Modifier.graphicsLayer {
+                            alpha = labelAlpha
+                        }
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BoxWithAverage(
-    modifier: Modifier = Modifier,
-    contentAlignment: Alignment = Alignment.Center,
-    content: @Composable () -> Unit
-) {
-    androidx.compose.foundation.layout.Box(
-        modifier = modifier,
-        contentAlignment = contentAlignment
-    ) {
-        content()
     }
 }
 

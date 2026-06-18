@@ -33,12 +33,13 @@ import cn.debubu.signalinsight.R
  * RSRP（参考信号接收功率）详细科普 — 使用 MetricExplainerShell 统一外壳
  */
 @Composable
-fun RsrpExplainer(currentRsrp: Int, onClose: () -> Unit) {
+fun RsrpExplainer(currentRsrp: Int, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     MetricExplainerShell(
         icon = Icons.Default.CellTower,
         labelResId = R.string.metric_rsrp_label,
         fullResId = R.string.metric_rsrp_full,
         tipResId = R.string.metric_rsrp_tip,
+        skipOuterPadding = skipOuterPadding,
         onClose = onClose
     ) {
         SectionCard(R.string.rsrp_explain_title, Icons.Default.Search) {

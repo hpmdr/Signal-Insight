@@ -31,12 +31,13 @@ import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
 
 @Composable
-fun TacExplainer(currentTac: Int, onClose: () -> Unit) {
+fun TacExplainer(currentTac: Int, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     MetricExplainerShell(
         icon = Icons.Default.CellTower,
         labelResId = R.string.metric_tac_label,
         fullResId = R.string.metric_tac_full,
         tipResId = R.string.metric_tac_tip,
+        skipOuterPadding = skipOuterPadding,
         onClose = onClose
     ) {
         SectionCard(R.string.tac_explain_title, Icons.Default.Search) {

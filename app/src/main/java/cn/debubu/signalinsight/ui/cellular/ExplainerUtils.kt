@@ -77,15 +77,20 @@ fun MetricExplainerShell(
     fullResId: Int,
     tipResId: Int,
     tipText: String? = null,
+    skipOuterPadding: Boolean = false,
     onClose: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    Column(
-        modifier = Modifier
+    // 在共享转场容器内使用时，外层滚动 + 系统栏边距由 ExplainerContent 统一处理
+    val modifier = if (skipOuterPadding) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 20.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp + 20.dp, start = 24.dp, end = 24.dp)
-    ) {
+    }
+    Column(modifier = modifier) {
         // ── 标题头 ──
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(

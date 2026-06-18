@@ -27,12 +27,13 @@ import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
 
 @Composable
-fun PciExplainer(currentPci: Int, onClose: () -> Unit) {
+fun PciExplainer(currentPci: Int, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     MetricExplainerShell(
         icon = Icons.Default.CellTower,
         labelResId = R.string.metric_pci_label,
         fullResId = R.string.metric_pci_full,
         tipResId = R.string.metric_pci_tip,
+        skipOuterPadding = skipOuterPadding,
         onClose = onClose
     ) {
         SectionCard(R.string.pci_explain_title, Icons.Default.Search) {

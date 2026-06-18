@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
 
 @Composable
-fun BandExplainer(currentBand: String, onClose: () -> Unit) {
+fun BandExplainer(currentBand: String, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     // 根据当前频段计算动态提示文本
     val bandTipText = when {
         currentBand.startsWith("n78") || currentBand.startsWith("n79") ->
@@ -54,6 +54,7 @@ fun BandExplainer(currentBand: String, onClose: () -> Unit) {
         fullResId = R.string.metric_band_full,
         tipResId = R.string.metric_band_tip_5g_high,
         tipText = bandTipText,
+        skipOuterPadding = skipOuterPadding,
         onClose = onClose
     ) {
         SectionCard(R.string.band_explain_title, Icons.Default.Search) {

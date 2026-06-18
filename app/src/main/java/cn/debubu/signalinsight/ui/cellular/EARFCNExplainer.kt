@@ -27,12 +27,13 @@ import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
 
 @Composable
-fun EarfcnExplainer(currentEarfcn: Int, onClose: () -> Unit) {
+fun EarfcnExplainer(currentEarfcn: Int, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     MetricExplainerShell(
         icon = Icons.Default.CellTower,
         labelResId = R.string.metric_earfcn_label,
         fullResId = R.string.metric_earfcn_full,
         tipResId = R.string.metric_earfcn_tip,
+        skipOuterPadding = skipOuterPadding,
         onClose = onClose
     ) {
         SectionCard(R.string.earfcn_explain_title, Icons.Default.Search) {

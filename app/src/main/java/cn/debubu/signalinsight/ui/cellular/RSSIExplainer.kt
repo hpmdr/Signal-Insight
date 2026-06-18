@@ -31,12 +31,13 @@ import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
 
 @Composable
-fun RssiExplainer(currentRssi: Int, onClose: () -> Unit) {
+fun RssiExplainer(currentRssi: Int, onClose: () -> Unit, skipOuterPadding: Boolean = false) {
     MetricExplainerShell(
         icon = Icons.Default.CellTower,
         labelResId = R.string.metric_rssi_label,
         fullResId = R.string.metric_rssi_full,
         tipResId = R.string.metric_rssi_tip,
+        skipOuterPadding = skipOuterPadding,
         onClose = onClose
     ) {
         SectionCard(R.string.rssi_explain_title, Icons.Default.Search) {
