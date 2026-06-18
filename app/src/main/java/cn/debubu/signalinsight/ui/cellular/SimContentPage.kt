@@ -1,8 +1,12 @@
 package cn.debubu.signalinsight.ui.cellular
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -69,10 +73,14 @@ import cn.debubu.signalinsight.data.cellular.SignalData
  * @param neighborCells  当前 SIM 的邻小区列表
  * @param onMetricClick  用户点击某个指标方格时的回调
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SimContentPage(
     signalData: SignalData,
     neighborCells: List<NeighborCellTableModel>,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedContentStates: Map<MetricKey, SharedTransitionScope.SharedContentState>,
     onMetricClick: (MetricKey) -> Unit,
 ) {
     val context = LocalContext.current
@@ -116,6 +124,9 @@ fun SimContentPage(
         // ===== 指标网格 =====
         MetricGridCard(
             signalData = signalData,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            sharedContentStates = sharedContentStates,
             onMetricClick = onMetricClick
         )
 
@@ -224,9 +235,13 @@ private fun SignalRingCard(
 /**
  * 指标网格卡片 — 8 个信号参数（RSRP/RSRQ/SINR/RSSI/Band/PCI/EARFCN/TAC），点击弹出科普
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun MetricGridCard(
     signalData: SignalData,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedContentStates: Map<MetricKey, SharedTransitionScope.SharedContentState>,
     onMetricClick: (MetricKey) -> Unit
 ) {
     Surface(
@@ -279,46 +294,62 @@ private fun MetricGridCard(
             rows.forEachIndexed { rowIndex, rowItems ->
                 Row(modifier = Modifier.height(IntrinsicSize.Min)) {
                     rowItems.forEachIndexed { colIndex, item ->
+                        val sharedState = sharedContentStates[item.key]!!
                         Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onMetricClick(item.key) }
-                                .padding(vertical = 10.dp),
+                            modifier = with(sharedTransitionScope) {
+                                Modifier
+                                    .weight(1f)
+                                    .sharedBounds(
+                                        sharedContentState = sharedState,
+                                        animatedVisibilityScope = animatedVisibilityScope,
+                                        boundsTransform = { _, _ ->
+                                            tween(420, easing = CubicBezierEasing(0.1f, 0.8f, 0.1f, 1.0f))
+                                        }
+                                    )
+                                    .clickable { onMetricClick(item.key) }
+                                    .padding(vertical = 10.dp)
+                            },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Text(
-                                text = item.label,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    platformStyle = PlatformTextStyle(includeFontPadding = false)
-                                ),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f)
-                            )
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                text = item.value,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    platformStyle = PlatformTextStyle(includeFontPadding = false)
-                                ),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            if (item.unit.isNotEmpty()) {
+                            // 内部列：文本容器防止拉伸缩放抖动
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
                                 Text(
-                                    text = item.unit,
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                    letterSpacing = 0.5.sp,
-                                    style = TextStyle(
+                                    text = item.label,
+                                    style = MaterialTheme.typography.labelSmall.copy(
                                         platformStyle = PlatformTextStyle(includeFontPadding = false)
-                                    )
+                                    ),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f)
                                 )
-                            } else {
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = item.value,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                                    ),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (item.unit.isNotEmpty()) {
+                                    Text(
+                                        text = item.unit,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        letterSpacing = 0.5.sp,
+                                        style = TextStyle(
+                                            platformStyle = PlatformTextStyle(includeFontPadding = false)
+                                        )
+                                    )
+                                } else {
+                                    Spacer(Modifier.height(8.dp))
+                                }
                             }
                         }
                         // 列分隔线

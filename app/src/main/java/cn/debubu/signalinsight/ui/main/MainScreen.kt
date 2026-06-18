@@ -1,14 +1,16 @@
 package cn.debubu.signalinsight.ui.main
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +26,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -63,10 +66,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -143,20 +148,76 @@ fun AboutScreen(modifier: Modifier = Modifier) {
  * 根据 MetricKey 渲染对应的详解页内容（不包含导航外壳）
  */
 @Composable
-fun ExplainerContent(metricKey: MetricKey, signalData: SignalData, onClose: () -> Unit) {
+fun SharedTransitionScope.ExplainerContent(
+    metricKey: MetricKey,
+    signalData: SignalData,
+    sharedContentStates: Map<MetricKey, SharedTransitionScope.SharedContentState>,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    onClose: () -> Unit
+) {
+    val sharedContentState = sharedContentStates[metricKey]!!
+    val transition = animatedVisibilityScope.transition
+    val isTransitionFinished = transition.currentState == transition.targetState
+
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .sharedBounds(
+                sharedContentState = sharedContentState,
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ ->
+                    tween(420, easing = CubicBezierEasing(0.1f, 0.8f, 0.1f, 1.0f))
+                }
+            )
+            .fillMaxSize()
+            .background(Color(0xFF0D0E12))
+            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha }
+            .verticalScroll(rememberScrollState())
     ) {
-        when (metricKey) {
-            MetricKey.OVERVIEW -> SignalOverviewScreen(signalData = signalData, onClose = onClose)
-            MetricKey.Band -> BandExplainer(currentBand = signalData.band, onClose = onClose)
-            MetricKey.RSRP -> RsrpExplainer(currentRsrp = signalData.dbm, onClose = onClose)
-            MetricKey.RSRQ -> RsrqExplainer(currentRsrq = signalData.rsrq, onClose = onClose)
-            MetricKey.SINR -> SinrExplainer(currentSinr = signalData.sinr, onClose = onClose)
-            MetricKey.RSSI -> RssiExplainer(currentRssi = signalData.rssi, onClose = onClose)
-            MetricKey.PCI -> PciExplainer(currentPci = signalData.pci, onClose = onClose)
-            MetricKey.EARFCN -> EarfcnExplainer(currentEarfcn = signalData.earfcn, onClose = onClose)
-            MetricKey.TAC -> TacExplainer(currentTac = signalData.tac, onClose = onClose)
+        // 顶部返回栏 — 过渡半程后淡入
+        AnimatedVisibility(
+            visible = isTransitionFinished,
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(150))
+        ) {
+            Row(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .background(Color(0xFF16171C))
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
+                }
+                Text(
+                    stringResource(titleResIdForMetricKey(metricKey)),
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // 核心内容 — 延迟滑入
+        AnimatedVisibility(
+            visible = isTransitionFinished,
+            enter = fadeIn(tween(300, delayMillis = 80)),
+            exit = fadeOut(tween(100))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                when (metricKey) {
+                    MetricKey.OVERVIEW -> SignalOverviewScreen(signalData = signalData, onClose = onClose)
+                    MetricKey.Band -> BandExplainer(currentBand = signalData.band, onClose = onClose)
+                    MetricKey.RSRP -> RsrpExplainer(currentRsrp = signalData.dbm, onClose = onClose)
+                    MetricKey.RSRQ -> RsrqExplainer(currentRsrq = signalData.rsrq, onClose = onClose)
+                    MetricKey.SINR -> SinrExplainer(currentSinr = signalData.sinr, onClose = onClose)
+                    MetricKey.RSSI -> RssiExplainer(currentRssi = signalData.rssi, onClose = onClose)
+                    MetricKey.PCI -> PciExplainer(currentPci = signalData.pci, onClose = onClose)
+                    MetricKey.EARFCN -> EarfcnExplainer(currentEarfcn = signalData.earfcn, onClose = onClose)
+                    MetricKey.TAC -> TacExplainer(currentTac = signalData.tac, onClose = onClose)
+                }
+            }
         }
     }
 }
@@ -346,6 +407,16 @@ fun MainScreen(
                 )
             }
         ) { paddingValues ->
+            SharedTransitionLayout(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha }
+            ) {
+            //  为每个 MetricKey 创建共享内容状态
+            val sharedContentStates = MetricKey.entries.associate { key ->
+                key to this@SharedTransitionLayout.rememberSharedContentState(key = "param_card_${key.name}")
+            }
+
             NavHost(
                 navController = navController,
                 startDestination = NavRoutes.CELLULAR,
@@ -366,6 +437,9 @@ fun MainScreen(
                         CellularPage(
                             modifier = Modifier.fillMaxSize(),
                             viewModel = cellularViewModel,
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedVisibilityScope = this@composable,
+                            sharedContentStates = sharedContentStates,
                             onOpenExplainer = { key ->
                                 navController.navigate(NavRoutes.explainer(key))
                             }
@@ -402,26 +476,10 @@ fun MainScreen(
                     AboutScreen()
                 }
 
-                // ── 详解页（缩放放大动画） ──
+                // ── 详解页（SharedTransitionLayout 容器转换） ──
                 composable(
                     route = NavRoutes.EXPLAINER,
-                    arguments = listOf(navArgument("metricKey") { type = NavType.StringType }),
-                    enterTransition = {
-                        scaleIn(animationSpec = tween(300), initialScale = 0.85f) +
-                                fadeIn(animationSpec = tween(250))
-                    },
-                    exitTransition = {
-                        scaleOut(animationSpec = tween(250), targetScale = 0.85f) +
-                                fadeOut(animationSpec = tween(200))
-                    },
-                    popEnterTransition = {
-                        scaleIn(animationSpec = tween(300), initialScale = 0.85f) +
-                                fadeIn(animationSpec = tween(250))
-                    },
-                    popExitTransition = {
-                        scaleOut(animationSpec = tween(250), targetScale = 0.85f) +
-                                fadeOut(animationSpec = tween(200))
-                    }
+                    arguments = listOf(navArgument("metricKey") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val metricKeyStr = backStackEntry.arguments?.getString("metricKey") ?: "RSRP"
                     val metricKey = try {
@@ -436,8 +494,11 @@ fun MainScreen(
                     ExplainerContent(
                         metricKey = metricKey,
                         signalData = signalData,
+                        sharedContentStates = sharedContentStates,
+                        animatedVisibilityScope = this@composable,
                         onClose = { navController.popBackStack() }
                     )
+                }
                 }
             }
         }

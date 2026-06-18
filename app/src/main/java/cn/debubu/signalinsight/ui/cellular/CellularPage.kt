@@ -1,5 +1,8 @@
 package cn.debubu.signalinsight.ui.cellular
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.Spring
@@ -116,10 +119,14 @@ data class SimStatus(
 // 主页面：HorizontalPager + NavigationBar 双卡切换
 // =====================================================================
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CellularPage(
     modifier: Modifier = Modifier,
     viewModel: CellularViewModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedContentStates: Map<MetricKey, SharedTransitionScope.SharedContentState>,
     onOpenExplainer: (key: MetricKey) -> Unit = { }
 ) {
     val context = LocalContext.current
@@ -186,11 +193,17 @@ fun CellularPage(
                 1 -> SimContentPage(
                     signalData = sim1Data,
                     neighborCells = sim1Neighbors,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    sharedContentStates = sharedContentStates,
                     onMetricClick = { key -> onOpenExplainer(key) }
                 )
                 2 -> SimContentPage(
                     signalData = sim2Data,
                     neighborCells = sim2Neighbors,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    sharedContentStates = sharedContentStates,
                     onMetricClick = { key -> onOpenExplainer(key) }
                 )
             }
