@@ -82,13 +82,13 @@ flowchart TB
 
 | 参数 | 5G NR | 4G LTE | 3G WCDMA | 2G GSM |
 |------|-------|--------|---------|--------|
-| **RSRP** | **SS-RSRP** (ssRsrp→csiRsrp) | RSRP (rsrp) | N/A | N/A |
-| **RSRQ** | **SS-RSRQ** (ssRsrq→csiRsrq) | RSRQ (rsrq) | N/A | N/A |
-| **SINR** | **SS-SINR** (ssSinr→csiSinr) | rssnr 作为 SINR 等效值 | N/A | N/A |
-| **RSSI** | N/A（NR 无此概念） | rssi | N/A | rssi |
+| **RSRP** | **SS-RSRP** (ssRsrp→csiRsrp) | RSRP (rsrp) | 无数据 | 无数据 |
+| **RSRQ** | **SS-RSRQ** (ssRsrq→csiRsrq) | RSRQ (rsrq) | 无数据 | 无数据 |
+| **SINR** | **SS-SINR** (ssSinr→csiSinr) | rssnr 作为 SINR 等效值 | 无数据 | 无数据 |
+| **RSSI** | 无数据（NR 无此概念） | rssi | 无数据 | rssi |
 | **PCI** | pci | pci | psc（主扰码） | cid（小区ID） |
-| **频率** | nrarfcn | earfcn | uarfcn | N/A |
-| **频段** | bands API | bands API | N/A | N/A |
+| **频率** | nrarfcn | earfcn | uarfcn | 无数据 |
+| **频段** | bands API | bands API | 无数据 | 无数据 |
 | **TAC** | tac | tac | lac | lac |
 
 ---
@@ -100,8 +100,9 @@ flowchart TB
 - **弹性水滴切换器**：底部 SIM 切换采用独立双边界弹簧动画，模拟液滴拉伸吸附效果
 - **信号环形进度条**：绿/黄/红三色直观指示信号强度
 - **8 大核心指标网格**：按网络类型自适应标签（5G 显示 SS-RSRP，4G 显示 RSRP）
-- **不可用指标自动隐藏**：3G/2G 不支持的参数显示 N/A
-- **信号综合分析**：点击信号环进入综合评分页面，含评分环+诊断说明+短板建议
+- **不可用指标显示「无数据」**：3G/2G 不支持的参数显示「无数据」
+- **共享元素容器转场动画**：点击指标格或信号环，详情页从原位置无缝缩放展开（420ms CubicBezier，类似手机桌面启动 App）
+- **信号综合分析**：Energy Pulse 动画评分环（数字跳跃+弹性弹跳+脉冲波纹），含诊断说明+短板建议
 
 ### 📖 参数科普解读
 点击每个指标格块进入全屏详情页：
@@ -160,6 +161,8 @@ app/src/main/java/cn/debubu/signalinsight/
 │   └── theme/
 │       └── ThemeManager.kt                # 主题管理器（浅色/深色/配色方案）
 ├── ui/
+│   ├── about/
+│   │   └── AboutScreen.kt                 # 关于页（动态版本号 + 隐私说明）
 │   ├── cellular/
 │   │   ├── CellularPage.kt                # 双卡切换主页面（HorizontalPager）
 │   │   ├── CellularViewModel.kt           # 视图模型（StateFlow 驱动）
@@ -195,7 +198,7 @@ app/src/main/java/cn/debubu/signalinsight/
 | `cellular` | 信号监测页 | fadeIn(250) / fadeOut(150) |
 | `settings` | 设置页 | fadeIn(250) / fadeOut(150) |
 | `about` | 关于页 | fadeIn(250) / fadeOut(150) |
-| `explainer/{metricKey}` | 参数详解页 | 右滑入 + 淡入 / 左滑出 + 淡出（对称） |
+| `explainer/{metricKey}` | 参数详解页 | SharedTransitionLayout 容器转换 (420ms CubicBezier) |
 | 底部 SIM 切换栏 | 仅在 cellular 页显示 | 延迟 300ms 闪现（等页面动画播完） |
 
 ---
@@ -210,7 +213,9 @@ app/src/main/java/cn/debubu/signalinsight/
 ### 快速开始
 
 ```bash
-# 克隆
+# 克隆（GitHub）
+git clone https://github.com/hpmdr/Signal-Insight.git
+# 或 Gitee
 git clone https://gitee.com/debumao/SingnalInsight.git
 cd SingnalInsight
 
@@ -250,7 +255,7 @@ cd SingnalInsight
 | `READ_PHONE_STATE` | 读取运营商名称、网络类型 | Android 12 及以下 |
 | `READ_BASIC_PHONE_STATE` | 读取基本电话状态 | Android 13+ 替代 |
 
-> 应用**不会**收集或上传任何位置信息或个人数据，所有数据仅在本地设备上处理。
+> 应用**没有申请联网权限**，所有数据仅在本地设备上处理，不会也无法上传或泄露任何信息。
 
 ---
 
