@@ -75,7 +75,7 @@ fun EarfcnExplainer(currentEarfcn: Int, onClose: () -> Unit, skipOuterPadding: B
                     shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("N/A", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                        Text(stringResource(R.string.metric_no_data), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
                         Spacer(Modifier.height(4.dp))
                         Text(stringResource(R.string.metric_not_available), style = MaterialTheme.typography.bodySmall)
                     }

@@ -85,6 +85,7 @@ import androidx.navigation.navArgument
 import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.data.cellular.MetricKey
 import cn.debubu.signalinsight.data.cellular.SignalData
+import cn.debubu.signalinsight.ui.about.AboutScreen
 import cn.debubu.signalinsight.ui.cellular.BandExplainer
 import cn.debubu.signalinsight.ui.cellular.CellularPage
 import cn.debubu.signalinsight.ui.cellular.CellularViewModel
@@ -120,30 +121,6 @@ data class NavigationItem(
     val route: String
 )
 
-@Composable
-fun AboutScreen(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(
-                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 20.dp,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp + 20.dp,
-                start = 16.dp, end = 16.dp
-            )
-    ) {
-        Text(
-            text = stringResource(R.string.about_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = stringResource(R.string.about_content),
-            style = MaterialTheme.typography.bodyLarge
-        )
-    }
-}
 
 /**
  * 根据 MetricKey 渲染对应的详解页内容。

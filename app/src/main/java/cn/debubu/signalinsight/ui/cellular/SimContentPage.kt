@@ -214,7 +214,7 @@ private fun SignalRingCard(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = if (isDbmValid) "$animatedRsrp" else "N/A",
+                        text = if (isDbmValid) "$animatedRsrp" else stringResource(R.string.metric_no_data),
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Black,
                         color = statusColor,
@@ -295,7 +295,7 @@ private fun MetricGridCard(
 
             // 两行指标 — 根据网络类型调整标签和可用性
             val is5gNet = signalData.networkType.contains("5G")
-            val na = "N/A"
+            val na = stringResource(R.string.metric_no_data)
 
             fun displayValue(value: Int): String = if (value != Int.MAX_VALUE) value.toString() else na
 
@@ -521,7 +521,7 @@ private fun NeighborCellsCard(neighborCells: List<NeighborCellTableModel>, is5gN
                             })
                         Text(cell.rsrq.toString(), Modifier.weight(1f), textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodySmall)
-                        Text(cell.sinr.let { if (it != Int.MAX_VALUE) it.toString() else "N/A" }, Modifier.weight(1f), textAlign = TextAlign.Center,
+                        Text(cell.sinr.let { if (it != Int.MAX_VALUE) it.toString() else stringResource(R.string.metric_no_data) }, Modifier.weight(1f), textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodySmall)
                     }
                     if (index < neighborCells.size - 1) {

@@ -191,7 +191,7 @@ fun PermissionScreen(
 }
 
 @Composable
-fun HeaderSection() {
+private fun HeaderSection() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier.size(56.dp).clip(CircleShape)
@@ -209,7 +209,7 @@ fun HeaderSection() {
 }
 
 @Composable
-fun PermissionCardsSection(
+private fun PermissionCardsSection(
     permissionRequirements: List<PermissionRequirement>,
     onRequestPermission: (String) -> Unit
 ) {
@@ -221,7 +221,7 @@ fun PermissionCardsSection(
 }
 
 @Composable
-fun PermissionCard(
+private fun PermissionCard(
     requirement: PermissionRequirement,
     onRequestPermission: () -> Unit
 ) {

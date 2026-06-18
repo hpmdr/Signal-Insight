@@ -335,6 +335,7 @@
     <string name="tac_assessment_changed">TAC 已更新。你已进入新的跟踪区域。</string>
 
     <string name="metric_not_available">当前网络不支持此指标</string>
+    <string name="metric_no_data">无数据</string>
 
     <!-- 参数网络兼容性说明 -->
     <string name="metric_net_prefix">📡 网络兼容性：</string>

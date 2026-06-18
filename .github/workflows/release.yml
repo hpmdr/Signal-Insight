@@ -51,6 +51,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: SignalInsight ${{ github.ref_name }}
-          body_path: CHANGELOG.md
           files: app/build/outputs/apk/release/app-release.apk
           generate_release_notes: true

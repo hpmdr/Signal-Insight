@@ -264,6 +264,7 @@
     <string name="tac_assessment_changed">TAC has changed. You have entered a new tracking area.</string>
 
     <string name="metric_not_available">Not available on current network</string>
+    <string name="metric_no_data">N/A</string>
 
     <!-- Network compatibility info -->
     <string name="metric_net_prefix">📡 Network compatibility: </string>

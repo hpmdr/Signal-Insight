@@ -128,7 +128,7 @@ private fun RsrpAssessment(currentRsrp: Int) {
             shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()
         ) {
             Column(Modifier.padding(12.dp)) {
-                Text("N/A", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                Text(stringResource(R.string.metric_no_data), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
                 Spacer(Modifier.height(4.dp))
                 Text(stringResource(R.string.metric_not_available), style = MaterialTheme.typography.bodySmall, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
             }
