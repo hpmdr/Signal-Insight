@@ -9,6 +9,54 @@ import android.telephony.CellInfoWcdma
 import android.telephony.CellSignalStrengthNr
 import android.telephony.TelephonyManager
 
+// ═══════════════════════════════════════════════════════════════
+// EARFCN / NR-ARFCN → 频段对照表
+// 覆盖国内运营商主流频段。不在表中的频点回退到 CellIdentity.bands API。
+// ═══════════════════════════════════════════════════════════════
+
+/** LTE EARFCN → Band 映射（国内主流 LTE 频段） */
+private val LTE_EARFCN_TO_BAND = listOf(
+    0 to 599 to "B1",        // 2100 MHz  FDD
+    1200 to 1949 to "B3",    // 1800 MHz  FDD
+    2400 to 2649 to "B5",    // 850 MHz   FDD
+    3450 to 3799 to "B8",    // 900 MHz   FDD
+    36200 to 36349 to "B34", // 2000 MHz  TDD
+    37750 to 38249 to "B38", // 2600 MHz  TDD
+    38250 to 38649 to "B39", // 1900 MHz  TDD
+    38650 to 39649 to "B40", // 2300 MHz  TDD
+    39650 to 41589 to "B41", // 2500 MHz  TDD
+)
+
+/** NR NR-ARFCN → Band 映射（国内主流 5G NR 频段） */
+private val NR_ARFCN_TO_BAND = listOf(
+    151600 to 160600 to "n28", // 700 MHz
+    173400 to 178800 to "n5",  // 850 MHz
+    185000 to 192000 to "n8",  // 900 MHz
+    361000 to 376000 to "n3",  // 1800 MHz
+    422000 to 434000 to "n1",  // 2100 MHz
+    499200 to 537999 to "n41", // 2500 MHz
+    620000 to 653333 to "n78", // 3500 MHz
+    693334 to 733333 to "n79", // 4700 MHz
+)
+
+/** 查找 LTE EARFCN 对应的频段名称，不在表中返回 null */
+private fun earfcnToBand(earfcn: Int): String? {
+    if (earfcn <= 0) return null
+    for ((range, band) in LTE_EARFCN_TO_BAND) {
+        if (earfcn in range.first..range.second) return band
+    }
+    return null
+}
+
+/** 查找 NR NR-ARFCN 对应的频段名称，不在表中返回 null */
+private fun nrarfcnToBand(nrarfcn: Int): String? {
+    if (nrarfcn <= 0) return null
+    for ((range, band) in NR_ARFCN_TO_BAND) {
+        if (nrarfcn in range.first..range.second) return band
+    }
+    return null
+}
+
 /**
  * 根据 MCC 和 MNC 获取运营商中文名称
  *
@@ -106,8 +154,9 @@ data class CellularSignalInfo(
                 is CellInfoLte -> {
                     val signalStrengthLte = cellInfo.cellSignalStrength
                     val cellIdentityLte = cellInfo.cellIdentity
-                    val cellBand = cellIdentityLte.bands.firstOrNull()?.toString()
-                        ?: "B${cellIdentityLte.earfcn / 1000}"
+                    val cellBand = cellIdentityLte.bands.firstOrNull()?.let { "B$it" }
+                        ?: earfcnToBand(cellIdentityLte.earfcn)
+                        ?: ""
                     val lteSinr = signalStrengthLte.rssnr.let {
                         // CellInfo 路径返回 MAX_VALUE 时，尝试 SignalStrength 路径的备用值
                         if (it != Int.MAX_VALUE) it
@@ -139,8 +188,9 @@ data class CellularSignalInfo(
                 is CellInfoNr -> {
                     val signalStrengthNr = cellInfo.cellSignalStrength as CellSignalStrengthNr
                     val cellIdentityNr = cellInfo.cellIdentity as CellIdentityNr
-                    val cellBand = cellIdentityNr.bands.firstOrNull()?.toString()
-                        ?: "n${cellIdentityNr.nrarfcn / 1000}"
+                    val cellBand = cellIdentityNr.bands.firstOrNull()?.let { "n$it" }
+                        ?: nrarfcnToBand(cellIdentityNr.nrarfcn)
+                        ?: ""
 
                     val invalidValue = Int.MAX_VALUE
                     val rsrp = if (signalStrengthNr.ssRsrp != invalidValue) {
@@ -288,8 +338,9 @@ data class NeighborCellInfo(
                 is CellInfoLte -> {
                     val signalStrengthLte = cellInfo.cellSignalStrength
                     val cellIdentityLte = cellInfo.cellIdentity
-                    val cellBand = cellIdentityLte.bands.firstOrNull()?.toString()
-                        ?: "B${cellIdentityLte.earfcn / 1000}"
+                    val cellBand = earfcnToBand(cellIdentityLte.earfcn)
+                        ?: cellIdentityLte.bands.firstOrNull()?.toString()
+                        ?: ""
                     val lteSinr = signalStrengthLte.rssnr.let {
                         if (it != Int.MAX_VALUE) it else Int.MAX_VALUE
                     }
@@ -307,8 +358,9 @@ data class NeighborCellInfo(
                 is CellInfoNr -> {
                     val signalStrengthNr = cellInfo.cellSignalStrength as CellSignalStrengthNr
                     val cellIdentityNr = cellInfo.cellIdentity as CellIdentityNr
-                    val cellBand = cellIdentityNr.bands.firstOrNull()?.toString()
-                        ?: "n${cellIdentityNr.nrarfcn / 1000}"
+                    val cellBand = nrarfcnToBand(cellIdentityNr.nrarfcn)
+                        ?: cellIdentityNr.bands.firstOrNull()?.toString()
+                        ?: ""
 
                     val invalidValue = Int.MAX_VALUE
                     val rsrp = if (signalStrengthNr.ssRsrp != invalidValue) {

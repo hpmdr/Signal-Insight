@@ -86,6 +86,8 @@ SignalInsight/
 │       │   │       │   ├── EARFCNExplainer.kt           # EARFCN 科普页
 │       │   │       │   ├── TACExplainer.kt              # TAC 科普页
 │       │   │       │   └── ExplainerUtils.kt            # 科普页共享组件
+│       │   │       ├── about/
+│       │   │       │   └── AboutScreen.kt               # 关于页（动态版本号 + 隐私说明）
 │       │   │       ├── main/
 │       │   │       │   └── MainScreen.kt                # 主导航（NavHost + 抽屉）
 │       │   │       ├── permission/
@@ -195,28 +197,43 @@ data class NeighborCellInfo(
 ## 数据流架构（完整链路）
 
 ```
-┌─────────────┐     ┌────────────────────┐     ┌──────────────────┐     ┌───────────┐
-│ Telephony   │──→  │ CellularRepository  │──→  │ CellularViewModel │──→  │ Compose   │
-│ Manager API │     │ (callbackFlow)      │     │ (StateFlow)      │     │ UI        │
-└─────────────┘     └────────────────────┘     └──────────────────┘     └───────────┘
+┌──────────────────┐     ┌────────────────────┐     ┌──────────────────┐     ┌───────────┐
+│ Telephony        │──→  │ CellularRepository  │──→  │ CellularViewModel │──→  │ Compose   │
+│ Manager API      │     │ (callbackFlow)      │     │ (StateFlow)      │     │ UI        │
+│                  │     │                     │     │                   │     │           │
+│ ┌──────────────┐ │     │ ┌─────────────────┐ │     │ ┌───────────────┐ │     │           │
+│ │ CellInfo     │ │     │ │ 被动监听        │ │     │ │ resumeData    │ │     │           │
+│ │ Listener     │─┤──→  │ │ CellInfoListener│─┤──→  │ │ Collection()  │─┤──→  │           │
+│ │ (被动)       │ │     │ │                 │ │     │ │               │ │     │           │
+│ ├──────────────┤ │     │ ├─────────────────┤ │     │ ├───────────────┤ │     │           │
+│ │ requestCell  │ │     │ │ 主动轮询        │ │     │ │ refreshJob    │ │     │           │
+│ │ InfoUpdate() │ │ ←── │ │ 每5s调用 TM.    │ │     │ │ 每5s触发      │ │     │           │
+│ │ (主动)       │ │     │ │ requestCell     │ │     │ │               │ │     │           │
+│ │              │ │     │ │ InfoUpdate()    │ │     │ │               │ │     │           │
+│ └──────────────┘ │     │ └─────────────────┘ │     │ └───────────────┘ │     │           │
+└──────────────────┘     └────────────────────┘     └──────────────────┘     └───────────┘
 ```
 
-### 第一步：系统接口监听（CellularRepository.kt）
+### 主动 + 被动混合刷新机制
 
-使用 `TelephonyManager` + `TelephonyCallback.CellInfoListener`，通过 `callbackFlow` 转为协程 Flow：
+**问题背景**：`CellInfoListener` 是被动的——Modem 只在信号发生"有意义变化"时才回调。
+设备静止时可能数秒甚至十几秒无更新，导致 UI 卡顿。
 
-- 为每张 SIM 卡创建独立 `callbackFlow`（slotId=0/1）
-- 通过 `SubscriptionManager` 获取 subscriptionId
-- 注册 `telephonyManager.registerTelephonyCallback(cellInfoListener)`
-- 热插拔监听：`SubscriptionManager.OnSubscriptionsChangedListener`
-- 双卡合并：`combine(getCellularDataFlow(0), getCellularDataFlow(1))`
-- `distinctUntilChanged()` 避免重复发射
+**解决方案**：在 `CellularViewModel` 中新增 `refreshJob` 协程，前台运行时每 5 秒调用
+`repository.requestCellInfoUpdate(slotId)`。该方法调用 `TelephonyManager.requestCellInfoUpdate()`
+主动请求 Modem 刷新 CellInfo，结果通过已注册的 `CellInfoListener` 自动抵达 `callbackFlow`。
 
-### 第二步：数据提取（fromCellInfo）
+**生命周期**：
+- `ON_RESUME` → `startDataCollection()` → 启动 `dataCollectionJob` + `refreshJob`
+- `ON_PAUSE` → `pauseDataCollection()` → 取消两个 Job，停止监听和轮询
+- 间隔选 5s：AOSP 源码 `ServiceStateTracker` 中节流为亮屏+充电 2s、其他 10s；
+  实测小米设备有效阈值在 2s~5s 之间，5s 为跨设备安全值。
 
-根据 `CellInfo` 实际类型分流解析：
-- **5G NR**: ssRsrp/csiRsrp 回退链，ssSinr/csiSinr 回退链，RSSI 不可用（TDD 波束）
-- **4G LTE**: rsrp/rsrq/rssnr 标准 API，RSSI 可用（-113 ~ -51 dBm）
+### 频段反算
+
+**问题**：`CellIdentity.bands` API 对邻小区不可靠，小米设备返回占位值 `[1]`。
+**解决**：EARFCN/NR-ARFCN → 频段查表优先于 `bands` API。覆盖国内主流 LTE（B1/3/5/8/34/38/39/40/41）
+和 NR（n1/3/5/8/28/41/78/79）频段。
 - **3G WCDMA**: 仅 dbm/psc/uarfcn/lac 可用（RSSI 为 @hide 系统 API）
 - **2G GSM**: 仅 dbm/rssi/cid/lac 可用
 

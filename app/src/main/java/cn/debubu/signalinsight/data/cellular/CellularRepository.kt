@@ -154,14 +154,14 @@ class CellularRepository constructor(
                 servingCell = CellularSignalInfo.fromCellInfo(cellInfo, slotId, isPrimary, operatorName, lteSinrFallback)
                 Log.d(
                     TAG,
-                    "服务小区信息 - SIM 卡槽: $slotId, PCI: ${servingCell.pci}, RSRP: ${servingCell.rsrp} dBm, 运营商: ${servingCell.operatorName}, 频段: ${servingCell.band}, 网络类型: ${servingCell.networkType}"
+                    "服务小区信息 - SIM 卡槽: $slotId, PCI: ${servingCell.pci}, RSRP: ${servingCell.rsrp} dBm, EARFCN: ${servingCell.earfcn}, 运营商: ${servingCell.operatorName}, 频段: ${servingCell.band}, 网络类型: ${servingCell.networkType}"
                 )
             } else {
                 val neighborCell = NeighborCellInfo.fromCellInfo(cellInfo, isServing = false)
                 neighborCells.add(neighborCell)
                 Log.d(
                     TAG,
-                    "邻小区信息 - SIM 卡槽: $slotId, PCI: ${neighborCell.pci}, RSRP: ${neighborCell.rsrp} dBm, SINR: ${neighborCell.sinr}, 频段: ${neighborCell.band}"
+                    "邻小区信息 - SIM 卡槽: $slotId, PCI: ${neighborCell.pci}, RSRP: ${neighborCell.rsrp} dBm, SINR: ${neighborCell.sinr}, EARFCN: ${neighborCell.earfcn}, 频段: ${neighborCell.band}"
                 )
 
             }
@@ -477,6 +477,33 @@ class CellularRepository constructor(
      *
      * @return Pair<CellularData, CellularData> 流，第一个是 SIM 1，第二个是 SIM 2
      */
+    /**
+     * 主动请求 Modem 刷新 CellInfo（fire-and-forget）
+     *
+     * 不处理返回数据——结果通过已注册的 CellInfoListener.onCellInfoChanged() 自动抵达
+     * callbackFlow，最终通过 StateFlow 驱动 UI 更新。
+     *
+     * App 前台运行时 ViewModel 每 5s 调用一次，配合被动 Listener 实现秒级刷新。
+     */
+    fun requestCellInfoUpdate(slotId: Int) {
+        val tm = getTelephonyManagerForSlot(slotId) ?: return
+        try {
+            tm.requestCellInfoUpdate(
+                context.mainExecutor,
+                object : TelephonyManager.CellInfoCallback() {
+                    override fun onCellInfo(cellInfo: MutableList<CellInfo>) {
+                        Log.d(TAG, "主动刷新成功 - SIM $slotId, cells=${cellInfo.size}")
+                    }
+                    override fun onError(errorCode: Int, detail: Throwable?) {
+                        Log.w(TAG, "主动刷新失败 - SIM $slotId, errorCode=$errorCode")
+                    }
+                }
+            )
+        } catch (e: SecurityException) {
+            Log.w(TAG, "无权限调用 requestCellInfoUpdate - SIM $slotId", e)
+        }
+    }
+
     fun getDualSimCellularDataFlow(): Flow<Pair<CellularData, CellularData>> {
         return getCellularDataFlow(0).combine(getCellularDataFlow(1)) { sim1, sim2 ->
             sim1 to sim2

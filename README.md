@@ -3,6 +3,8 @@
 一款专业的 Android **蜂窝网络信号监测**工具，基于 Jetpack Compose + Material 3 开发。
 实时展示 2G/3G/4G/5G 信号的各项核心指标，区分各网络类型参数差异，并提供详细的科普解读。
 
+![Signal Insight 主界面](screen_main.png)
+
 ---
 
 ## 信号监听原理
@@ -10,73 +12,79 @@
 ```mermaid
 flowchart TB
     subgraph Android["Android System Layer"]
-        TM[TelephonyManager]
-        SC[SubscriptionManager]
-        TC[CellInfoListener]
-        SS[PhoneStateListener]
+        SC["SubscriptionManager"]
+        TM["TelephonyManager"]
+        CL["CellInfoListener<br/>(被动)"]
+        PS["PhoneStateListener<br/>(MIUI RSSNR 备用)"]
+        RCU["requestCellInfoUpdate()<br/>(主动刷新)"]
     end
 
-    subgraph Data["Data Layer"]
+    subgraph Repo["CellularRepository"]
         CF["callbackFlow"]
         EC["extractCellularData()"]
-        FI["fromCellInfo() type dispatch"]
-        SFB["_lteSinrFallback (MIUI 兼容)"]
+        FD["fromCellInfo()<br/>类型分流"]
+        EB["earfcnToBand()<br/>频段反算"]
     end
 
-    subgraph Model["Network Type Dispatch"]
-        L4G["4G LTE: rsrp / rsrq / rssnr / rssi / pci / earfcn / band / tac"]
-        NR["5G NR: ssRsrp / ssRsrq / ssSinr / pci / nrarfcn / band / tac"]
-        W3G["3G WCDMA: dbm / psc / uarfcn / lac"]
-        G2G["2G GSM: dbm / rssi / cid / lac"]
+    subgraph Net["Network Type Dispatch"]
+        direction LR
+        L4G["4G LTE"]
+        NR_5G["5G NR"]
+        W3G["3G WCDMA"]
+        G2G["2G GSM"]
     end
 
-    subgraph ViewModel["ViewModel Layer"]
-        COLL["collect { sim1, sim2 }"]
+    subgraph VM["CellularViewModel"]
+        RJ["refreshJob<br/>每 5s 轮询"]
+        FL["collect { sim1, sim2 }"]
         SF["StateFlow&lt;SignalData&gt;"]
-        LIFE["Lifecycle: pause ON_PAUSE / resume ON_RESUME"]
+        LC["ON_RESUME / ON_PAUSE"]
     end
 
-    subgraph UI["Compose UI Layer"]
+    subgraph UI["Compose UI"]
         CS["collectAsState()"]
-        CP["CellularPage - Dual SIM HorizontalPager"]
-        SG["SimContentPage: Signal Ring + Metric Grid"]
-        NT["5G = SS-RSRP | 4G = RSRP | N/A = unavailable"]
-        SO["SignalOverviewScreen: 综合评分 + 诊断"]
+        CP["CellularPage<br/>Dual SIM Pager"]
+        SG["SimContentPage<br/>信号环 + 指标网格"]
+        SO["SignalOverviewScreen<br/>综合评分 + 诊断"]
     end
 
-    TM --> SC
-    SC --> TC
-    SC --> SS
-    TC -->|onCellInfoChanged| CF
-    SS -->|onSignalStrengthsChanged| SFB
-    SFB -.->|备用 SINR| EC
+    SC --> TM
+    TM --> CL
+    TM --> PS
+    RJ -->|每 5s| RCU
+    RCU -->|触发刷新| CL
+
+    CL -->|onCellInfoChanged| CF
+    PS -.->|备用 SINR| EB
     CF --> EC
-    EC --> FI
+    EC --> FD
 
-    FI -->|CellInfoLte| L4G
-    FI -->|CellInfoNr| NR
-    FI -->|CellInfoWcdma| W3G
-    FI -->|CellInfoGsm| G2G
+    FD -->|LTE| L4G
+    FD -->|NR| NR_5G
+    FD -->|WCDMA| W3G
+    FD -->|GSM| G2G
 
-    L4G & NR & W3G & G2G --> COLL
-    COLL --> SF
-    LIFE --> COLL
+    L4G & NR_5G & W3G & G2G --> FL
+    FL --> SF
+    LC -->|控制| FL
+    LC -->|控制| RJ
 
     SF --> CS
     CS --> CP
     CP --> SG
     SG --> SO
-    SG --> NT
 ```
 
 ### 核心流程说明
 
-1. **系统监听**：`TelephonyManager` + `TelephonyCallback.CellInfoListener` 注册回调，监听基站信号变化
-2. **MIUI 兼容**：额外注册 `PhoneStateListener`，解决 MIUI 设备上 CellInfo 不返回 LTE RSSNR 的问题，通过 SignalStrength 路径获取备用 SINR
-3. **数据提取**：`callbackFlow` 将回调转为协程 Flow，`extractCellularData()` 解析 `CellInfo` 列表
-4. **类型分流**：`fromCellInfo()` 根据 `CellInfo` 实际类型（LTE/NR/WCDMA/GSM）分别提取可用参数
-5. **ViewModel 处理**：通过 `MutableStateFlow` → `.map{}.stateIn()` 转为不可变 UI 状态
-6. **Compose 渲染**：`collectAsState()` 收集 StateFlow，驱动 UI 响应式更新
+1. **被动监听**：`TelephonyManager` + `TelephonyCallback.CellInfoListener` 注册回调，监听基站信号变化
+2. **主动刷新**：前台每 5s 调用 `requestCellInfoUpdate()` 强制 Modem 刷新，解决被动监听在信号稳定时更新不及时的问题。数据通过已有的 `CellInfoListener` 自动抵达，不改变下游链路
+3. **MIUI 兼容**：额外注册 `PhoneStateListener`，解决 MIUI 设备上 CellInfo 不返回 LTE RSSNR 的问题，通过 SignalStrength 路径获取备用 SINR
+4. **频段反算**：`CellIdentity.bands` API 对邻小区不可靠（部分设备返回占位值），改用 EARFCN/NR-ARFCN → 频段查表覆盖国内主流 LTE/NR 频段
+5. **数据提取**：`callbackFlow` 将回调转为协程 Flow，`extractCellularData()` 解析 `CellInfo` 列表
+6. **类型分流**：`fromCellInfo()` 根据 `CellInfo` 实际类型（LTE/NR/WCDMA/GSM）分别提取可用参数
+7. **ViewModel 处理**：通过 `MutableStateFlow` → `.map{}.stateIn()` 转为不可变 UI 状态
+8. **Compose 渲染**：`collectAsState()` 收集 StateFlow，驱动 UI 响应式更新
 
 ### 各网络类型参数差异
 

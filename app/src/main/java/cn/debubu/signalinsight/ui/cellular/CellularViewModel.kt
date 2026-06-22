@@ -48,6 +48,7 @@ class CellularViewModel(
     val activeSim: StateFlow<Int> = _activeSim.asStateFlow()
 
     private var dataCollectionJob: Job? = null
+    private var refreshJob: Job? = null
 
     // ─── 派生状态 (每张卡独立) ─────────────────────────────────────
 
@@ -97,6 +98,7 @@ class CellularViewModel(
 
     fun restartDataCollection() {
         dataCollectionJob?.cancel()
+        refreshJob?.cancel()
         startDataCollection()
         Log.d(TAG, "数据收集已重新启动")
     }
@@ -105,6 +107,8 @@ class CellularViewModel(
     fun pauseDataCollection() {
         dataCollectionJob?.cancel()
         dataCollectionJob = null
+        refreshJob?.cancel()
+        refreshJob = null
         Log.d(TAG, "数据收集已暂停 - app 进入后台")
     }
 
@@ -146,6 +150,19 @@ class CellularViewModel(
                 } else if (firstValidDataArrived) {
                     autoSwitchIfNeeded(sim1Data, sim2Data)
                 }
+            }
+        }
+        startPeriodicRefresh()
+    }
+
+    /** 前台每 5s 调用一次 requestCellInfoUpdate，强制 Modem 刷新 CellInfo */
+    private fun startPeriodicRefresh() {
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                kotlinx.coroutines.delay(5_000)
+                repository.requestCellInfoUpdate(0)
+                repository.requestCellInfoUpdate(1)
             }
         }
     }

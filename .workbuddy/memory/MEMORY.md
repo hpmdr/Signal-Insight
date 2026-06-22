@@ -269,6 +269,24 @@ tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
 - `fromCellInfo()` 三级降级：`rssnr → lteRssnrFallback → Int.MAX_VALUE`
 - 已验证：MIUI 上服务小区 RSSNR = 21 dB 正确回退
 
+## 导航架构（Navigation Compose）
+- **方案**：Jetpack Navigation Compose（NavHost + NavController），依赖 `2.9.8`
+- **路由定义**：在 `NavRoutes` object 中统一管理
+  - `cellular` → 信号监测页
+  - `settings` → 设置页
+  - `about` → 关于页
+  - `explainer/{metricKey}` → 详解页（含进入/退出/弹出动画）
+- **动画**：NavHost 内置 `enterTransition/exitTransition/popEnterTransition/popExitTransition`
+  - 标签页间：`fadeIn(250) + fadeOut(150)`
+  - 进入详解：`slideInHorizontally(tween(300)) + fadeIn(250)`
+  - 返回主页：对称滑出
+- **新增页面**：在 NavHost 中加一行 `composable("路由") { Page() }`，无需手写动画
+
+## 近期 UI 更新（2026-06-15 远程提交）
+- 透明 AppBar / NavigationBar（边到边效果）
+- SIM 卡图标（`ic_sim_1.xml` / `ic_sim_2.xml`）
+- 全页面动态 padding 适配
+
 #### 关键数据模型
 
 ```kotlin
@@ -340,3 +358,39 @@ SingnalInsight/
 ├── gradle.properties
 └── local.properties
 ```
+
+## CellInfo 刷新机制（2026-06-22 解决）
+
+### 问题
+`CellInfoListener.onCellInfoChanged()` 是被动的——Modem 只在信号发生"有意义变化"时才回调。
+设备静止时可能数秒甚至十几秒无更新，UI 显示卡顿。打开 Cellular-Z 后能跟着秒刷新。
+
+### 根因
+`CellInfoListener` 依赖 Modem 自行判断何时上报。`requestCellInfoUpdate()` 主动通过 RIL 层告诉 Modem 刷新。
+
+### 解决方案
+- `CellularRepository.requestCellInfoUpdate(slotId)`: fire-and-forget 调用 `tm.requestCellInfoUpdate()`，
+  不处理回调数据（数据通过已有的 CellInfoListener 自动抵达 callbackFlow）
+- `CellularViewModel`: 新增 `refreshJob`，前台每 5s 调用一次两个卡槽的主动刷新
+- 生命周期：ON_RESUME 启动 refreshJob，ON_PAUSE 取消
+- 间隔 5s 原因：AOSP `ServiceStateTracker` 节流为亮屏+充电 2s、其他 10s；
+  实测小米设备有效阈值在 2s~5s 之间
+
+### 修改文件
+- `CellularRepository.kt`: +requestCellInfoUpdate() 方法
+- `CellularViewModel.kt`: +refreshJob, startPeriodicRefresh(), 更新 pauseDataCollection/restartDataCollection
+
+## 邻小区频段错误修复（2026-06-22）
+
+### 问题
+所有邻小区频段显示为"1"，但实际设备连接 n78。
+
+### 根因
+小米设备 `CellIdentity.bands` 对邻小区返回占位值 `[1]`，代码无条件信任了 `bands.firstOrNull()`。
+旧 fallback `earfcn / 1000` 精度不足（EARFCN 1500 = Band 3，但 1500/1000=1）。
+
+### 解决方案
+- 新增 `earfcnToBand()` / `nrarfcnToBand()` 函数，覆盖国内主流 LTE/NR 频段
+- 服务小区：bands 优先 → 查表兜底
+- 邻小区：查表优先 → bands 兜底
+- 所有频段统一加前缀（B/n）：n78, B3

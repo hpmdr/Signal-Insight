@@ -83,7 +83,7 @@
     <string name="explainer_what_is">它是做什么的？</string>
     <string name="explainer_impact">对体验的影响</string>
     <string name="explainer_standard">参考标准 (左差右优)</string>
-    <string name="explainer_understand">理解了</string>
+    <string name="explainer_understand">知道了</string>
 
     <!-- 网络类型名称 -->
     <string name="network_5g_nr">5G NR</string>
