@@ -1,7 +1,11 @@
 pluginManagement {
     repositories {
-        maven {
-            url = uri("https://maven.aliyun.com/repository/google")
+        if (System.getenv("GITHUB_ACTIONS") == "true") {
+            google()
+        } else {
+            maven {
+                url = uri("https://maven.aliyun.com/repository/google")
+            }
         }
         mavenCentral()
         gradlePluginPortal()
@@ -10,8 +14,12 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        maven {
-            url = uri("https://maven.aliyun.com/repository/google")
+        if (System.getenv("GITHUB_ACTIONS") == "true") {
+            google()
+        } else {
+            maven {
+                url = uri("https://maven.aliyun.com/repository/google")
+            }
         }
         mavenCentral()
     }
