@@ -71,4 +71,4 @@ jobs:
         with:
           name: SignalInsight ${{ github.ref_name }}
           body_path: release_notes.md
-          files: app/build/outputs/apk/release/app-release.apk
+          files: app/build/outputs/apk/release/*.apk

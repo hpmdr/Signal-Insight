@@ -78,6 +78,17 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // APK 输出命名：SignalInsight-v1.0.4-release.apk
+    androidComponents {
+        onVariants { variant ->
+            variant.outputs.forEach { output ->
+                output.outputFileName.set(
+                    "SignalInsight-v${defaultConfig.versionName}-${variant.buildType.orEmpty()}.apk"
+                )
+            }
+        }
+    }
 }
 
 dependencies {
