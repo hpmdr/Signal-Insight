@@ -202,8 +202,6 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    // 70% 透明度 = 30% 不透明度的 bar 背景，形成毛玻璃效果
-    val barScrim = Color.Black.copy(alpha = 0.45f)
 
     // 判断当前是否为详解页（用于控制抽屉手势 + TopAppBar 标题）
     val isShowingExplainer = currentRoute?.startsWith("explainer") == true
@@ -321,10 +319,11 @@ fun MainScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = if (isShowingExplainer) {
-                                explainerTitle ?: ""
-                            } else {
-                                if (allPermissionsGranted) {
+                            text = when {
+                                isShowingExplainer -> explainerTitle ?: ""
+                                currentRoute == NavRoutes.SETTINGS -> stringResource(R.string.settings_title)
+                                currentRoute == NavRoutes.ABOUT -> stringResource(R.string.about_title)
+                                else -> if (allPermissionsGranted) {
                                     stringResource(R.string.app_bar_title)
                                 } else {
                                     stringResource(R.string.permission_title)
@@ -351,8 +350,8 @@ fun MainScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = barScrim,
-                        scrolledContainerColor = barScrim,
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = MaterialTheme.colorScheme.onSurface,
                         navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                     )

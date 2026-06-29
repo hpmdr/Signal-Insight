@@ -180,13 +180,13 @@ fun CellularPage(
         }
     }
 
-    // ---- 布局：HorizontalPager + 底部弹性水滴 SIM 切换栏 ----
-    val barColor = Color.Black.copy(alpha = 0.45f)
+    // ---- 布局：Box 叠加布局 — Pager 填满全屏，SIM 切换栏叠加在最底部（半透明可见下方内容） ----
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
+        // 底层：全屏 HorizontalPager
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxSize()
         ) { page ->
             val simId = page + 1
             when (simId) {
@@ -209,16 +209,17 @@ fun CellularPage(
             }
         }
 
+        // 顶层底部：SIM 切换栏叠加在 Pager 内容之上，透明背景可穿透看见下方的邻小区列表
         ElasticSimSwitcher(
             selectedSim = activeSim,
             sim1Name = if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
             sim2Name = if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
             onSimSelected = { viewModel.switchSim(it) },
             modifier = Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
-                .padding(WindowInsets.navigationBars.asPaddingValues()),
-            containerColor = barColor
+                .padding(WindowInsets.navigationBars.asPaddingValues())
         )
     }
 

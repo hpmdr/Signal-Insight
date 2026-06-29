@@ -51,7 +51,10 @@ fun EarfcnExplainer(currentEarfcn: Int, onClose: () -> Unit, skipOuterPadding: B
         SectionCard(R.string.earfcn_formula_title, Icons.Default.Info) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.earfcn_formula_4g), modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium)
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("LTE:  Fdl = Fdl_low + 0.1 × (EARFCN − Ndl)", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium)
+                        Text("NR:   Fref = Fref_Off + ΔF_Global × (NR-ARFCN − Nref)", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium)
+                    }
                 }
                 Text(stringResource(R.string.earfcn_formula_4g_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
             }

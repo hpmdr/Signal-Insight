@@ -63,7 +63,7 @@
 
     <!-- CellularPage -->
     <string name="cellular_no_sim_toast">No SIM card in this slot, cannot switch display</string>
-    <string name="cellular_signal_quality">Quality: %s</string>
+    <string name="cellular_signal_quality">Strength: %s</string>
     <string name="cellular_serving_cell_title">Current Serving Cell Details</string>
     <string name="cellular_tap_hint">Tap a metric card to view educational explanations and reference standards</string>
     <string name="cellular_neighbor_title">Neighbor Cells</string>
@@ -180,18 +180,18 @@
     <string name="band_excellent_hint">%s is a high-speed band. Your 5G experience should be excellent!</string>
     <string name="band_good_hint">%s is a mid-band, balancing speed and coverage. For faster speeds, try moving closer to a 5G tower.</string>
     <string name="band_normal_hint">%s is a low band with stable coverage but slower speeds. Best for indoor and long-distance use.</string>
-    <string name="band_china_mobile_5g">n41 (2.6GHz), n79 (4.9GHz)</string>
-    <string name="band_china_mobile_4g">B3 (1800MHz), B8 (900MHz), B39 (1900MHz)</string>
-    <string name="band_china_mobile_feature">Wide band coverage, both 5G and 4G coexist. Good coverage in cities and rural areas.</string>
-    <string name="band_china_unicom_5g">n78 (3.5GHz)</string>
-    <string name="band_china_unicom_4g">B1 (2100MHz), B3 (1800MHz), B8 (900MHz)</string>
-    <string name="band_china_unicom_feature">n78 is the 5G gold band with fast speeds. Coverage is primarily urban.</string>
-    <string name="band_china_telecom_5g">n78 (3.5GHz)</string>
-    <string name="band_china_telecom_4g">B1 (2100MHz), B3 (1800MHz), B5 (850MHz)</string>
-    <string name="band_china_telecom_feature">Shares n78 with China Unicom. B5 offers wide 4G coverage.</string>
-    <string name="band_china_broadcast_5g">n28 (700MHz), n79 (4.9GHz)</string>
-    <string name="band_china_broadcast_4g">N/A</string>
-    <string name="band_china_broadcast_feature">The 700MHz golden band offers extremely wide coverage and strong penetration.</string>
+    <string name="band_china_mobile_5g">n28 (700M, shared with BRC), n41 (2.6G), n79 (4.9G)</string>
+    <string name="band_china_mobile_4g">B3 (1800M), B8 (900M), B34 (1900M), B38~B41 (2.6G, partially refarmed)</string>
+    <string name="band_china_mobile_feature">n41 main 5G band shared with 4G; n28 wide coverage with BRC; n79 for high-capacity hotspots</string>
+    <string name="band_china_unicom_5g">n1 (2.1G, 4G/5G refarmed), n78 (3.5G, shared with CT)</string>
+    <string name="band_china_unicom_4g">B1 (2100M), B3 (1800M), B8 (900M)</string>
+    <string name="band_china_unicom_feature">Shares n78 with China Telecom as main 5G band; n1 refarmed for 4G/5G mixed use</string>
+    <string name="band_china_telecom_5g">n5 (800M, low-band refarmed), n78 (3.5G, shared with CU)</string>
+    <string name="band_china_telecom_4g">B1 (2100M), B3 (1800M), B5 (850M)</string>
+    <string name="band_china_telecom_feature">Co-builds world\'s largest n78 SA network with Unicom; n5 refarmed for low-band 5G coverage</string>
+    <string name="band_china_broadcast_5g">n28 (700M, shared with CM), n79 (4.9G)</string>
+    <string name="band_china_broadcast_4g">N/A (builds 5G directly)</string>
+    <string name="band_china_broadcast_feature">700MHz golden band, extremely wide coverage, leveraging CM\'s existing infrastructure</string>
     <string name="band_low_freq">Low (sub-1GHz)</string>
     <string name="band_mid_freq">Mid (1-3GHz)</string>
     <string name="band_high_freq">High (3-6GHz)</string>

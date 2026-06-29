@@ -102,9 +102,9 @@ fun SimContentPage(
     // rememberSaveable 确保从详情页返回后恢复滚动位置
     val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
 
-    // 动态获取状态栏 + 系统导航栏高度
+    // 动态获取状态栏高度，底部不再预留给切换栏（切换栏重叠在内容之上，透明背景）
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 20.dp
-    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp + 20.dp
+    val bottomPadding = 20.dp
 
     Column(
         modifier = Modifier

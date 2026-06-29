@@ -59,8 +59,8 @@ fun ElasticSimSwitcher(
     sim2Name: String,
     onSimSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    activeColor: Color = MaterialTheme.colorScheme.primary,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    activeColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
 ) {
     val containerHeight = 48.dp
     val outerPadding = 4.dp
@@ -119,9 +119,9 @@ fun ElasticSimSwitcher(
                 // ── 卡槽 1 ──
                 val isSim1Active = selectedSim == 1
                 val sim1Color = if (isSim1Active) {
-                    MaterialTheme.colorScheme.onPrimary
+                    MaterialTheme.colorScheme.onPrimaryContainer
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                 }
 
                 Box(
@@ -157,9 +157,9 @@ fun ElasticSimSwitcher(
                 // ── 卡槽 2 ──
                 val isSim2Active = selectedSim == 2
                 val sim2Color = if (isSim2Active) {
-                    MaterialTheme.colorScheme.onPrimary
+                    MaterialTheme.colorScheme.onPrimaryContainer
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                 }
 
                 Box(

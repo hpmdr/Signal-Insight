@@ -19,6 +19,7 @@ local.properties
 
 # ── 调试截图（根目录下的临时截图文件） ──
 /*.png
+/screenshots/
 nul*
 
 # ── WorkBuddy 内部文件 ──

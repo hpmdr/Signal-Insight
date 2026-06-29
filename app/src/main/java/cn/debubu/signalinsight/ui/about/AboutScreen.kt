@@ -1,5 +1,8 @@
 package cn.debubu.signalinsight.ui.about
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,16 +18,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
@@ -43,6 +52,28 @@ fun AboutScreen(modifier: Modifier = Modifier) {
         }
     }
 
+    val gitHubUrl = "https://github.com/hpmdr/Signal-Insight"
+    var showGitDialog by remember { mutableStateOf(false) }
+
+    // ── 打开 GitHub 确认弹窗 ──
+    if (showGitDialog) {
+        AlertDialog(
+            onDismissRequest = { showGitDialog = false },
+            title = { Text("打开浏览器") },
+            text = { Text("即将打开浏览器访问 GitHub 仓库，是否继续？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showGitDialog = false
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(gitHubUrl))
+                    context.startActivity(intent)
+                }) { Text("确定") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGitDialog = false }) { Text("取消") }
+            }
+        )
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -54,15 +85,9 @@ fun AboutScreen(modifier: Modifier = Modifier) {
             )
     ) {
         Text(
-            text = stringResource(R.string.about_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
             text = "信号监测仪 v$versionName",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Black
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -144,10 +169,12 @@ fun AboutScreen(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "https://github.com/hpmdr/Signal-Insight",
+            text = gitHubUrl,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.primary,
-            lineHeight = 18.sp
+            lineHeight = 18.sp,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier.clickable { showGitDialog = true }
         )
     }
 }
