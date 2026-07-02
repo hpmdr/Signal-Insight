@@ -281,4 +281,17 @@
     <string name="overview_title">Signal Diagnosis</string>
     <string name="overview_diagnosis_title">Diagnosis</string>
     <string name="overview_metrics_title">Key Metrics</string>
+
+    <!-- About page dialog -->
+    <string name="about_view_source">View Source</string>
+    <string name="about_view_source_confirm">About to open browser to visit GitHub repository. Continue?</string>
+
+    <!-- Refresh interval settings -->
+    <string name="settings_refresh">Refresh Settings</string>
+    <string name="settings_refresh_interval">Refresh Interval</string>
+    <string name="settings_refresh_interval_hint">Controls how often the app polls signal data. Fast (2s) for intensive monitoring, Slow (5s) for battery saving. Actual interval is subject to system scheduling — some devices may not reach 2s</string>
+    <string name="refresh_fast">Fast</string>
+    <string name="refresh_fast_detail">2 sec</string>
+    <string name="refresh_slow">Slow</string>
+    <string name="refresh_slow_detail">5 sec</string>
 </resources>

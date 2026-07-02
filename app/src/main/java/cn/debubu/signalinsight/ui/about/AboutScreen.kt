@@ -59,8 +59,8 @@ fun AboutScreen(modifier: Modifier = Modifier) {
     if (showGitDialog) {
         AlertDialog(
             onDismissRequest = { showGitDialog = false },
-            title = { Text("打开浏览器") },
-            text = { Text("即将打开浏览器访问 GitHub 仓库，是否继续？") },
+            title = { Text(stringResource(R.string.about_view_source)) },
+            text = { Text(stringResource(R.string.about_view_source_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
                     showGitDialog = false

@@ -39,10 +39,12 @@ enum class ThemePreset(
  * 主题设置数据类
  * @param presetId 当前选中的预设 ID
  * @param dynamicColorsEnabled 是否启用系统动态取色（仅非 MIUI 设备有效）
+ * @param refreshIntervalMs 信号主动刷新间隔（毫秒），默认 5000ms（5 秒）
  */
 data class ThemeSettings(
     val presetId: String = ThemePreset.SIGNAL_BLUE.id,
-    val dynamicColorsEnabled: Boolean = false
+    val dynamicColorsEnabled: Boolean = true,
+    val refreshIntervalMs: Int = 5_000
 )
 
 /**
@@ -59,13 +61,15 @@ class ThemeManager(context: Context) {
     private fun load(): ThemeSettings = ThemeSettings(
         presetId = prefs.getString("preset_id", ThemePreset.SIGNAL_BLUE.id)
             ?: ThemePreset.SIGNAL_BLUE.id,
-        dynamicColorsEnabled = prefs.getBoolean("dynamic_colors", false)
+        dynamicColorsEnabled = prefs.getBoolean("dynamic_colors", true),
+        refreshIntervalMs = prefs.getInt("refresh_interval_ms", 5_000)
     )
 
     private fun save(s: ThemeSettings) {
         prefs.edit()
             .putString("preset_id", s.presetId)
             .putBoolean("dynamic_colors", s.dynamicColorsEnabled)
+            .putInt("refresh_interval_ms", s.refreshIntervalMs)
             .apply()
     }
 
@@ -78,6 +82,12 @@ class ThemeManager(context: Context) {
 
     fun setDynamicColorsEnabled(enabled: Boolean) {
         val updated = _settings.value.copy(dynamicColorsEnabled = enabled)
+        _settings.value = updated
+        save(updated)
+    }
+
+    fun setRefreshIntervalMs(intervalMs: Int) {
+        val updated = _settings.value.copy(refreshIntervalMs = intervalMs)
         _settings.value = updated
         save(updated)
     }

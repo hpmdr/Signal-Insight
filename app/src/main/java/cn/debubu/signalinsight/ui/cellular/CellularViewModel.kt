@@ -10,6 +10,7 @@ import cn.debubu.signalinsight.data.cellular.CellularRepository
 import cn.debubu.signalinsight.data.cellular.CellularSignalInfo
 import cn.debubu.signalinsight.data.cellular.NeighborCellTableModel
 import cn.debubu.signalinsight.data.cellular.SignalData
+import cn.debubu.signalinsight.data.theme.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,7 @@ import kotlinx.coroutines.launch
  */
 class CellularViewModel(
     private val repository: CellularRepository,
+    private val themeManager: ThemeManager,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -49,6 +51,10 @@ class CellularViewModel(
 
     private var dataCollectionJob: Job? = null
     private var refreshJob: Job? = null
+    private var settingsJob: Job? = null
+
+    /** 当前刷新间隔（毫秒），由 ThemeManager 驱动 */
+    private var refreshIntervalMs: Long = themeManager.settings.value.refreshIntervalMs.toLong()
 
     // ─── 派生状态 (每张卡独立) ─────────────────────────────────────
 
@@ -99,6 +105,7 @@ class CellularViewModel(
     fun restartDataCollection() {
         dataCollectionJob?.cancel()
         refreshJob?.cancel()
+        settingsJob?.cancel()
         startDataCollection()
         Log.d(TAG, "数据收集已重新启动")
     }
@@ -109,6 +116,8 @@ class CellularViewModel(
         dataCollectionJob = null
         refreshJob?.cancel()
         refreshJob = null
+        settingsJob?.cancel()
+        settingsJob = null
         Log.d(TAG, "数据收集已暂停 - app 进入后台")
     }
 
@@ -155,12 +164,25 @@ class CellularViewModel(
         startPeriodicRefresh()
     }
 
-    /** 前台每 5s 调用一次 requestCellInfoUpdate，强制 Modem 刷新 CellInfo */
+    /** 前台周期性调用 requestCellInfoUpdate，刷新间隔由 ThemeManager 设置动态控制 */
     private fun startPeriodicRefresh() {
         refreshJob?.cancel()
+        settingsJob?.cancel()
+
+        // 监听 ThemeManager 中刷新间隔的变化
+        settingsJob = viewModelScope.launch(Dispatchers.IO) {
+            themeManager.settings.collect { settings ->
+                val newInterval = settings.refreshIntervalMs.toLong()
+                if (newInterval != refreshIntervalMs) {
+                    refreshIntervalMs = newInterval
+                    Log.d(TAG, "刷新间隔已更新: ${refreshIntervalMs}ms")
+                }
+            }
+        }
+
         refreshJob = viewModelScope.launch(Dispatchers.IO) {
             while (true) {
-                kotlinx.coroutines.delay(5_000)
+                kotlinx.coroutines.delay(refreshIntervalMs)
                 repository.requestCellInfoUpdate(0)
                 repository.requestCellInfoUpdate(1)
             }

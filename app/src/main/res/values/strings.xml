@@ -353,4 +353,17 @@
     <string name="overview_title">信号综合诊断</string>
     <string name="overview_diagnosis_title">诊断分析</string>
     <string name="overview_metrics_title">关键指标速览</string>
+
+    <!-- 关于页-弹窗 -->
+    <string name="about_view_source">查看源码</string>
+    <string name="about_view_source_confirm">即将打开浏览器访问 GitHub 仓库，是否继续？</string>
+
+    <!-- 刷新间隔设置 -->
+    <string name="settings_refresh">刷新设置</string>
+    <string name="settings_refresh_interval">信号刷新间隔</string>
+    <string name="settings_refresh_interval_hint">控制信号数据主动刷新频率，快（2秒）适合密集监测，慢（5秒）更省电。实际刷新间隔受系统调度限制，部分设备可能无法达到2秒频率</string>
+    <string name="refresh_fast">快</string>
+    <string name="refresh_fast_detail">2秒</string>
+    <string name="refresh_slow">慢</string>
+    <string name="refresh_slow_detail">5秒</string>
 </resources>

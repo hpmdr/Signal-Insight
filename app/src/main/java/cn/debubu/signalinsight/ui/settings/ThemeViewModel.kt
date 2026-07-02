@@ -21,4 +21,8 @@ class ThemeViewModel(
     fun toggleDynamicColors(enabled: Boolean) {
         themeManager.setDynamicColorsEnabled(enabled)
     }
+
+    fun setRefreshIntervalMs(intervalMs: Int) {
+        themeManager.setRefreshIntervalMs(intervalMs)
+    }
 }

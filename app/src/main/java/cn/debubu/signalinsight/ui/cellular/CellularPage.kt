@@ -102,13 +102,6 @@ data class RangeStep(
     val color: Color
 )
 
-data class Metric(
-    val key: MetricKey,
-    val label: String,
-    val value: String,
-    val unit: String
-)
-
 data class SimStatus(
     val id: Int,
     val name: String,

@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         val application = application as SignalInsightApplication
         val cellularViewModel = ViewModelProvider(
             this,
-            CellularViewModelFactory(application.cellularRepository, application)
+            CellularViewModelFactory(application.cellularRepository, application.themeManager, application)
         )[CellularViewModel::class.java]
 
         val permissionViewModel = ViewModelProvider(
@@ -45,12 +45,13 @@ class MainActivity : ComponentActivity() {
 
 class CellularViewModelFactory(
     private val repository: cn.debubu.signalinsight.data.cellular.CellularRepository,
+    private val themeManager: cn.debubu.signalinsight.data.theme.ThemeManager,
     private val application: Application
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CellularViewModel::class.java)) {
-            return CellularViewModel(repository, application) as T
+            return CellularViewModel(repository, themeManager, application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
