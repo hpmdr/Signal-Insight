@@ -85,6 +85,23 @@ object SignalQualityEvaluator {
         else -> 20
     }
 
+    /**
+     * 公开评分分发：供 UI 层做动态显色复用，避免重复阈值。
+     *
+     * 阈值与各 Explainer 详情页评估段、综合评估完全一致。
+     *
+     * @param key   指标键（仅 RSRP/RSRQ/SINR/RSSI 参与评分，其余返回 0）
+     * @param value 原始值（Int.MAX_VALUE 视为不可用，记 0 分）
+     * @return 0-100 评分
+     */
+    fun score(key: MetricKey, value: Int): Int = when (key) {
+        MetricKey.RSRP -> scoreRsrp(value)
+        MetricKey.RSRQ -> scoreRsrq(value)
+        MetricKey.SINR -> scoreSinr(value)
+        MetricKey.RSSI -> scoreRssi(value)
+        else -> 0
+    }
+
     // ─── 一句话说明 ────────────────────────────────────────
 
     private fun briefExplanation(key: MetricKey, is5g: Boolean): String = when (key) {

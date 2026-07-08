@@ -47,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -226,14 +225,8 @@ private fun ScoreRing(evaluation: SignalQualityEvaluator.Evaluation) {
         label = "labelAlpha"
     )
 
-    // ── 配色 ──
-    val ringColor = when (evaluation.rating) {
-        SignalQualityEvaluator.Rating.EXCELLENT -> Color(0xFF2E7D32)
-        SignalQualityEvaluator.Rating.GOOD -> Color(0xFFF9A825)
-        SignalQualityEvaluator.Rating.FAIR -> Color(0xFFE65100)
-        SignalQualityEvaluator.Rating.POOR -> Color(0xFFC62828)
-        SignalQualityEvaluator.Rating.WEAK -> Color(0xFF616161)
-    }
+    // ── 配色（明暗双档，与指标网格同源） ──
+    val ringColor = ratingColor(evaluation.rating)
 
     // 与主页信号环完全一致的像素值（Canvas 内直接使用 px，不用 dp）
     val strokePx = 45f    // 主页圆环宽度
@@ -328,13 +321,7 @@ private fun MetricBriefCard(
     param: SignalQualityEvaluator.ParamScore,
     onClick: () -> Unit
 ) {
-    val scoreColor = when {
-        param.score >= 80 -> Color(0xFF2E7D32)
-        param.score >= 60 -> Color(0xFFF9A825)
-        param.score >= 40 -> Color(0xFFE65100)
-        param.value == Int.MAX_VALUE -> MaterialTheme.colorScheme.outline
-        else -> Color(0xFFC62828)
-    }
+    val accent = scoreColor(param.score, param.value != Int.MAX_VALUE)
 
     val scoreLabel = when {
         param.value == Int.MAX_VALUE -> "不支持"
@@ -361,7 +348,7 @@ private fun MetricBriefCard(
         ) {
             // 评分圆点
             Surface(
-                color = scoreColor,
+                color = accent,
                 shape = RoundedCornerShape(50),
                 modifier = Modifier.size(10.dp)
             ) {}
@@ -387,7 +374,7 @@ private fun MetricBriefCard(
                 scoreLabel,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = scoreColor
+                color = accent
             )
         }
     }

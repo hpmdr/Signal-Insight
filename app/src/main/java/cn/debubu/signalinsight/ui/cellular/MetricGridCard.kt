@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
@@ -44,12 +45,15 @@ import cn.debubu.signalinsight.data.cellular.SignalData
 
 /**
  * 单个指标格子的数据载体。
+ *
+ * @param textColor 数值文本颜色（动态显色结果，中性指标为 onSurface）
  */
 internal data class Metric(
     val key: MetricKey,
     val label: String,
     val value: String,
     val unit: String,
+    val textColor: Color,
 )
 
 /**
@@ -108,18 +112,23 @@ internal fun MetricGridCard(
             fun displayValue(value: Int): String =
                 if (value != Int.MAX_VALUE) value.toString() else na
 
+            @Composable
+            fun metric(key: MetricKey, label: String, intValue: Int, display: String, unit: String): Metric {
+                return Metric(key, label, display, unit, metricColor(key, intValue))
+            }
+
             val rows = listOf(
                 listOf(
-                    Metric(MetricKey.RSRP, if (is5gNet) "SS-RSRP" else "RSRP", displayValue(signalData.rsrp), "dBm"),
-                    Metric(MetricKey.RSRQ, if (is5gNet) "SS-RSRQ" else "RSRQ", displayValue(signalData.rsrq), "dB"),
-                    Metric(MetricKey.SINR, if (is5gNet) "SS-SINR" else "SINR", displayValue(signalData.sinr), "dB"),
-                    Metric(MetricKey.RSSI, "RSSI", displayValue(signalData.rssi), "dBm"),
+                    metric(MetricKey.RSRP, if (is5gNet) "SS-RSRP" else "RSRP", signalData.rsrp, displayValue(signalData.rsrp), "dBm"),
+                    metric(MetricKey.RSRQ, if (is5gNet) "SS-RSRQ" else "RSRQ", signalData.rsrq, displayValue(signalData.rsrq), "dB"),
+                    metric(MetricKey.SINR, if (is5gNet) "SS-SINR" else "SINR", signalData.sinr, displayValue(signalData.sinr), "dB"),
+                    metric(MetricKey.RSSI, "RSSI", signalData.rssi, displayValue(signalData.rssi), "dBm"),
                 ),
                 listOf(
-                    Metric(MetricKey.Band, "Band", signalData.band.ifEmpty { na }, ""),
-                    Metric(MetricKey.PCI, "PCI", displayValue(signalData.pci), ""),
-                    Metric(MetricKey.EARFCN, "EARFCN", displayValue(signalData.earfcn), ""),
-                    Metric(MetricKey.TAC, "TAC", displayValue(signalData.tac), ""),
+                    metric(MetricKey.Band, "Band", 0, signalData.band.ifEmpty { na }, ""),
+                    metric(MetricKey.PCI, "PCI", signalData.pci, displayValue(signalData.pci), ""),
+                    metric(MetricKey.EARFCN, "EARFCN", signalData.earfcn, displayValue(signalData.earfcn), ""),
+                    metric(MetricKey.TAC, "TAC", signalData.tac, displayValue(signalData.tac), ""),
                 ),
             )
 
@@ -165,7 +174,7 @@ internal fun MetricGridCard(
                                     ),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    color = item.textColor,
                                 )
                                 if (item.unit.isNotEmpty()) {
                                     Text(
