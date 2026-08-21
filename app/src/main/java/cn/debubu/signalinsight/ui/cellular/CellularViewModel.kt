@@ -183,8 +183,12 @@ class CellularViewModel(
         refreshJob = viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 kotlinx.coroutines.delay(refreshIntervalMs)
-                repository.requestCellInfoUpdate(0)
-                repository.requestCellInfoUpdate(1)
+                try {
+                    repository.requestCellInfoUpdate(0)
+                    repository.requestCellInfoUpdate(1)
+                } catch (e: Exception) {
+                    Log.w(TAG, "主动刷新调用异常", e)
+                }
             }
         }
     }

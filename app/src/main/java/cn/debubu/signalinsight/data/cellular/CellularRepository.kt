@@ -45,7 +45,12 @@ class CellularRepository constructor(
      */
     private fun getTelephonyManagerForSlot(slotId: Int): TelephonyManager? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            telephonyManager.createForSubscriptionId(getSubscriptionIdForSlot(slotId))
+            val subId = getSubscriptionIdForSlot(slotId)
+            if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID || subId == Int.MAX_VALUE) {
+                null
+            } else {
+                telephonyManager.createForSubscriptionId(subId)
+            }
         } else {
             if (slotId == 0) telephonyManager else null
         }
@@ -355,16 +360,20 @@ class CellularRepository constructor(
                         TAG,
                         "CellInfo 变化回调 - SIM 卡槽: $slotId, CellInfo 数量: ${cellInfoList.size}"
                     )
-                    val data = extractCellularData(cellInfoList, slotId, slotId == 0, operatorName, _lteSinrFallback)
-                    if (lastData != data) {
-                        lastData = data
-                        trySend(data)
-                        Log.d(
-                            TAG,
-                            "数据已更新 - SIM 卡槽: $slotId, PCI: ${data.servingCell?.pci}, RSRP: ${data.servingCell?.rsrp} dBm, 运营商: ${data.servingCell?.operatorName}"
-                        )
-                    } else {
-                        Log.d(TAG, "数据未变化 - SIM 卡槽: $slotId")
+                    try {
+                        val data = extractCellularData(cellInfoList, slotId, slotId == 0, operatorName, _lteSinrFallback)
+                        if (lastData != data) {
+                            lastData = data
+                            trySend(data)
+                            Log.d(
+                                TAG,
+                                "数据已更新 - SIM 卡槽: $slotId, PCI: ${data.servingCell?.pci}, RSRP: ${data.servingCell?.rsrp} dBm, 运营商: ${data.servingCell?.operatorName}"
+                            )
+                        } else {
+                            Log.d(TAG, "数据未变化 - SIM 卡槽: $slotId")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "解析 CellInfo 失败 - SIM 卡槽: $slotId", e)
                     }
                 }
             }
@@ -501,6 +510,8 @@ class CellularRepository constructor(
             )
         } catch (e: SecurityException) {
             Log.w(TAG, "无权限调用 requestCellInfoUpdate - SIM $slotId", e)
+        } catch (e: Exception) {
+            Log.w(TAG, "requestCellInfoUpdate 调用失败 - SIM $slotId", e)
         }
     }
 
