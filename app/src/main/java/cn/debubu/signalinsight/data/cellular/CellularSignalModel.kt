@@ -118,8 +118,18 @@ data class CellularSignalInfo(
                 *
                 * */
                 is CellInfoNr -> {
-                    val signalStrengthNr = cellInfo.cellSignalStrength as CellSignalStrengthNr
-                    val cellIdentityNr = cellInfo.cellIdentity as CellIdentityNr
+                    val signalStrengthNr = cellInfo.cellSignalStrength as? CellSignalStrengthNr
+                        ?: return@fromCellInfo CellularSignalInfo(
+                            simSlotId = simSlotId,
+                            isPrimary = isPrimary,
+                            operatorName = operatorName.takeUnless { it == "Unknown" } ?: "Unknown"
+                        )
+                    val cellIdentityNr = cellInfo.cellIdentity as? CellIdentityNr
+                        ?: return@fromCellInfo CellularSignalInfo(
+                            simSlotId = simSlotId,
+                            isPrimary = isPrimary,
+                            operatorName = operatorName.takeUnless { it == "Unknown" } ?: "Unknown"
+                        )
                     val cellBand = cellIdentityNr.bands.firstOrNull()?.let { "n$it" }
                         ?: nrarfcnToBand(cellIdentityNr.nrarfcn)
                         ?: ""
@@ -288,8 +298,10 @@ data class NeighborCellInfo(
                     )
                 }
                 is CellInfoNr -> {
-                    val signalStrengthNr = cellInfo.cellSignalStrength as CellSignalStrengthNr
-                    val cellIdentityNr = cellInfo.cellIdentity as CellIdentityNr
+                    val signalStrengthNr = cellInfo.cellSignalStrength as? CellSignalStrengthNr
+                        ?: return@fromCellInfo NeighborCellInfo(isServing = isServing)
+                    val cellIdentityNr = cellInfo.cellIdentity as? CellIdentityNr
+                        ?: return@fromCellInfo NeighborCellInfo(isServing = isServing)
                     val cellBand = nrarfcnToBand(cellIdentityNr.nrarfcn)
                         ?: cellIdentityNr.bands.firstOrNull()?.toString()
                         ?: ""
