@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.verticalScroll
@@ -67,7 +68,8 @@ fun SimContentPage(
 
     val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 20.dp
-    val bottomPadding = 20.dp
+    // 底部留白必须躲开悬浮的 SIM 切换栏（48dp 条高 + 12dp 垂直边距 + 导航栏高度 + 16dp 余量）
+    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 76.dp
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // 宽度 > 600dp 视为横屏/平板宽屏模式
