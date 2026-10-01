@@ -49,35 +49,37 @@ jobs:
           java-version: 21
           distribution: microsoft
 
-      # 安装项目所需 SDK 组件。
+      # 不需要 setup-android。
       #
-      # 背景: 本项目 compileSdk 为 37.2（Android 17 的 minor API level），
-      # setup-android 默认只装 "tools platform-tools"，不含 37.2，
-      # 其内部自动补齐时失败并导致整步报错（CI 运行 #20:
-      # "sdkmanager failed with exit code 1"），后续签名与构建步骤全被跳过。
+      # GitHub 官方 ubuntu-latest runner 镜像已预装本项目所需的全部组件
+      # （依据 actions/runner-images 的 Ubuntu2404-Readme.md）:
+      #   Android SDK Platforms : android-37.2 (rev 1)   ← 本项目 compileSdk 所需
+      #   Android SDK Build-tools: 37.0.0                ← 本项目 buildToolsVersion 所需
+      #   ANDROID_HOME / ANDROID_SDK_ROOT = /usr/local/lib/android/sdk
       #
-      # 优先使用 action 自带的 packages 输入（由 action 内部调用 SDK 工具，最稳妥）。
-      - name: 设置 Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools "platforms;android-37.2" "build-tools;37.0.0"'
-
-      # 兜底: 若上面未装上，改用新的 Android CLI 补齐。
-      # 注意 sdkmanager 已被官方弃用（运行时提示 "The SDK Manager CLI tool (sdkmanager)
-      # is deprecated. Android CLI will be used instead."），替代品是 cmdline-tools/bin 下的
-      # `android` 命令；该目录已由 setup-android 加入 PATH（action.yml 描述即为
-      # "Setup the Android SDK Tools and add them to the path"）。
-      # 已在本地干净 SDK 目录实测 `android sdk install` 可正确安装这两个包。
-      - name: 校验并补齐 SDK 组件
+      # 而 setup-android@v3 会去改动预装 SDK，在 CI 运行 #20/#21 中于该步骤失败:
+      #   The process '/usr/local/lib/android/sdk/cmdline-tools/16.0/bin/sdkmanager'
+      #   failed with exit code 1
+      # 导致后续「解码签名密钥 / 构建并签名 / 创建 Release」全部被跳过。
+      # 该 action 在 2026-07-09 的 #19（v1.0.7）尚可成功，说明是 runner 镜像
+      # 在这 84 天内更新后与 action 不再兼容，并非项目配置问题。
+      #
+      # 因此这里只做校验，不改动环境；缺失时才用新 CLI 补齐。
+      - name: 校验 Android SDK 组件
         run: |
-          if [ ! -d "$ANDROID_SDK_ROOT/platforms/android-37.2" ]; then
-            echo "android-37.2 未安装，使用 android CLI 补齐"
-            android sdk install "platforms;android-37.2" "build-tools;37.0.0" "platform-tools"
-          fi
-          echo "--- 已安装组件 ---"
-          android sdk list | grep -E "platforms;android-37|build-tools;37" || true
-          echo "--- 目录校验 ---"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          echo "--- 必需的组件 ---"
           ls -d "$ANDROID_SDK_ROOT/platforms/android-37.2" "$ANDROID_SDK_ROOT/build-tools/37.0.0"
+          # 兜底: 仅当预装缺失时才安装。
+          # 注意 sdkmanager 已被官方弃用，替代品是 cmdline-tools/bin 下的 `android` 命令。
+          if [ ! -d "$ANDROID_SDK_ROOT/platforms/android-37.2" ]; then
+            echo "android-37.2 缺失，使用 android CLI 补齐"
+            "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/android" sdk install \
+              "platforms;android-37.2" "build-tools;37.0.0" || \
+            "$(ls -d "$ANDROID_SDK_ROOT"/cmdline-tools/*/bin/android | head -1)" sdk install \
+              "platforms;android-37.2" "build-tools;37.0.0"
+          fi
 
       - name: 设置 gradlew 执行权限
         run: chmod +x gradlew
