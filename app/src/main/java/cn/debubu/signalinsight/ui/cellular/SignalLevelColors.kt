@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import cn.debubu.signalinsight.data.cellular.MetricKey
 import cn.debubu.signalinsight.data.cellular.SignalQualityEvaluator
+import cn.debubu.signalinsight.data.cellular.isUnavailable
 import cn.debubu.signalinsight.ui.theme.BlueGrey300
 import cn.debubu.signalinsight.ui.theme.Gold300
 import cn.debubu.signalinsight.ui.theme.Gold800
@@ -112,3 +113,23 @@ fun scoreColor(score: Int, available: Boolean): Color {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     return levelColor(levelOf(score), isDark)
 }
+
+/**
+ * 由原始指标值取动态显色（信号环的 dBm、邻小区 RSRP 列等直接展示原始值的位置使用）。
+ *
+ * 与 [metricColor] 共用同一套阈值（[SignalQualityEvaluator]）与同一套明暗色阶，
+ * 避免各处再写一遍 `when { v > -85 -> 深绿 ... }` 这类**亮色专用**硬编码色值——
+ * 那些色值在深色主题的近黑背景上对比度极低。
+ *
+ * @param value 原始值；不可用返回中性 outline
+ */
+@Composable
+fun valueColor(key: MetricKey, value: Int): Color {
+    if (isUnavailable(value)) return MaterialTheme.colorScheme.outline
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    return levelColor(levelOf(SignalQualityEvaluator.score(key, value)), isDark)
+}
+
+/** 信号环轨道底色：跟随主题的描边色，深色模式下不会像固定浅灰那样突兀 */
+@Composable
+fun ringTrackColor(): Color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)

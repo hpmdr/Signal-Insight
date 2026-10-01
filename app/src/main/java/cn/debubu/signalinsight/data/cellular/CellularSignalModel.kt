@@ -454,6 +454,20 @@ data class NeighborCellTableModel(
     val sinr: Int
 )
 
+// ─── 「无数据」展示规则 ───
+//
+// Android 用 CellInfo.UNAVAILABLE(常量值 Int.MAX_VALUE = 2147483647)表示「系统未上报」，
+// 本项目同样用 Int.MAX_VALUE 表示「无数据」。两者同值，渲染层必须显式判等，
+// 否则会把哨兵值当真实值显示(并可能因数值极大被误判为「信号极好」)。
+// 规则集中在此处，便于纯逻辑单测覆盖，避免各处重复实现导致漂移。
+
+/** 该指标值是否为「系统未上报 / 无数据」 */
+fun isUnavailable(value: Int): Boolean = value == Int.MAX_VALUE
+
+/** 指标值的展示文本；不可用时返回占位文案 */
+fun displayMetric(value: Int, placeholder: String): String =
+    if (isUnavailable(value)) placeholder else value.toString()
+
 // ─── 指标路由枚举 — 替代硬编码字符串 "Band"/"RSRP"/... ───
 
 /**

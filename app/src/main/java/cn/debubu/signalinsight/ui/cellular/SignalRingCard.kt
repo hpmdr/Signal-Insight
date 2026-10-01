@@ -107,11 +107,14 @@ internal fun SignalRingCard(
                 animationSpec = tween(1500),
             )
 
+            // 环形轨道底色必须在 Canvas 之外取：draw scope 的 lambda 不是 @Composable 上下文
+            val trackColor = ringTrackColor()
+
             // 环形进度
             Canvas(modifier = Modifier.size(ringSize)) {
                 val strokeWidth = if (isCompact) 35f else 45f
                 drawCircle(
-                    color = Color.LightGray.copy(alpha = 0.2f),
+                    color = trackColor,
                     style = Stroke(width = strokeWidth),
                 )
                 drawArc(

@@ -53,12 +53,9 @@ fun SimContentPage(
     val context = LocalContext.current
 
     // 信号强度状态色 & 文字标签
-    val statusColor = when {
-        signalData.dbm == Int.MAX_VALUE -> MaterialTheme.colorScheme.outline
-        signalData.dbm > -85 -> Color(0xFF386B28)
-        signalData.dbm > -105 -> Color(0xFF6C5D00)
-        else -> Color(0xFFBA1A1A)
-    }
+    // 颜色统一走 SignalLevelColors 的明暗双档色阶（此前是亮色专用硬编码色值，
+    // 在深色主题下对比度不足）；文字标签仍按同一套阈值分档。
+    val statusColor = valueColor(MetricKey.RSRP, signalData.dbm)
     val statusLabel = when {
         signalData.dbm == Int.MAX_VALUE -> ""
         signalData.dbm > -85 -> context.getString(R.string.signal_excellent)

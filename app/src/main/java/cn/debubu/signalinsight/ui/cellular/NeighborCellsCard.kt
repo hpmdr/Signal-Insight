@@ -30,7 +30,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
+import cn.debubu.signalinsight.data.cellular.MetricKey
 import cn.debubu.signalinsight.data.cellular.NeighborCellTableModel
+import cn.debubu.signalinsight.data.cellular.displayMetric
 
 /**
  * 邻小区列表卡片 — 表头 + 邻区行，带空状态提示。
@@ -169,19 +171,13 @@ private fun RowScope.TableCell(
 }
 
 /** 不可用值(Int.MAX_VALUE) → 占位文案；其余走正常数字渲染 */
-private fun Int.ifUnavailable(placeholder: String): String =
-    if (this == Int.MAX_VALUE) placeholder else toString()
+private fun Int.ifUnavailable(placeholder: String): String = displayMetric(this, placeholder)
 
 /**
- * RSRP 值 → 颜色映射。
+ * RSRP 值 → 颜色。
  *
- * 不可用值必须先判，否则 `Int.MAX_VALUE > -85` 为真会被染成「优秀绿」，
- * 把「系统未上报」误传达为「信号极好」。
+ * 复用 [valueColor]（与信号环、指标格同一套阈值与明暗色阶），
+ * 此前这里是亮色专用的硬编码色值，深色主题下对比度不足。
  */
 @Composable
-private fun rsrpColor(rsrp: Int): Color = when {
-    rsrp == Int.MAX_VALUE -> MaterialTheme.colorScheme.outline
-    rsrp > -85 -> Color(0xFF386B28)
-    rsrp > -105 -> Color(0xFF6C5D00)
-    else -> Color(0xFFBA1A1A)
-}
+private fun rsrpColor(rsrp: Int): Color = valueColor(MetricKey.RSRP, rsrp)
