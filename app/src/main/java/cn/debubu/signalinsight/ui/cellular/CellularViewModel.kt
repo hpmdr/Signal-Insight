@@ -234,35 +234,6 @@ class CellularViewModel(
         _activeSim.value = simId
         return true
     }
-
-    // ─── SIM 状态查询 ────────────────────────────────────────────
-
-    /** 获取指定 SIM 卡槽的运营商名称（国际化字符串） */
-    fun getSimOperatorName(simId: Int): String {
-        val app = getApplication<Application>()
-        val noSim = app.getString(R.string.operator_no_sim)
-        val simData = if (simId == 1) _sim1Data.value else _sim2Data.value
-        val operatorName = simData?.servingCell?.operatorName ?: "No SIM"
-        return if (operatorName == "No SIM") noSim else operatorName
-    }
-
-    /** 判断指定 SIM 卡槽是否已插卡 */
-    fun isSimInserted(simId: Int): Boolean {
-        val simData = if (simId == 1) _sim1Data.value else _sim2Data.value
-        val operatorName = simData?.servingCell?.operatorName
-        return operatorName != null && operatorName != "未插卡" && operatorName != "No SIM"
-    }
-
-    /** 获取已插入的 SIM 卡运营商名称列表 */
-    fun getSimOptions(): List<String> {
-        val sim1Name = _sim1Data.value?.servingCell?.operatorName
-        val sim2Name = _sim2Data.value?.servingCell?.operatorName
-        fun isValid(name: String?) = name != null && name != "未插卡" && name != "No SIM" && name != "Unknown"
-        return listOfNotNull(
-            if (isValid(sim1Name)) sim1Name else null,
-            if (isValid(sim2Name)) sim2Name else null
-        )
-    }
 }
 
 // ─── 私有扩展函数 ──────────────────────────────────────────────────

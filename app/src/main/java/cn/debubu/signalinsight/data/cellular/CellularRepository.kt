@@ -186,50 +186,6 @@ class CellularRepository constructor(
     }
 
     /**
-     * 获取指定 SIM 卡槽的蜂窝数据
-     *
-     * @param slotId SIM 卡槽 ID (0 或 1)
-     * @return CellularData 对象
-     */
-    @SuppressLint("MissingPermission")
-    fun getCellularData(slotId: Int): CellularData {
-        val requiredPermissions = mutableListOf(
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requiredPermissions.add(Manifest.permission.READ_BASIC_PHONE_STATE)
-            requiredPermissions.add(Manifest.permission.READ_PHONE_STATE)
-        } else {
-            requiredPermissions.add(Manifest.permission.READ_PHONE_STATE)
-        }
-
-        val permissionState = permissionManager.checkPermissions(requiredPermissions)
-
-        if (!permissionState.allGranted) {
-            Log.w(
-                TAG,
-                "权限检查失败 - SIM 卡槽: $slotId, 缺少权限: ${permissionState.missingPermissions}"
-            )
-            return CellularData(
-                servingCell = CellularSignalInfo(
-                    simSlotId = slotId,
-                    networkType = getNetworkType(slotId),
-                    isPrimary = slotId == 0,
-                    operatorName = getOperatorNameForSlot(slotId)
-                )
-            )
-        }
-
-        val tm = getTelephonyManagerForSlot(slotId)
-        val cellInfoList = tm?.allCellInfo ?: emptyList()
-
-        Log.d(TAG, "获取蜂窝数据 - SIM 卡槽: $slotId, CellInfo 数量: ${cellInfoList.size}")
-
-        return extractCellularData(cellInfoList, slotId, slotId == 0, getOperatorNameForSlot(slotId))
-    }
-
-    /**
      * 获取指定 SIM 卡槽的蜂窝数据流
      * 使用 callbackFlow 监听 CellInfo 变化
      * 支持热插拔 SIM 卡的动态监听

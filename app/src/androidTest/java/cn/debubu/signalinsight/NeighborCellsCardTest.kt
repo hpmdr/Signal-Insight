@@ -122,4 +122,67 @@ class NeighborCellsCardTest {
             composeRule.onAllNodesWithText(noData).fetchSemanticsNodes().size,
         )
     }
+
+    /**
+     * 回归防线：厂商对**邻区**普遍不上报 rssnr（真机实测为 CellInfo.UNAVAILABLE），
+     * 此时 SINR 列必须显示「无数据」——这里用合成数据把该分支锁死，
+     * 避免以后有人「顺手」把它改成显示数字或 0。
+     */
+    @Test
+    fun 邻区SINR不可用时显示无数据而其余列正常() {
+        render(
+            listOf(
+                NeighborCellTableModel(
+                    pci = 400,
+                    earfcn = 3590,
+                    band = "B8",
+                    rsrp = -82,
+                    rsrq = -9,
+                    sinr = Int.MAX_VALUE,
+                )
+            )
+        )
+
+        // 只有 SINR 一列回退为占位，其余五列正常显示
+        assertEquals(
+            1,
+            composeRule.onAllNodesWithText(noData).fetchSemanticsNodes().size,
+        )
+        composeRule.onNodeWithText("-82").assertIsDisplayed()
+        composeRule.onNodeWithText("-9").assertIsDisplayed()
+        composeRule.onNodeWithText("400").assertIsDisplayed()
+        composeRule.onNodeWithText("3590").assertIsDisplayed()
+        composeRule.onNodeWithText("B8").assertIsDisplayed()
+    }
+
+    /** 邻区 SINR 有真实值（含 0 这种「有效但极差」的值）时必须照常显示数字 */
+    @Test
+    fun 邻区SINR有值时显示数值() {
+        render(
+            listOf(
+                NeighborCellTableModel(
+                    pci = 380,
+                    earfcn = 1650,
+                    band = "B3",
+                    rsrp = -104,
+                    rsrq = -5,
+                    sinr = 0,
+                ),
+                NeighborCellTableModel(
+                    pci = 282,
+                    earfcn = 2452,
+                    band = "B5",
+                    rsrp = -102,
+                    rsrq = -9,
+                    sinr = 12,
+                ),
+            )
+        )
+
+        assertEquals(
+            0,
+            composeRule.onAllNodesWithText(noData).fetchSemanticsNodes().size,
+        )
+        composeRule.onNodeWithText("12").assertIsDisplayed()
+    }
 }

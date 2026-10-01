@@ -77,6 +77,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import cn.debubu.signalinsight.R
 import cn.debubu.signalinsight.data.cellular.MetricKey
 import cn.debubu.signalinsight.ui.components.ElasticSimSwitcher
@@ -103,12 +104,6 @@ data class RangeStep(
     val color: Color
 )
 
-data class SimStatus(
-    val id: Int,
-    val name: String,
-    val isReady: Boolean = true
-)
-
 // =====================================================================
 // 主页面：HorizontalPager + NavigationBar 双卡切换
 // =====================================================================
@@ -126,31 +121,17 @@ fun CellularPage(
     val context = LocalContext.current
     val activeSim by viewModel.activeSim.collectAsStateWithLifecycle()
 
+    // 空卡槽的展示名走资源(英文环境下也正确)，不再依赖数据层硬编码的 "未插卡"
+    val noSimText = stringResource(R.string.operator_no_sim)
+    // 数据层在无卡/未识别时给出的占位值
+    val unknownName = "Unknown"
+
     // ── 收集 StateFlow 为 Compose State（必须用 collectAsStateWithLifecycle：官方推荐的生命周期
     //    感知收集方式，页面退到后台时自动停止收集以节省资源） ──
     val sim1Data by viewModel.sim1SignalData.collectAsStateWithLifecycle()
     val sim1Neighbors by viewModel.sim1NeighborCells.collectAsStateWithLifecycle()
     val sim2Data by viewModel.sim2SignalData.collectAsStateWithLifecycle()
     val sim2Neighbors by viewModel.sim2NeighborCells.collectAsStateWithLifecycle()
-
-    // ---- SIM 选项（从已收集的 state 派生，响应式更新） ----
-    val noSimText = remember { context.getString(R.string.operator_no_sim) }
-    val simOptions by remember {
-        derivedStateOf {
-            listOf(
-                SimStatus(
-                    1,
-                    if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
-                    sim1Data.operatorName != "Unknown"
-                ),
-                SimStatus(
-                    2,
-                    if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
-                    sim2Data.operatorName != "Unknown"
-                )
-            )
-        }
-    }
 
     // ---- Pager 状态（当前页面索引 = activeSim - 1） ----
     val pagerState = rememberPagerState(
@@ -207,8 +188,8 @@ fun CellularPage(
         // 顶层底部：SIM 切换栏叠加在 Pager 内容之上，透明背景可穿透看见下方的邻小区列表
         ElasticSimSwitcher(
             selectedSim = activeSim,
-            sim1Name = if (sim1Data.operatorName != "Unknown") sim1Data.operatorName else noSimText,
-            sim2Name = if (sim2Data.operatorName != "Unknown") sim2Data.operatorName else noSimText,
+            sim1Name = if (sim1Data.operatorName != unknownName) sim1Data.operatorName else noSimText,
+            sim2Name = if (sim2Data.operatorName != unknownName) sim2Data.operatorName else noSimText,
             onSimSelected = { viewModel.switchSim(it) },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
