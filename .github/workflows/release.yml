@@ -1,9 +1,18 @@
 name: Release
 
+# ⚠️ 发布闸门：当前**仅允许手动触发**，已停用 tag 自动发布。
+#
+# 原因：v1.0.0 ~ v1.0.7 由 GitHub Secrets 中的密钥（证书 CN=debumao，
+# 指纹 6C:1D:3F:27:…:27:E2）签名，该密钥库文件目前未在本地留存。
+# 在确认/找回该密钥之前禁止发版，否则新包签名不一致，老用户无法覆盖升级。
+#
+# 恢复自动发布的步骤：
+#   1) 找回归属密钥并核对指纹（keytool -list -v -keystore xxx.jks）
+#   2) 确认签名一致后，取消下面 push: tags 的注释
 on:
-  push:
-    tags:
-      - 'v*'
+  # push:
+  #   tags:
+  #     - 'v*'
   workflow_dispatch:
 
 permissions:
