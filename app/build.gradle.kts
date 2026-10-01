@@ -17,13 +17,16 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "cn.debubu.signalinsight"
     compileSdk {
-        version = release(36)
+        // API 37.2（Android 17）—— 当前最新稳定版
+        version = release(37) {
+            minorApiLevel = 2
+        }
     }
 
     defaultConfig {
         applicationId = "cn.debubu.signalinsight"
         minSdk = 31
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 7
         versionName = "1.0.7"
 

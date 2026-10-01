@@ -13,7 +13,7 @@ SignalInsight 是一款 Android 蜂窝网络信号智能监测仪，基于 Jetpa
 - **包名**: `cn.debubu.signalinsight`
 - **应用 ID**: `cn.debubu.signalinsight`
 - **minSdk**: 31 (Android 12)
-- **targetSdk / compileSdk**: 36 (Android 16)
+- **targetSdk / compileSdk**: 37 / 37.2 (Android 17)
 - **架构**: 单 Activity + MVVM + StateFlow + Navigation Compose（NavHost + 抽屉导航）
 
 ---
@@ -22,18 +22,18 @@ SignalInsight 是一款 Android 蜂窝网络信号智能监测仪，基于 Jetpa
 
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| Kotlin | 2.4.0 | 主要开发语言 |
-| Android Gradle Plugin | 9.2.0 | 构建系统 |
-| Gradle | 9.5.1 | 构建工具（腾讯镜像加速）|
-| Jetpack Compose BOM | 2026.05.00 | UI 框架物料清单 |
+| Kotlin | 2.4.20 | 主要开发语言 |
+| Android Gradle Plugin | 9.4.1 | 构建系统 |
+| Gradle | 9.8.0 | 构建工具（腾讯镜像加速）|
+| Jetpack Compose BOM | 2026.09.00 | UI 框架物料清单 |
 | Material 3 | 随 BOM | 设计系统 |
-| Navigation Compose | 2.9.8 | 页面路由导航（支持参数化路由 + 转场动画）|
-| Activity Compose | 1.12.2 | Activity 集成 |
-| Lifecycle Runtime KTX | 2.10.0 | 生命周期感知 |
-| Core KTX | 1.17.0 | AndroidX 核心扩展 |
+| Navigation Compose | 2.10.2 | 页面路由导航（支持参数化路由 + 转场动画）|
+| Activity Compose | 1.13.0 | Activity 集成 |
+| Lifecycle Runtime KTX | 2.11.0 | 生命周期感知 |
+| Core KTX | 1.19.1 | AndroidX 核心扩展 |
 
 版本集中管理于 `gradle/libs.versions.toml`，依赖声明使用 `libs.` 别名。
-Gradle 发行版使用腾讯镜像加速：`https://mirrors.cloud.tencent.com/gradle/gradle-9.5.1-bin.zip`
+Gradle 发行版使用腾讯镜像加速：`https://mirrors.cloud.tencent.com/gradle/gradle-9.8.0-bin.zip`
 
 ---
 
@@ -46,8 +46,8 @@ SignalInsight/
 ├── gradle.properties                   # Gradle 属性
 ├── gradle/
 │   ├── libs.versions.toml              # ★ 版本目录（所有依赖版本集中管理）
-│   └── wrapper/gradle-wrapper.properties  # Gradle 9.5.1（腾讯镜像）
-├── local.properties                    # sdk.dir 指向本地 SDK
+│   └── wrapper/gradle-wrapper.properties  # Gradle 9.8.0（腾讯镜像）
+├── local.properties                    # sdk.dir 指向本地 SDK（已 gitignore，需自行创建）
 ├── keystore.properties                 # 签名密钥配置（版本管理）
 ├── README.md                           # 项目文档（数据流图 + 指标说明）
 ├── app/
@@ -283,6 +283,7 @@ tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
 
 **关键约束**：
 - `PhoneStateListener(context.mainExecutor)` — API 31+ 必需 Executor 参数
+- 该监听器**刻意保留旧 API**：虽然 `TelephonyCallback.SignalStrengthsListener` 已取代它，但替换会改变 MIUI 回退路径的行为，故以 `@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")` 抑制告警而非迁移
 - 备用值仅用于服务小区（邻小区不使用，避免全部显示相同 SINR）
 - `fromCellInfo()` 三级降级：`rssnr → lteRssnrFallback → Int.MAX_VALUE`
 
@@ -374,6 +375,7 @@ tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
 - [x] 关于页
 - [x] README.md 项目文档（含架构图和指标说明）
 - [x] Compose UI 测试（权限流程）
+- [x] 清理编译弃用告警（`LocalLifecycleOwner` 迁至 `androidx.lifecycle.compose`、`Icons.AutoMirrored.Filled.ArrowBack`、`PhoneStateListener` 覆写加 `OVERRIDE_DEPRECATION` 抑制）
 
 ### ⬜ 待实现
 - [ ] **图表展示** — 信号变化趋势图（Compose Charts）
@@ -405,12 +407,25 @@ tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
 ./gradlew app:dependencies
 ```
 
+### 首次准备（新克隆的仓库）
+
+1. 通过 SDK Manager 安装：`platforms;android-37.2` 与 `build-tools;37.0.0`
+2. 在项目根目录创建 `local.properties`（已被 `.gitignore` 忽略，**必须创建**，否则报 SDK 路径未找到）：
+
+```properties
+sdk.dir=D\:\\Android\\Sdk
+```
+
+3. JDK 17+（实测 Microsoft JDK 25 通过；Android Studio 内置 jbr-21 亦可）
+
+> 构建时会提示「使用了已弃用的 Gradle 特性，与 Gradle 10 不兼容」，来源为 AGP / Kotlin 插件而非项目脚本，升级 Gradle 10 前需等待插件适配。
+
 ---
 
 ## Git 约定
 
 - 提交信息格式: `<type>: <description>`（feat/fix/refactor/docs/test/chore）
-- 远程仓库: `git@gitee.com:debumao/SingnalInsight.git`
+- 远程仓库: `git@github.com:hpmdr/Signal-Insight.git`（origin；README 中另列有 Gitee 镜像）
 
 ---
 
@@ -430,4 +445,4 @@ A: 已通过 PhoneStateListener 双监听器模式修复。如仍有问题请反
 
 ---
 
-*最后更新: 2026-06-13*
+*最后更新: 2026-10-01*

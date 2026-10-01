@@ -141,16 +141,17 @@ flowchart TB
 
 | 组件 | 技术 | 版本 |
 |------|------|------|
-| 语言 | Kotlin | 2.4.0 |
-| UI 框架 | Jetpack Compose + Material 3 | BOM 2026.05.00 |
-| 导航 | Jetpack Navigation Compose | 2.9.8 |
+| 语言 | Kotlin | 2.4.20 |
+| UI 框架 | Jetpack Compose + Material 3 | BOM 2026.09.00 |
+| 导航 | Jetpack Navigation Compose | 2.10.2 |
 | 架构 | MVVM (Repository + ViewModel + StateFlow) | - |
 | 异步 | Kotlin Coroutines + Flow + StateFlow | - |
-| 构建系统 | Gradle | 9.5.1 |
-| AGP | Android Gradle Plugin | 9.2.0 |
+| 构建系统 | Gradle | 9.8.0 |
+| AGP | Android Gradle Plugin | 9.4.1 |
 | 动画 | spring + tween + AnimatedContent + AnimatedVisibility | - |
 | 测试 | Compose UI Test (ui-test-junit4) | - |
-| 编译 SDK | Android 16 (API 36) | - |
+| 编译 SDK | Android 17 (API 37.2) | - |
+| 目标 SDK | Android 17 (API 37) | - |
 | 最低支持 | Android 12 (API 31) | - |
 
 ---
@@ -214,18 +215,19 @@ app/src/main/java/cn/debubu/signalinsight/
 ## 构建指南
 
 ### 环境要求
-- **JDK** 17+（推荐 Microsoft JDK 21）
-- **Android SDK** API 31 + API 36
-- **Gradle** 9.5.1（gradlew 自动下载）
+- **JDK** 17+（实测 Microsoft JDK 25 通过）
+- **Android SDK** Platform 37.2 + Build-Tools 37.0.0
+- **Gradle** 9.8.0（gradlew 自动下载）
+- **local.properties** 需在项目根目录自行创建（已被 `.gitignore` 忽略），指定 `sdk.dir` 指向本地 SDK
 
 ### 快速开始
 
 ```bash
 # 克隆（GitHub）
 git clone https://github.com/hpmdr/Signal-Insight.git
-# 或 Gitee
+# 或 Gitee 镜像
 git clone https://gitee.com/debumao/SingnalInsight.git
-cd SingnalInsight
+cd Signal-Insight   # GitHub 克隆后的目录名（Gitee 镜像的目录名为 SingnalInsight）
 
 # 构建 Debug
 ./gradlew assembleDebug

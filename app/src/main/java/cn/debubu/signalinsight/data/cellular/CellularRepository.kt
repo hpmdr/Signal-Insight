@@ -276,7 +276,11 @@ class CellularRepository constructor(
         var lastData: CellularData? = null
 
         // SignalStrength 备用监听器（用于 MIUI 等 CellInfo 不返回 RSSNR 的设备）
-        @Suppress("DEPRECATION")
+        // PhoneStateListener 自 API 31 起已被 TelephonyCallback.SignalStrengthsListener 取代，
+        // 但为保持 MIUI SINR 回退路径的行为不变，此处仍沿用旧 API：
+        //   DEPRECATION          —— 覆盖构造器与 listen() 调用点
+        //   OVERRIDE_DEPRECATION —— 覆盖 onSignalStrengthsChanged 的覆写声明
+        @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
         val ssListener = object : android.telephony.PhoneStateListener(context.mainExecutor) {
             override fun onSignalStrengthsChanged(signalStrength: android.telephony.SignalStrength?) {
                 if (signalStrength != null) {
