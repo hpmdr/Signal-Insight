@@ -115,20 +115,24 @@ internal fun NeighborCellsCard(
                     )
                 }
             } else {
+                // CellInfo.UNAVAILABLE(== Int.MAX_VALUE) 是「系统未上报」而非真实测量值，
+                // 六列必须统一按「无数据」渲染：否则会显示 2147483647、被排到最前、还会被染成绿色。
+                val noData = stringResource(R.string.metric_no_data)
                 neighborCells.forEachIndexed { index, cell ->
                     Row(
                         Modifier.fillMaxWidth().padding(vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        TableCell(cell.pci.toString(), bold = true)
-                        TableCell(cell.earfcn.toString(), fontSize = 9, singleLine = true)
+                        TableCell(cell.pci.ifUnavailable(noData), bold = true)
+                        TableCell(cell.earfcn.ifUnavailable(noData), fontSize = 9, singleLine = true)
                         TableCell(cell.band, bold = true, color = MaterialTheme.colorScheme.outline)
-                        TableCell(cell.rsrp.toString(), bold = true, color = rsrpColor(cell.rsrp))
-                        TableCell(cell.rsrq.toString())
                         TableCell(
-                            if (cell.sinr != Int.MAX_VALUE) cell.sinr.toString()
-                            else stringResource(R.string.metric_no_data),
+                            text = cell.rsrp.ifUnavailable(noData),
+                            bold = true,
+                            color = rsrpColor(cell.rsrp),
                         )
+                        TableCell(cell.rsrq.ifUnavailable(noData))
+                        TableCell(cell.sinr.ifUnavailable(noData))
                     }
                     if (index < neighborCells.size - 1) {
                         HorizontalDivider(
@@ -164,8 +168,19 @@ private fun RowScope.TableCell(
     )
 }
 
-/** RSRP 值 → 颜色映射 */
+/** 不可用值(Int.MAX_VALUE) → 占位文案；其余走正常数字渲染 */
+private fun Int.ifUnavailable(placeholder: String): String =
+    if (this == Int.MAX_VALUE) placeholder else toString()
+
+/**
+ * RSRP 值 → 颜色映射。
+ *
+ * 不可用值必须先判，否则 `Int.MAX_VALUE > -85` 为真会被染成「优秀绿」，
+ * 把「系统未上报」误传达为「信号极好」。
+ */
+@Composable
 private fun rsrpColor(rsrp: Int): Color = when {
+    rsrp == Int.MAX_VALUE -> MaterialTheme.colorScheme.outline
     rsrp > -85 -> Color(0xFF386B28)
     rsrp > -105 -> Color(0xFF6C5D00)
     else -> Color(0xFFBA1A1A)

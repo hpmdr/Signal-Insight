@@ -249,27 +249,37 @@ object SignalQualityEvaluator {
         }
 
         // 计算加权总分
-        val totalScore = when {
-            is5g -> {
-                val rsrp = paramScores.find { it.key == MetricKey.RSRP }?.score ?: 0
-                val rsrq = paramScores.find { it.key == MetricKey.RSRQ }?.score ?: 0
-                val sinr = paramScores.find { it.key == MetricKey.SINR }?.score ?: 0
-                (rsrp * 40 + rsrq * 25 + sinr * 35) / 100
+        //
+        // 关键：权重的分母只统计「实际可用」的参数。某参数在当前网络制式/机型下不可用
+        // (Int.MAX_VALUE) 时，若仍按固定权重记 0 分，会把「未上报」误判为「极差」——
+        // 例如 5G 下 RSRP 优秀、RSRQ 良好但 SINR 未上报，旧算法只有 59 分(一般)。
+        val weighted: List<Pair<Int, Int>> = buildList {
+            when {
+                is5g -> {
+                    if (signalData.rsrp != Int.MAX_VALUE) add(40 to scoreRsrp(signalData.rsrp))
+                    if (signalData.rsrq != Int.MAX_VALUE) add(25 to scoreRsrq(signalData.rsrq))
+                    if (signalData.sinr != Int.MAX_VALUE) add(35 to scoreSinr(signalData.sinr))
+                }
+                isLte -> {
+                    if (signalData.rsrp != Int.MAX_VALUE) add(35 to scoreRsrp(signalData.rsrp))
+                    if (signalData.rsrq != Int.MAX_VALUE) add(20 to scoreRsrq(signalData.rsrq))
+                    if (signalData.sinr != Int.MAX_VALUE) add(30 to scoreSinr(signalData.sinr))
+                    if (signalData.rssi != Int.MAX_VALUE) add(15 to scoreRssi(signalData.rssi))
+                }
+                isWcdma -> {
+                    if (signalData.dbm != Int.MAX_VALUE) add(100 to scoreDbm(signalData.dbm))
+                }
+                isGsm -> {
+                    if (signalData.dbm != Int.MAX_VALUE) add(40 to scoreDbm(signalData.dbm))
+                    if (signalData.rssi != Int.MAX_VALUE) add(60 to scoreRssi(signalData.rssi))
+                }
             }
-            isLte -> {
-                val rsrp = paramScores.find { it.key == MetricKey.RSRP }?.score ?: 0
-                val rsrq = paramScores.find { it.key == MetricKey.RSRQ }?.score ?: 0
-                val sinr = paramScores.find { it.key == MetricKey.SINR }?.score ?: 0
-                val rssi = paramScores.find { it.key == MetricKey.RSSI }?.score ?: 0
-                (rsrp * 35 + rsrq * 20 + sinr * 30 + rssi * 15) / 100
-            }
-            isWcdma -> paramScores.firstOrNull()?.score ?: 0
-            isGsm -> {
-                val dbm = scoreDbm(signalData.dbm)
-                val rssi = if (signalData.rssi != Int.MAX_VALUE) scoreRssi(signalData.rssi) else 0
-                (dbm * 40 + rssi * 60) / 100
-            }
-            else -> 0
+        }
+        val totalWeight = weighted.sumOf { it.first }
+        val totalScore = if (totalWeight == 0) {
+            0
+        } else {
+            weighted.sumOf { it.first * it.second } / totalWeight
         }
 
         val rating = Rating.entries.firstOrNull { totalScore >= it.minScore } ?: Rating.WEAK

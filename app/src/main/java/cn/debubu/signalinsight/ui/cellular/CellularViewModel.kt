@@ -307,4 +307,6 @@ private fun List<cn.debubu.signalinsight.data.cellular.NeighborCellInfo>?.toNeig
             rsrq = neighbor.rsrq,
             sinr = neighbor.sinr,
         )
-    }?.sortedByDescending { it.rsrp } ?: emptyList()
+    // 不可用值(Int.MAX_VALUE)必须排在最后：否则「系统未上报」的邻区会因数值最大而被置顶，
+    // 看起来像最强邻区。真实测量值仍按 RSRP 降序。
+    }?.sortedByDescending { if (it.rsrp == Int.MAX_VALUE) Int.MIN_VALUE else it.rsrp } ?: emptyList()
