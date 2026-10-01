@@ -1,3 +1,4 @@
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -6,12 +7,28 @@ plugins {
 }
 
 // 读取签名配置：私有密钥优先，回退到公开测试密钥
+//
+// 密钥库路径解析规则（兼容两种放置方式，避免因「文件放哪」导致构建失败）：
+//   1) storeFile 是绝对路径            → 直接使用
+//   2) storeFile 相对「项目根目录」存在 → 使用根目录下的该文件
+//   3) 否则                            → 按 Gradle 默认语义相对「app 模块目录」解析
+// 说明：原先直接用 file(...)，其基准是 app 模块目录；若把 .jks 放在项目根目录
+//       （与 private-keystore.properties 同级），会解析成 app/xxx.jks 而报文件不存在。
 val privatePropsFile = rootProject.file("private-keystore.properties")
 val publicPropsFile = rootProject.file("keystore.properties")
 val keystorePropertiesFile = if (privatePropsFile.exists()) privatePropsFile else publicPropsFile
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
+/** 将 storeFile 解析为实际存在的密钥库文件；都不存在时返回 null（由调用方决定回退策略） */
+fun resolveStoreFile(raw: String?): File? {
+    if (raw.isNullOrBlank()) return null
+    val asFile = File(raw)
+    if (asFile.isAbsolute) return asFile.takeIf { it.exists() }
+    rootProject.file(raw).takeIf { it.exists() }?.let { return it }
+    return file(raw).takeIf { it.exists() }
 }
 
 android {
@@ -36,24 +53,27 @@ android {
     buildTypes {
         debug {
             // 使用与 release 相同的签名，确保 test APK 兼容已安装的 release 版
-            if (keystorePropertiesFile.exists()) {
+            resolveStoreFile(keystoreProperties["storeFile"]?.toString())?.let { ks ->
                 signingConfig = signingConfigs.create("debugCustom") {
                     keyAlias = keystoreProperties["keyAlias"].toString()
                     keyPassword = keystoreProperties["keyPassword"].toString()
-                    storeFile = file(keystoreProperties["storeFile"].toString())
+                    storeFile = ks
                     storePassword = keystoreProperties["storePassword"].toString()
                 }
             }
         }
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            val ks = resolveStoreFile(keystoreProperties["storeFile"]?.toString())
+            signingConfig = if (ks != null) {
                 signingConfigs.create("release") {
                     keyAlias = keystoreProperties["keyAlias"].toString()
                     keyPassword = keystoreProperties["keyPassword"].toString()
-                    storeFile = file(keystoreProperties["storeFile"].toString())
+                    storeFile = ks
                     storePassword = keystoreProperties["storePassword"].toString()
                 }
             } else {
+                // 密钥库缺失时回退到 debug 签名（仅便于本地出包验证，正式发版必须提供密钥库）
+                logger.warn("[SignalInsight] 未找到 release 密钥库，已回退到 debug 签名")
                 signingConfigs["debug"]
             }
             isMinifyEnabled = true
