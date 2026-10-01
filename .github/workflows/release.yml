@@ -1,18 +1,18 @@
 name: Release
 
-# ⚠️ 发布闸门：当前**仅允许手动触发**，已停用 tag 自动发布。
+# 自动发布已恢复：推送 v* tag 即触发构建并创建 GitHub Release。
 #
-# 原因：v1.0.0 ~ v1.0.7 由 GitHub Secrets 中的密钥（证书 CN=debumao，
-# 指纹 6C:1D:3F:27:…:27:E2）签名，该密钥库文件目前未在本地留存。
-# 在确认/找回该密钥之前禁止发版，否则新包签名不一致，老用户无法覆盖升级。
+# 签名密钥变更说明（v1.1.0 起）：
+#   v1.0.0 ~ v1.0.7 使用的密钥库文件已丢失（证书指纹 6C:1D:3F:27:…:27:E2），
+#   v1.1.0 起改用新密钥库（证书指纹 B9:8A:E3:A9:…:D4:4F，别名 release）。
+#   已安装 v1.0.x 的用户需卸载重装，详见 doc/v1.1.0-发版说明.md。
 #
-# 恢复自动发布的步骤：
-#   1) 找回归属密钥并核对指纹（keytool -list -v -keystore xxx.jks）
-#   2) 确认签名一致后，取消下面 push: tags 的注释
+# 发版前请确认 GitHub Secrets 已更新为新密钥对应的值：
+#   SIGNING_KEY / KEY_STORE_PASSWORD / KEY_PASSWORD / KEY_ALIAS(=release)
 on:
-  # push:
-  #   tags:
-  #     - 'v*'
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
