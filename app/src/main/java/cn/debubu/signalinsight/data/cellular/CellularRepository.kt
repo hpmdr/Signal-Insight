@@ -60,7 +60,15 @@ class CellularRepository constructor(
         val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE)
                 as SubscriptionManager
 
-        val activeSubscriptionInfoList = subscriptionManager.activeSubscriptionInfoList
+        // 读取 activeSubscriptionInfoList 需要 READ_PHONE_STATE；权限缺失时会抛 SecurityException。
+        // 官方 lint(MissingPermission)要求「显式检查权限或显式处理异常」，此处按后者处理：
+        // 失败时回退到默认订阅 ID，由调用方按「未插卡」分支展示，绝不因此崩溃。
+        val activeSubscriptionInfoList = try {
+            subscriptionManager.activeSubscriptionInfoList
+        } catch (e: SecurityException) {
+            Log.w(TAG, "读取订阅列表被拒（缺少 READ_PHONE_STATE）", e)
+            null
+        }
         if (activeSubscriptionInfoList != null) {
             for (subscriptionInfo in activeSubscriptionInfoList) {
                 if (subscriptionInfo.simSlotIndex == slotId) {
@@ -86,7 +94,14 @@ class CellularRepository constructor(
         val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE)
                 as SubscriptionManager
 
-        val activeSubscriptionInfoList = subscriptionManager.activeSubscriptionInfoList
+        // 同 getSubscriptionIdForSlot：显式处理 SecurityException（官方 lint 要求），
+        // 失败时按「未插卡」返回，不向上抛。
+        val activeSubscriptionInfoList = try {
+            subscriptionManager.activeSubscriptionInfoList
+        } catch (e: SecurityException) {
+            Log.w(TAG, "读取订阅列表被拒（缺少 READ_PHONE_STATE）", e)
+            null
+        }
         if (activeSubscriptionInfoList != null) {
             for (subscriptionInfo in activeSubscriptionInfoList) {
                 if (subscriptionInfo.simSlotIndex == slotId) {
@@ -107,12 +122,19 @@ class CellularRepository constructor(
 
     private fun getNetworkType(slotId: Int): String {
         val tm = getTelephonyManagerForSlot(slotId) ?: return "未知"
-        val networkType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            @Suppress("DEPRECATION")
-            tm.dataNetworkType
-        } else {
-            @Suppress("DEPRECATION")
-            tm.networkType
+        // dataNetworkType / networkType 需要 READ_PHONE_STATE 或 READ_BASIC_PHONE_STATE；
+        // 权限缺失时抛 SecurityException，此处显式处理并降级为「未知」。
+        val networkType = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                @Suppress("DEPRECATION")
+                tm.dataNetworkType
+            } else {
+                @Suppress("DEPRECATION")
+                tm.networkType
+            }
+        } catch (e: SecurityException) {
+            Log.w(TAG, "读取网络类型被拒（缺少电话权限）- SIM 卡槽: $slotId", e)
+            TelephonyManager.NETWORK_TYPE_UNKNOWN
         }
         return CellularSignalInfo.getNetworkTypeName(networkType)
     }

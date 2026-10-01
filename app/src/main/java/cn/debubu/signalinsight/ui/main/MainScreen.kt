@@ -357,7 +357,12 @@ fun MainScreen(
                     )
                 )
             }
-        ) { paddingValues ->
+        ) { _ ->
+            // Scaffold 的 content padding 在此刻意不使用：本应用采用 edgeToEdge，
+            // 各页面自行通过 WindowInsets 处理状态栏/导航栏内边距（见 SimContentPage 等），
+            // 若再叠加 Scaffold 的 padding 会导致双重留白。
+            // 用 `_` 显式表达「有意忽略」，避免官方 lint 规则
+            // UnusedMaterial3ScaffoldPaddingParameter 报警。
             SharedTransitionLayout(
                 modifier = Modifier
                     .fillMaxSize()

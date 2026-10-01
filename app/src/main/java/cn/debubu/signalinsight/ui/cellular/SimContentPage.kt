@@ -23,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cn.debubu.signalinsight.R
@@ -50,17 +49,19 @@ fun SimContentPage(
     sharedContentStates: Map<MetricKey, SharedTransitionScope.SharedContentState>,
     onMetricClick: (MetricKey) -> Unit,
 ) {
-    val context = LocalContext.current
-
     // 信号强度状态色 & 文字标签
     // 颜色统一走 SignalLevelColors 的明暗双档色阶（此前是亮色专用硬编码色值，
     // 在深色主题下对比度不足）；文字标签仍按同一套阈值分档。
+    //
+    // 文本必须用 stringResource：官方 lint 规则 LocalContextGetResourceValueCall 指出
+    // 「用 LocalContext 取资源不具备配置感知能力，Configuration 变化时可能返回陈旧值」，
+    // 而 stringResource 会读取 LocalConfiguration 并在语言/配置变化时自动刷新。
     val statusColor = valueColor(MetricKey.RSRP, signalData.dbm)
     val statusLabel = when {
         signalData.dbm == Int.MAX_VALUE -> ""
-        signalData.dbm > -85 -> context.getString(R.string.signal_excellent)
-        signalData.dbm > -105 -> context.getString(R.string.signal_fair)
-        else -> context.getString(R.string.signal_poor)
+        signalData.dbm > -85 -> stringResource(R.string.signal_excellent)
+        signalData.dbm > -105 -> stringResource(R.string.signal_fair)
+        else -> stringResource(R.string.signal_poor)
     }
 
     val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
