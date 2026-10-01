@@ -5,6 +5,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.telephony.CellInfo
+import android.telephony.CellSignalStrengthLte
+import android.telephony.SignalStrength
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
@@ -33,9 +35,6 @@ class CellularRepository constructor(
     private val telephonyManager: TelephonyManager by lazy {
         context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
     }
-
-    /** SINR 备用值 — 从 SignalStrength 回调获取（MIUI 设备 CellInfo 不返回 RSSNR） */
-    private var _lteSinrFallback: Int = Int.MAX_VALUE
 
     /**
      * 获取指定 SIM 卡槽的 TelephonyManager
@@ -275,20 +274,21 @@ class CellularRepository constructor(
         var currentCallback: TelephonyCallback? = null
         var lastData: CellularData? = null
 
-        // SignalStrength 备用监听器（用于 MIUI 等 CellInfo 不返回 RSSNR 的设备）
-        // PhoneStateListener 自 API 31 起已被 TelephonyCallback.SignalStrengthsListener 取代，
-        // 但为保持 MIUI SINR 回退路径的行为不变，此处仍沿用旧 API：
-        //   DEPRECATION          —— 覆盖构造器与 listen() 调用点
-        //   OVERRIDE_DEPRECATION —— 覆盖 onSignalStrengthsChanged 的覆写声明
-        @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-        val ssListener = object : android.telephony.PhoneStateListener(context.mainExecutor) {
-            override fun onSignalStrengthsChanged(signalStrength: android.telephony.SignalStrength?) {
-                if (signalStrength != null) {
-                    for (css in signalStrength.cellSignalStrengths) {
-                        if (css is android.telephony.CellSignalStrengthLte && css.rssnr != Int.MAX_VALUE) {
-                            _lteSinrFallback = css.rssnr
-                            Log.d(TAG, "SignalStrength RSSNR 备用值更新: ${css.rssnr}")
-                        }
+        // SINR 备用值 —— 每个 flow 各自持有。
+        // 早期版本把它放在 repository 字段上，而仓库是应用级单例：双卡同时为 LTE 时，
+        // 一张卡的 RSSNR 会写进共享字段被另一张卡读到（跨卡污染），且暂停采集后不清零。
+        var lteSinrFallback = Int.MAX_VALUE
+
+        // SignalStrength 备用监听器（用于 MIUI 等 CellInfo 不返回 RSSNR 的设备）。
+        // PhoneStateListener / LISTEN_SIGNAL_STRENGTHS 自 API 31 起被官方弃用，指定替代品即
+        // TelephonyCallback.SignalStrengthsListener，两者载荷同为 SignalStrength，
+        // 因此这里与 CellInfo 走同一套 registerTelephonyCallback 注册/注销路径。
+        val ssCallback = object : TelephonyCallback(), TelephonyCallback.SignalStrengthsListener {
+            override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
+                for (css in signalStrength.cellSignalStrengths) {
+                    if (css is CellSignalStrengthLte && css.rssnr != Int.MAX_VALUE) {
+                        lteSinrFallback = css.rssnr
+                        Log.d(TAG, "SignalStrength RSSNR 备用值更新 - SIM 卡槽: $slotId, rssnr: ${css.rssnr}")
                     }
                 }
             }
@@ -349,6 +349,13 @@ class CellularRepository constructor(
                 }
             }
 
+            // SignalStrength 监听器同样要换绑，否则换卡后会残留在旧订阅上
+            try {
+                currentTm?.unregisterTelephonyCallback(ssCallback)
+            } catch (e: Exception) {
+                Log.e(TAG, "注销 SignalStrength 监听器失败 - SIM 卡槽: $slotId", e)
+            }
+
             currentTm = tm
 
             val operatorName = getOperatorNameForSlot(slotId)
@@ -359,7 +366,7 @@ class CellularRepository constructor(
                         TAG,
                         "CellInfo 变化回调 - SIM 卡槽: $slotId, CellInfo 数量: ${cellInfoList.size}"
                     )
-                    val data = extractCellularData(cellInfoList, slotId, slotId == 0, operatorName, _lteSinrFallback)
+                    val data = extractCellularData(cellInfoList, slotId, slotId == 0, operatorName, lteSinrFallback)
                     if (lastData != data) {
                         lastData = data
                         trySend(data)
@@ -377,8 +384,7 @@ class CellularRepository constructor(
 
             try {
                 tm.registerTelephonyCallback(context.mainExecutor, callback)
-                @Suppress("DEPRECATION")
-                tm.listen(ssListener, android.telephony.PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
+                tm.registerTelephonyCallback(context.mainExecutor, ssCallback)
 
                 val initialCellInfo = tm.allCellInfo ?: emptyList()
                 Log.d(
@@ -386,7 +392,7 @@ class CellularRepository constructor(
                     "初始 CellInfo - SIM 卡槽: $slotId, SubscriptionId: $subscriptionId, 数量: ${initialCellInfo.size}"
                 )
 
-                val initialData = extractCellularData(initialCellInfo, slotId, slotId == 0, operatorName, _lteSinrFallback)
+                val initialData = extractCellularData(initialCellInfo, slotId, slotId == 0, operatorName, lteSinrFallback)
                 if (lastData != initialData) {
                     lastData = initialData
                     trySend(initialData)
@@ -444,8 +450,7 @@ class CellularRepository constructor(
                         currentTm?.unregisterTelephonyCallback(it)
                         Log.d(TAG, "注销 CellInfo 监听器 - SIM 卡槽: $slotId")
                     }
-                    @Suppress("DEPRECATION")
-                    currentTm?.listen(ssListener, android.telephony.PhoneStateListener.LISTEN_NONE)
+                    currentTm?.unregisterTelephonyCallback(ssCallback)
                     subscriptionManager.removeOnSubscriptionsChangedListener(subscriptionListener)
                     Log.d(TAG, "移除订阅监听器 - SIM 卡槽: $slotId")
                 } catch (e: Exception) {
@@ -466,8 +471,7 @@ class CellularRepository constructor(
                         currentTm?.unregisterTelephonyCallback(it)
                         Log.d(TAG, "注销 CellInfo 监听器 - SIM 卡槽: $slotId")
                     }
-                    @Suppress("DEPRECATION")
-                    currentTm?.listen(ssListener, android.telephony.PhoneStateListener.LISTEN_NONE)
+                    currentTm?.unregisterTelephonyCallback(ssCallback)
                 } catch (e: Exception) {
                     Log.e(TAG, "注销监听器失败 - SIM 卡槽: $slotId", e)
                 }

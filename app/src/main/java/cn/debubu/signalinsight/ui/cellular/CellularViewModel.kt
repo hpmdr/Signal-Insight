@@ -183,8 +183,13 @@ class CellularViewModel(
         refreshJob = viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 kotlinx.coroutines.delay(refreshIntervalMs)
-                repository.requestCellInfoUpdate(0)
-                repository.requestCellInfoUpdate(1)
+                // 兜底：单轮刷新里的任何异常都不该终止循环，否则会静默停止刷新。
+                try {
+                    repository.requestCellInfoUpdate(0)
+                    repository.requestCellInfoUpdate(1)
+                } catch (e: Exception) {
+                    Log.w(TAG, "主动刷新异常，已忽略并继续下一轮", e)
+                }
             }
         }
     }
