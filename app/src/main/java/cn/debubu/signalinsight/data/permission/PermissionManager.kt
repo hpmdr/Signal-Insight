@@ -3,8 +3,6 @@ package cn.debubu.signalinsight.data.permission
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
-import android.provider.Settings
 import androidx.core.content.ContextCompat
 
 data class PermissionState(
@@ -18,8 +16,11 @@ class PermissionManager constructor(private val context: Context) {
 
     /**
      * 检查权限状态 — 同时检测是否被永久拒绝（"不再询问"）
-     * 根据 Android 官方最佳实践：
-     *   permanentlyDenied = checkSelfPermission(DENIED) && !shouldShowRequestPermissionRationale()
+     *
+     * 说明：`shouldShowRequestPermissionRationale()` 在「从未请求」和「永久拒绝」两种情况下
+     * 都返回 false（官方 Activity 文档只说明它表示"是否应展示权限说明"），因此**单独使用它
+     * 无法区分这两种状态**。本项目的做法是配合一个**持久化**的「是否请求过」标记来判断，
+     * 详见 [markRequested] / [wasRequested]。
      */
     fun checkPermissions(permissions: List<String>, activity: Activity? = null): PermissionState {
         val missing = missingPermissions(permissions)
@@ -80,14 +81,21 @@ class PermissionManager constructor(private val context: Context) {
         return activity.shouldShowRequestPermissionRationale(permission)
     }
 
-    fun isPreciseLocationEnabled(): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            return Settings.Secure.getInt(
-                context.contentResolver,
-                "location_accuracy",
-                2
-            ) == 2
-        }
-        return true
+    /**
+     * 「是否已请求过」标记的持久化。
+     *
+     * 该标记必须跨进程重启保留：`shouldShowRequestPermissionRationale()` 在「从未请求」与
+     * 「永久拒绝」下都返回 false，若标记只存内存，则进程重启后会把「永久拒绝」误判为
+     * 「从未请求」，导致用户点「授权」时系统不弹框、界面也不提示去设置页。
+     *
+     * 注意：读写发生在主线程（SharedPreferences 首次加载会阻塞），但文件极小、
+     * 仅在权限页初始化和点击时访问，实测无感知。
+     */
+    private val prefs = context.getSharedPreferences("permission_prefs", Context.MODE_PRIVATE)
+
+    fun markRequested(permission: String) {
+        prefs.edit().putBoolean(permission, true).apply()
     }
+
+    fun wasRequested(permission: String): Boolean = prefs.getBoolean(permission, false)
 }

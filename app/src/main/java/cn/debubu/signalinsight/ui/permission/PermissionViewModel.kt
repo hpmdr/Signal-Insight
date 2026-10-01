@@ -45,8 +45,15 @@ class PermissionViewModel constructor(
     private val _isRequestingPermissions = mutableStateOf(false)
     val isRequestingPermissions: State<Boolean> = _isRequestingPermissions
 
+    /** 上一次实际发起的请求集合 */
+    private var _lastRequestedPermissions: List<String> = emptyList()
+
     init {
         initializePermissionRequirements()
+        // 跨进程恢复「是否请求过」，用于区分「从未请求」与「永久拒绝」
+        _permissionRequirements.forEach {
+            it.hasBeenRequested = permissionManager.wasRequested(it.permission)
+        }
     }
 
     private final val TAG = "PermissionViewModel"
@@ -54,34 +61,27 @@ class PermissionViewModel constructor(
     private fun initializePermissionRequirements() {
         _permissionRequirements.clear()
 
-        // Android 13+ 需要 READ_BASIC_PHONE_STATE
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            _permissionRequirements.addAll(
-                listOf(
-                    PermissionRequirement(
-                        permission = Manifest.permission.READ_BASIC_PHONE_STATE,
-                        titleResId = R.string.perm_phone_state_title,
-                        descriptionResId = R.string.perm_phone_state_desc,
-                        icon = "phone_android"
-                    ),
-                    PermissionRequirement(
-                        permission = Manifest.permission.READ_PHONE_STATE,
-                        titleResId = R.string.perm_phone_full_title,
-                        descriptionResId = R.string.perm_phone_full_desc,
-                        icon = "phone_android"
-                    )
-                )
+        // 注意：READ_BASIC_PHONE_STATE 是 **non-dangerous** 权限（安装即授予，不属运行时框架），
+        // 因此不列入运行时请求清单；manifest 仍需保留声明，供 Android 13+ 的
+        // getDataNetworkType() 使用（官方：READ_PHONE_STATE **或** READ_BASIC_PHONE_STATE）。
+        // 把它放进请求数组是空操作，且一旦被误判为「永久拒绝」，会把用户送到一个
+        // 根本没有该开关的系统设置页。
+        _permissionRequirements.add(
+            PermissionRequirement(
+                permission = Manifest.permission.READ_PHONE_STATE,
+                titleResId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    R.string.perm_phone_full_title
+                } else {
+                    R.string.perm_phone_state_title
+                },
+                descriptionResId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    R.string.perm_phone_full_desc
+                } else {
+                    R.string.perm_phone_state_desc
+                },
+                icon = "phone_android"
             )
-        } else {
-            _permissionRequirements.add(
-                PermissionRequirement(
-                    permission = Manifest.permission.READ_PHONE_STATE,
-                    titleResId = R.string.perm_phone_state_title,
-                    descriptionResId = R.string.perm_phone_state_desc,
-                    icon = "phone_android"
-                )
-            )
-        }
+        )
 
         _permissionRequirements.add(
             PermissionRequirement(
@@ -104,11 +104,11 @@ class PermissionViewModel constructor(
             _permissionRequirements.forEachIndexed { index, requirement ->
                 val rawGranted = permissionManager.isPermissionGranted(requirement.permission)
 
-                val isGranted = if (requirement.permission == Manifest.permission.ACCESS_FINE_LOCATION) {
-                    rawGranted && permissionManager.isPreciseLocationEnabled()
-                } else {
-                    rawGranted
-                }
+                // 精确位置由 ACCESS_FINE_LOCATION 的授予状态本身决定：用户在 Android 12+
+                // 选择「大致位置」时，系统只授予 COARSE 而不授予 FINE。
+                // （原先额外读 Settings.Secure 的未公开键 "location_accuracy"，该键在真机上
+                //  并不存在，实测恒为默认值 2，属无效判断且存在误判风险，已移除。）
+                val isGranted = rawGranted
 
                 // 检测是否为"永久拒绝"状态
                 // 只有在「曾经请求过」且「shouldShowRationale=false」时才是永久拒绝
@@ -144,23 +144,48 @@ class PermissionViewModel constructor(
      * 请求权限 — 点击授权按钮时调用
      */
     fun requestPermissions(activity: Activity) {
-        val permissionsToRequest = _permissionRequirements
-            .filter { !it.isGranted && !it.isPermanentlyDenied }
-            .map { it.permission }
+        val permissionsToRequest = buildRequestList()
 
         if (permissionsToRequest.isEmpty()) {
             Log.d(TAG, "没有可请求的权限")
             return
         }
 
-        // 标记这些权限已经被请求过（用于后续判断永久拒绝）
+        _lastRequestedPermissions = permissionsToRequest
+
+        // 标记这些权限已经被请求过（用于后续判断永久拒绝），并持久化
         _permissionRequirements.forEach {
             if (it.permission in permissionsToRequest) {
                 it.hasBeenRequested = true
+                permissionManager.markRequested(it.permission)
             }
         }
 
         _isRequestingPermissions.value = true
+    }
+
+    /** 上一次实际发起的请求集合（ActivityResult 回调须与之对齐） */
+    fun lastRequestedPermissions(): List<String> = _lastRequestedPermissions
+
+    /**
+     * 构造实际向系统发起的请求集合。
+     *
+     * 官方要求：**不要单独请求 ACCESS_FINE_LOCATION**，必须与 ACCESS_COARSE_LOCATION 在同一次
+     * 请求中一起提交；否则部分 Android 12 版本会忽略整个请求，并在 Logcat 打印
+     * `ACCESS_FINE_LOCATION must be requested with ACCESS_COARSE_LOCATION`。
+     */
+    private fun buildRequestList(): List<String> {
+        val base = _permissionRequirements
+            .filter { !it.isGranted && !it.isPermanentlyDenied }
+            .map { it.permission }
+            .toMutableList()
+
+        if (base.contains(Manifest.permission.ACCESS_FINE_LOCATION) &&
+            !base.contains(Manifest.permission.ACCESS_COARSE_LOCATION)
+        ) {
+            base.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        return base
     }
 
     /**
@@ -183,11 +208,7 @@ class PermissionViewModel constructor(
                         permissionManager.isPermissionGranted(requirement.permission)
                     }
 
-                    val isGranted = if (requirement.permission == Manifest.permission.ACCESS_FINE_LOCATION) {
-                        granted && permissionManager.isPreciseLocationEnabled()
-                    } else {
-                        granted
-                    }
+                    val isGranted = granted
 
                     // 关键检测：判断是否为永久拒绝
                     val isPermanentlyDenied = if (!isGranted && requirement.hasBeenRequested && activity != null) {

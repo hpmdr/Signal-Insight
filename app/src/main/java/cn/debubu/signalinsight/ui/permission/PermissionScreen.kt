@@ -76,21 +76,21 @@ fun PermissionScreen(
         }
     }
 
-    // 需要请求的权限列表
-    val permissionsToRequest = remember {
-        permissionRequirements.map { it.permission }
-    }
-
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
-        viewModel.handlePermissionResult(permissionsToRequest, result, activity)
+        // 用 ViewModel 记录的实际请求集合对齐结果，避免两侧清单不一致
+        viewModel.handlePermissionResult(viewModel.lastRequestedPermissions(), result, activity)
     }
 
-    // 当 ViewModel 设置 isRequestingPermissions 时弹框
+    // 当 ViewModel 设置 isRequestingPermissions 时弹框。
+    // 请求集合由 ViewModel 计算，其中已按官方要求把 ACCESS_COARSE_LOCATION 与 FINE 配对。
     LaunchedEffect(isRequestingPermissions) {
         if (isRequestingPermissions) {
-            permissionLauncher.launch(permissionsToRequest.toTypedArray())
+            val perms = viewModel.lastRequestedPermissions()
+            if (perms.isNotEmpty()) {
+                permissionLauncher.launch(perms.toTypedArray())
+            }
         }
     }
 
