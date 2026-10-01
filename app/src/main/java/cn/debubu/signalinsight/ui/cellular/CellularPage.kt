@@ -51,7 +51,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -123,13 +124,14 @@ fun CellularPage(
     onOpenExplainer: (key: MetricKey) -> Unit = { }
 ) {
     val context = LocalContext.current
-    val activeSim by viewModel.activeSim.collectAsState()
+    val activeSim by viewModel.activeSim.collectAsStateWithLifecycle()
 
-    // ── 收集 StateFlow 为 Compose State（必须用 collectAsState，.value 是冷读不会触发重组） ──
-    val sim1Data by viewModel.sim1SignalData.collectAsState()
-    val sim1Neighbors by viewModel.sim1NeighborCells.collectAsState()
-    val sim2Data by viewModel.sim2SignalData.collectAsState()
-    val sim2Neighbors by viewModel.sim2NeighborCells.collectAsState()
+    // ── 收集 StateFlow 为 Compose State（必须用 collectAsStateWithLifecycle：官方推荐的生命周期
+    //    感知收集方式，页面退到后台时自动停止收集以节省资源） ──
+    val sim1Data by viewModel.sim1SignalData.collectAsStateWithLifecycle()
+    val sim1Neighbors by viewModel.sim1NeighborCells.collectAsStateWithLifecycle()
+    val sim2Data by viewModel.sim2SignalData.collectAsStateWithLifecycle()
+    val sim2Neighbors by viewModel.sim2NeighborCells.collectAsStateWithLifecycle()
 
     // ---- SIM 选项（从已收集的 state 派生，响应式更新） ----
     val noSimText = remember { context.getString(R.string.operator_no_sim) }

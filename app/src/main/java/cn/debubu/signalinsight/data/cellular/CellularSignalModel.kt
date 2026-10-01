@@ -8,6 +8,7 @@ import android.telephony.CellInfoNr
 import android.telephony.CellInfoWcdma
 import android.telephony.CellSignalStrengthNr
 import android.telephony.TelephonyManager
+import androidx.compose.runtime.Immutable
 
 /**
  * 蜂窝信号信息数据类
@@ -445,6 +446,7 @@ data class SignalData(
 /**
  * 邻小区表格数据模型 — 用于 Compose UI 中的邻小区列表展示
  */
+@Immutable
 data class NeighborCellTableModel(
     val pci: Int,
     val earfcn: Int,
