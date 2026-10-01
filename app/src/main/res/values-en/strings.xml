@@ -15,7 +15,6 @@
 
     <!-- AboutScreen -->
     <string name="about_title">About</string>
-    <string name="about_content">Signal Insight v1.0.1\n\nAn app for monitoring cellular network signal strength.</string>
 
     <!-- SettingsScreen -->
     <string name="settings_title">Settings</string>
@@ -372,4 +371,18 @@
 
     <!-- ===== EARFCN (NR formula) ===== -->
     <string name="earfcn_formula_nr">5G NR: Fref = Fref_Off + ΔF_Global × (NR-ARFCN - Nref)</string>
+    <!-- About screen (fully localized) -->
+    <string name="about_app_version">Signal Insight v%1$s</string>
+    <string name="about_tagline">Monitor 2G/3G/4G/5G cellular signals in real time and understand your network environment.</string>
+    <string name="about_privacy_title">Privacy</string>
+    <string name="about_privacy_no_network_title">This app never goes online</string>
+    <string name="about_privacy_no_network_desc">Signal Insight does not request the network permission at all. Check this app\'s permission list in system settings — there is no network entry. All data is processed locally and can never be uploaded or leaked to any server.</string>
+    <string name="about_perm_phone_title">Phone permission</string>
+    <string name="about_perm_phone_purpose">Reads cell signal strength, SIM status and network type — the core functionality this app depends on.</string>
+    <string name="about_perm_location_title">Location permission</string>
+    <string name="about_perm_location_purpose">Android requires location permission to read cell information. This app never records or tracks your actual location.</string>
+    <string name="about_license_title">Open source license</string>
+    <string name="about_license_desc">This project is open source under the Apache 2.0 license, with source code hosted on GitHub.</string>
+    <string name="action_confirm">OK</string>
+    <string name="action_cancel">Cancel</string>
 </resources>

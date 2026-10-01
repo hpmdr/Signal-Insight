@@ -15,7 +15,6 @@
 
     <!-- 关于页面 (AboutScreen) -->
     <string name="about_title">关于</string>
-    <string name="about_content">信号监测仪 v1.0.1\n\n这是一个用于监测蜂窝网络信号强度的应用。</string>
 
     <!-- 设置页面 (SettingsScreen) -->
     <string name="settings_title">设置</string>
@@ -366,4 +365,18 @@
     <string name="refresh_fast_detail">2秒</string>
     <string name="refresh_slow">慢</string>
     <string name="refresh_slow_detail">5秒</string>
+    <!-- 关于页(完整本地化) -->
+    <string name="about_app_version">信号监测仪 v%1$s</string>
+    <string name="about_tagline">实时监测 2G/3G/4G/5G 蜂窝网络信号，了解你的网络环境。</string>
+    <string name="about_privacy_title">隐私说明</string>
+    <string name="about_privacy_no_network_title">本应用不会联网</string>
+    <string name="about_privacy_no_network_desc">信号监测仪根本没有申请联网权限。你在系统设置中查看本应用的权限列表，找不到「网络」这一项——所有数据仅在本地处理，不可能上传或泄露到任何服务器。</string>
+    <string name="about_perm_phone_title">电话权限</string>
+    <string name="about_perm_phone_purpose">读取基站信号强度、SIM 卡状态、网络类型等蜂窝信息，这是本应用的核心功能依赖。</string>
+    <string name="about_perm_location_title">位置权限</string>
+    <string name="about_perm_location_purpose">Android 系统要求：读取基站信息必须授予位置权限。本应用不会记录或追踪你的实际位置。</string>
+    <string name="about_license_title">开源协议</string>
+    <string name="about_license_desc">本项目采用 Apache 2.0 开源协议，源代码托管在 GitHub。</string>
+    <string name="action_confirm">确定</string>
+    <string name="action_cancel">取消</string>
 </resources>

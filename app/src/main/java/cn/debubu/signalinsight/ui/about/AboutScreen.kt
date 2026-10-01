@@ -64,12 +64,19 @@ fun AboutScreen(modifier: Modifier = Modifier) {
             confirmButton = {
                 TextButton(onClick = {
                     showGitDialog = false
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(gitHubUrl))
-                    context.startActivity(intent)
-                }) { Text("确定") }
+                    // 设备无浏览器/被管控时 startActivity 会抛 ActivityNotFoundException
+                    //（官方 Context.startActivity 文档明确列出该异常），此处显式兜底。
+                    try {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(gitHubUrl)))
+                    } catch (e: android.content.ActivityNotFoundException) {
+                        android.util.Log.w("AboutScreen", "无法打开浏览器", e)
+                    }
+                }) { Text(stringResource(R.string.action_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showGitDialog = false }) { Text("取消") }
+                TextButton(onClick = { showGitDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             }
         )
     }
@@ -85,13 +92,13 @@ fun AboutScreen(modifier: Modifier = Modifier) {
             )
     ) {
         Text(
-            text = "信号监测仪 v$versionName",
+            text = stringResource(R.string.about_app_version, versionName),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Black
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "实时监测 2G/3G/4G/5G 蜂窝网络信号，了解你的网络环境。",
+            text = stringResource(R.string.about_tagline),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline
         )
@@ -100,7 +107,7 @@ fun AboutScreen(modifier: Modifier = Modifier) {
 
         // ── 隐私说明 ──
         Text(
-            text = "隐私说明",
+            text = stringResource(R.string.about_privacy_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -117,12 +124,12 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                     Spacer(Modifier.width(8.dp))
                     Column {
                         Text(
-                            "本应用不会联网",
+                            stringResource(R.string.about_privacy_no_network_title),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "信号监测仪根本没有申请联网权限。你在系统设置中查看本应用的权限列表，找不到「网络」这一项——所有数据仅在本地处理，不可能上传或泄露到任何服务器。",
+                            stringResource(R.string.about_privacy_no_network_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
                             lineHeight = 18.sp
@@ -141,13 +148,13 @@ fun AboutScreen(modifier: Modifier = Modifier) {
         ) {
             Column(Modifier.padding(16.dp)) {
                 PermissionExplainRow(
-                    title = "电话权限",
-                    purpose = "读取基站信号强度、SIM 卡状态、网络类型等蜂窝信息，这是本应用的核心功能依赖。"
+                    title = stringResource(R.string.about_perm_phone_title),
+                    purpose = stringResource(R.string.about_perm_phone_purpose)
                 )
                 Spacer(Modifier.height(16.dp))
                 PermissionExplainRow(
-                    title = "位置权限",
-                    purpose = "Android 系统要求：读取基站信息必须授予位置权限。本应用不会记录或追踪你的实际位置。"
+                    title = stringResource(R.string.about_perm_location_title),
+                    purpose = stringResource(R.string.about_perm_location_purpose)
                 )
             }
         }
@@ -156,13 +163,13 @@ fun AboutScreen(modifier: Modifier = Modifier) {
 
         // ── 开源信息 ──
         Text(
-            text = "开源协议",
+            text = stringResource(R.string.about_license_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "本项目采用 Apache 2.0 开源协议，源代码托管在 GitHub。",
+            text = stringResource(R.string.about_license_desc),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline,
             lineHeight = 18.sp
