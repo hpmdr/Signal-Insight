@@ -152,12 +152,10 @@ class CellularViewModel(
                 Log.d(TAG, "SIM 1: ${sim1Data.servingCell?.operatorName} (valid=$sim1Valid)")
                 Log.d(TAG, "SIM 2: ${sim2Data.servingCell?.operatorName} (valid=$sim2Valid)")
 
-                // 首次有效数据到达时自动选择默认卡槽
+                // 首次有效数据到达时选择一次默认卡槽（此后完全尊重用户选择，不再自动切换）
                 if (!firstValidDataArrived && (sim1Valid || sim2Valid)) {
                     firstValidDataArrived = true
                     selectDefaultSim(sim1Data, sim2Data)
-                } else if (firstValidDataArrived) {
-                    autoSwitchIfNeeded(sim1Data, sim2Data)
                 }
             }
         }
@@ -213,23 +211,11 @@ class CellularViewModel(
     }
 
     /**
-     * 运行时检测：如果当前选中的卡失去信号，且另一张卡有效，自动切换
+     * 判断指定卡槽的 CellularData 是否有效（有实际信号且运营商可识别）
+     *
+     * 注意：该判定用于「是否值得为无卡槽显示 SIM 卡片」以及「首次默认选中哪张卡」，
+     * **不再用于运行时自动切换**——卡槽选择完全由用户决定。
      */
-    private fun autoSwitchIfNeeded(sim1Data: CellularData?, sim2Data: CellularData?) {
-        val sim1Valid = isSimValid(sim1Data)
-        val sim2Valid = isSimValid(sim2Data)
-        val current = _activeSim.value
-
-        if (current == 1 && !sim1Valid && sim2Valid) {
-            _activeSim.value = 2
-            Log.d(TAG, "卡 1 失去信号，自动切换到卡 2")
-        } else if (current == 2 && !sim2Valid && sim1Valid) {
-            _activeSim.value = 1
-            Log.d(TAG, "卡 2 失去信号，自动切换到卡 1")
-        }
-    }
-
-    /** 判断指定卡槽的 CellularData 是否有效（有实际信号且运营商可识别） */
     private fun isSimValid(data: CellularData?): Boolean {
         val name = data?.servingCell?.operatorName
         return name != null && name != "未插卡" && name != "No SIM" && name != "Unknown"
