@@ -294,4 +294,82 @@
     <string name="refresh_fast_detail">2 sec</string>
     <string name="refresh_slow">Slow</string>
     <string name="refresh_slow_detail">5 sec</string>
+
+    <!-- ===== RSRP explainer ===== -->
+    <string name="metric_rsrq_tip">RSRQ must be read together with RSRP to judge signal conditions reliably.</string>
+    <string name="rsrp_explain_title">What is RSRP?</string>
+    <string name="rsrp_explain_basic">RSRP (Reference Signal Received Power) is the power of the reference signal your phone measures from the tower. It is the core metric for 4G/5G coverage strength.</string>
+    <string name="rsrp_range_title">RSRP Signal Strength Levels (international standard)</string>
+    <string name="rsrp_range_excellent">Excellent (&gt; -80 dBm)</string>
+    <string name="rsrp_range_excellent_desc">Very strong signal, peak throughput, HD VoLTE, seamless handover</string>
+    <string name="rsrp_range_good">Good (-80 to -90 dBm)</string>
+    <string name="rsrp_range_good_desc">Good signal, stable high-speed data, smooth everyday use</string>
+    <string name="rsrp_range_fair">Fair (-90 to -100 dBm)</string>
+    <string name="rsrp_range_fair_desc">Moderate signal, throughput starts to drop, indoor attenuation possible</string>
+    <string name="rsrp_range_poor">Poor (-100 to -110 dBm)</string>
+    <string name="rsrp_range_poor_desc">Weak signal, noticeably lower throughput, higher latency, possible drops</string>
+    <string name="rsrp_range_weak">Very weak (&lt; -110 dBm)</string>
+    <string name="rsrp_range_weak_desc">Extremely weak signal, only a minimal connection, possibly no service</string>
+    <string name="rsrp_factor_title">What affects signal strength</string>
+    <string name="rsrp_factor_distance">Distance to the tower: the farther away, the weaker the signal</string>
+    <string name="rsrp_factor_obstacle">Building obstruction: reinforced concrete walls attenuate heavily</string>
+    <string name="rsrp_factor_weather">Weather: heavy rain or fog causes slight attenuation</string>
+    <string name="rsrp_factor_load">User density: signal fluctuates when the tower is heavily loaded</string>
+    <string name="rsrp_assessment_title">Current Signal Assessment</string>
+    <string name="rsrp_assessment_excellent">Excellent signal! You are close to the tower — 5G can reach peak rates with the lowest latency.</string>
+    <string name="rsrp_assessment_good">Good signal, smooth for everyday use. If it feels slow, try adjusting your position.</string>
+    <string name="rsrp_assessment_fair">Moderate signal, speed may drop. Move near a window or outdoors.</string>
+    <string name="rsrp_assessment_poor">Weak signal. Move near a window or outdoors and avoid obstructions.</string>
+    <string name="rsrp_assessment_weak">Extremely weak signal — you may be at the cell edge or in a dead zone.</string>
+
+    <!-- ===== RSRQ explainer ===== -->
+    <string name="rsrq_explain_title">What is RSRQ?</string>
+    <string name="rsrq_explain_basic">RSRQ (Reference Signal Received Quality) measures how clean the signal is. Even with strong RSRP, heavy interference will drag down real-world speed.</string>
+    <string name="rsrq_range_title">RSRQ Quality Levels</string>
+    <string name="rsrq_range_good">Good (&gt; -10 dB)</string>
+    <string name="rsrq_range_good_desc">Clean signal, low cell load, excellent experience</string>
+    <string name="rsrq_range_fair">Fair (-15 to -10 dB)</string>
+    <string name="rsrq_range_fair_desc">Some interference or higher load, still usable overall</string>
+    <string name="rsrq_range_poor">Poor (&lt; -15 dB)</string>
+    <string name="rsrq_range_poor_desc">Heavy interference or an overloaded cell, unstable speed — common in crowded places</string>
+    <string name="rsrq_joint_title">RSRP and RSRQ Combined</string>
+    <string name="rsrq_joint_good_both">Strong RSRP + Good RSRQ = excellent quality!</string>
+    <string name="rsrq_joint_good_both_desc">Both strength and purity are good — the ideal network state.</string>
+    <string name="rsrq_joint_strong_noise">Strong RSRP + Poor RSRQ = high interference</string>
+    <string name="rsrq_joint_strong_noise_desc">Strength is sufficient but interference is high. Common in crowded stations and malls.</string>
+    <string name="rsrq_joint_weak_both">Weak RSRP + Poor RSRQ = poor signal</string>
+    <string name="rsrq_joint_weak_both_desc">Both strength and purity are poor. Move outdoors or near a window.</string>
+    <string name="rsrq_assessment_title">Current Quality Assessment</string>
+    <string name="rsrq_assessment_good">High signal purity with little interference — a very good experience.</string>
+    <string name="rsrq_assessment_fair">Some interference, but if RSRP is strong the experience is still acceptable.</string>
+    <string name="rsrq_assessment_poor">Heavy interference. Move away from crowded areas or large electronic equipment.</string>
+
+    <!-- ===== SINR explainer ===== -->
+    <string name="metric_sinr_tip">SINR is the key metric for real-world speed — more informative than RSRP.</string>
+    <string name="sinr_explain_title">What is SINR?</string>
+    <string name="sinr_explain_basic">SINR (Signal to Interference plus Noise Ratio) compares useful signal against interference and noise. Imagine hearing someone in a noisy room — the voice is the signal, the crowd is the noise.</string>
+    <string name="sinr_range_title">SINR and Expected Download Speed</string>
+    <string name="sinr_range_excellent">Excellent (&gt; 20 dB)</string>
+    <string name="sinr_range_excellent_speed">5G: 500-800 Mbps+ / 4G: 80-100 Mbps+, peak 256QAM</string>
+    <string name="sinr_range_good">Smooth (13-20 dB)</string>
+    <string name="sinr_range_good_speed">5G: 300-500 Mbps / 4G: 50-80 Mbps, high-speed 64QAM</string>
+    <string name="sinr_range_fair">Fair (0-13 dB)</string>
+    <string name="sinr_range_fair_speed">5G: 30-250 Mbps / 4G: 10-50 Mbps, moderate 16QAM</string>
+    <string name="sinr_range_poor">Poor (-5 to 0 dB)</string>
+    <string name="sinr_range_poor_speed">5G: 5-30 Mbps / 4G: &lt; 10 Mbps, low-speed QPSK, high latency</string>
+    <string name="sinr_range_weak">Stalling (&lt; -5 dB)</string>
+    <string name="sinr_range_weak_speed">Signal is buried in noise, frequent retransmissions, connection may not hold</string>
+    <string name="sinr_factor_title">What affects SINR</string>
+    <string name="sinr_factor_location">Closer to the tower means a stronger signal and higher SINR</string>
+    <string name="sinr_factor_crowd">Crowds increase interference and lower SINR</string>
+    <string name="sinr_factor_handover">Frequent handovers at cell edges can make SINR fluctuate</string>
+    <string name="sinr_assessment_title">Current SINR Assessment</string>
+    <string name="sinr_assessment_excellent">Excellent SINR! 5G can reach 500 Mbps+, 4G 80 Mbps+, with the most efficient modulation.</string>
+    <string name="sinr_assessment_good">Good SINR — 5G can reach 300-500 Mbps, comfortable for everyday use.</string>
+    <string name="sinr_assessment_fair">Moderate SINR — 5G around 30-250 Mbps. Video streams fine but large downloads are slow.</string>
+    <string name="sinr_assessment_poor">Poor SINR — 5G below 30 Mbps. Move to an open area to improve the environment.</string>
+    <string name="sinr_assessment_weak">Very poor SINR — the signal is almost buried in noise. Move to a location with better coverage.</string>
+
+    <!-- ===== EARFCN (NR formula) ===== -->
+    <string name="earfcn_formula_nr">5G NR: Fref = Fref_Off + ΔF_Global × (NR-ARFCN - Nref)</string>
 </resources>
