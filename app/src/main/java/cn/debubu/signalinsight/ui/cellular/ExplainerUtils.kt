@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cn.debubu.signalinsight.R
 
 /**
@@ -161,5 +162,46 @@ fun MetricExplainerShell(
         ) {
             Text(stringResource(R.string.explainer_understand), fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+/**
+ * 科普页中的「注记」小字块。
+ *
+ * 用于说明那些容易被误解的技术细节，例如：
+ * - 分级阈值是业界经验值，而 3GPP 只规定测量范围与精度
+ * - 某些指标存在物理上限或恒为负值
+ * - 经验性的速率/调制对应关系并非标准规定
+ *
+ * 统一样式（次要颜色、小字号、较松行距），保证不喧宾夺主但可读。
+ */
+@Composable
+fun NoteText(noteResId: Int) {
+    Text(
+        text = stringResource(noteResId),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.outline,
+        lineHeight = 16.sp,
+        modifier = Modifier.padding(top = 10.dp)
+    )
+}
+
+/**
+ * 带标题的说明条目（用于 RSSI 的「RSSI 随负载上升」等独立知识点）。
+ */
+@Composable
+fun NoteItem(titleResId: Int, descResId: Int) {
+    Column(Modifier.padding(vertical = 6.dp)) {
+        Text(
+            stringResource(titleResId),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            stringResource(descResId),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            lineHeight = 18.sp
+        )
     }
 }

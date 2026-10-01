@@ -70,6 +70,8 @@ fun RssiExplainer(currentRssi: Int, onClose: () -> Unit, skipOuterPadding: Boole
                     }
                 }
             }
+            // RSSI 随小区负载上升 —— 官方资料强调的关键特性，容易被误读为「信号变好」
+            NoteItem(R.string.rssi_vs_rsrp_load, R.string.rssi_vs_rsrp_load_desc)
         }
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.rssi_when_use_title, Icons.Default.Info) {

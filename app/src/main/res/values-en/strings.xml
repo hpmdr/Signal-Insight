@@ -343,4 +343,14 @@
     <string name="about_license_desc">This project is open source under the Apache 2.0 license, with source code hosted on GitHub.</string>
     <string name="action_confirm">OK</string>
     <string name="action_cancel">Cancel</string>
+    <!-- ===== 参数详解审查修正(v1.1.1)===== -->
+    <string name="rsrp_range_note">Note: 3GPP only specifies RSRP reporting range and accuracy, not what counts as good. The table above is a common industry rule of thumb; vendors and operators differ slightly. This app uses the same thresholds for assessment and scoring.</string>
+    <string name="rsrq_range_note">Note: RSRQ\'s theoretical ceiling is about -3 dB (single antenna port, unloaded, no interference) and is rarely reached in practice. A typical single-port fully loaded cell reads about -10.8 dB; two-port cells read about -6 dB unloaded and -13 dB loaded. Cell load alone can shift RSRQ by 7-8 dB, so variation at the same location over time is normal. 3GPP only defines its reporting range (about -19.5 to -3 dB, 0.5 dB steps), not its grading.</string>
+    <string name="sinr_range_note">Note: Real throughput does not depend on SINR alone. 3GPP does not define a SINR-to-throughput conversion; each chipset vendor builds its own mapping from measurement. Actual speed also depends on bandwidth, MIMO layers, scheduling, network congestion and device capability, and modulation order does not map one-to-one to SINR. The table above is indicative only.</string>
+    <string name="rssi_vs_rsrp_load">An important property: RSSI rises with cell load</string>
+    <string name="rssi_vs_rsrp_load_desc">Even when the radio link itself is unchanged, RSSI increases as more users in the cell raise total transmit power. A higher RSSI therefore does not necessarily mean a better signal.</string>
+    <string name="tac_purpose_note">Note: TAC itself does not perform load balancing. Load balancing is handled by cell selection, reselection and handover policies. Tracking Area List planning does consider paging signalling volume, but that is a network-planning concern rather than a function of TAC.</string>
+    <string name="earfcn_operator_note">Note: 700 MHz (n28) is led by China Broadcasting Network, with China Mobile sharing it under network co-construction. An n28 cell may therefore also appear on China Mobile. Operator band usage changes with co-construction and network tuning; only major bands are listed here.</string>
+    <string name="earfcn_formula_4g">4G LTE: Fdl = Fdl_low + 0.1 x (EARFCN - Ndl)</string>
+    <string name="earfcn_formula_4g_desc">Fdl_low is the band\'s downlink start frequency, Ndl the corresponding start channel number, with 0.1 MHz steps. For band B3, Fdl_low = 1805 MHz and Ndl = 1200, so EARFCN 1500 maps to 1805 + 0.1 x (1500 - 1200) = 1835 MHz.</string>
 </resources>

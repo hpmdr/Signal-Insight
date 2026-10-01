@@ -57,6 +57,8 @@ fun EarfcnExplainer(currentEarfcn: Int, onClose: () -> Unit, skipOuterPadding: B
                     }
                 }
                 Text(stringResource(R.string.earfcn_formula_4g_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                // 补全 LTE 公式各符号含义并给出算例（原先只有 NR 公式缺说明）
+                NoteText(R.string.earfcn_formula_4g_desc)
             }
         }
         Spacer(Modifier.height(16.dp))
@@ -69,6 +71,8 @@ fun EarfcnExplainer(currentEarfcn: Int, onClose: () -> Unit, skipOuterPadding: B
                         }
                     }
             }
+            // n28 由广电主导、移动共建共享；运营商频段会随网络调整变化
+            NoteText(R.string.earfcn_operator_note)
         }
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.earfcn_assessment_title, Icons.Default.Star) {

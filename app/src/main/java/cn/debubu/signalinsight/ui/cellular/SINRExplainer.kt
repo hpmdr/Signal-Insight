@@ -51,7 +51,10 @@ fun SinrExplainer(currentSinr: Int, onClose: () -> Unit, skipOuterPadding: Boole
             modifier = Modifier.padding(start = 4.dp)
         )
         Spacer(Modifier.height(16.dp))
-        SectionCard(R.string.sinr_range_title, Icons.Default.Speed) { SinrSpeedTable() }
+        SectionCard(R.string.sinr_range_title, Icons.Default.Speed) {
+            SinrSpeedTable()
+            NoteText(R.string.sinr_range_note)
+        }
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.sinr_factor_title, Icons.Default.Info) { SinrFactors() }
         Spacer(Modifier.height(16.dp))

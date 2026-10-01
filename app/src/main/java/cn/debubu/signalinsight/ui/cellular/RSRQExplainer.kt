@@ -51,7 +51,10 @@ fun RsrqExplainer(currentRsrq: Int, onClose: () -> Unit, skipOuterPadding: Boole
             modifier = Modifier.padding(start = 4.dp)
         )
         Spacer(Modifier.height(16.dp))
-        SectionCard(R.string.rsrq_range_title, Icons.Default.SignalCellularAlt) { RsrqRangeTable() }
+        SectionCard(R.string.rsrq_range_title, Icons.Default.SignalCellularAlt) {
+            RsrqRangeTable()
+            NoteText(R.string.rsrq_range_note)
+        }
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.rsrq_joint_title, Icons.Default.Info) { RsrqJointJudgment() }
         Spacer(Modifier.height(16.dp))

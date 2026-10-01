@@ -61,6 +61,14 @@ fun RsrpExplainer(currentRsrp: Int, onClose: () -> Unit, skipOuterPadding: Boole
 
         SectionCard(R.string.rsrp_range_title, Icons.Default.SignalCellularAlt) {
             RsrpRangeTable()
+            Spacer(Modifier.height(10.dp))
+            // 明确标注该分级为经验值：3GPP 只规定报告范围与精度，不规定「多少算好」
+            Text(
+                stringResource(R.string.rsrp_range_note),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                lineHeight = 16.sp
+            )
         }
         Spacer(Modifier.height(16.dp))
 

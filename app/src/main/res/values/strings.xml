@@ -93,18 +93,19 @@
     <string name="metric_rsrp_full">参考信号接收功率 (Reference Signal Received Power)</string>
     <string name="metric_rsrp_tip">RSRP 是衡量信号覆盖的最核心指标，信号强度的测量单位是 dBm。</string>
     <string name="rsrp_explain_title">什么是 RSRP？</string>
-    <string name="rsrp_explain_basic">RSRP（参考信号接收功率）是手机测量基站发出的参考信号的功率值，是衡量 4G/5G 信号覆盖强度最核心的指标。单位是 dBm（分贝毫瓦），数值越接近 0 表示信号越强。5G NR 使用 SSB-RSRP，4G LTE 使用 CRS-RSRP，两者的判定标准相近。</string>
-    <string name="rsrp_range_title">RSRP 信号强度分级 (国际标准)</string>
-    <string name="rsrp_range_excellent">极佳（> -80dBm）</string>
-    <string name="rsrp_range_excellent_desc">信号极强，峰值吞吐量，VoLTE 高清，切换流畅</string>
-    <string name="rsrp_range_good">良好（-80 ~ -90dBm）</string>
+    <string name="rsrp_explain_basic">RSRP（参考信号接收功率）是手机测量基站发出的参考信号的功率值，是衡量 4G/5G 信号覆盖强度最核心的指标。单位是 dBm（分贝毫瓦），数值越接近 0 表示信号越强。5G NR 使用 SSB-RSRP，4G LTE 使用 CRS-RSRP，两者判定标准相近。按 3GPP 规范，RSRP 的报告范围约为 -156 ~ -44 dBm。</string>
+    <string name="rsrp_range_title">RSRP 信号强度分级（业界常用经验值）</string>
+    <string name="rsrp_range_excellent">极佳（优于 -85 dBm）</string>
+    <string name="rsrp_range_excellent_desc">信号极强，可达峰值吞吐量，语音通话清晰，切换流畅</string>
+    <string name="rsrp_range_good">良好（-85 ~ -95 dBm）</string>
     <string name="rsrp_range_good_desc">信号良好，高速数据传输稳定，日常体验流畅</string>
-    <string name="rsrp_range_fair">一般（-90 ~ -100dBm）</string>
+    <string name="rsrp_range_fair">一般（-95 ~ -105 dBm）</string>
     <string name="rsrp_range_fair_desc">信号中等，吞吐量开始下降，室内可能有衰减</string>
-    <string name="rsrp_range_poor">较差（-100 ~ -110dBm）</string>
+    <string name="rsrp_range_poor">较差（-105 ~ -115 dBm）</string>
     <string name="rsrp_range_poor_desc">信号较弱，吞吐量明显下降，延迟增加，可能掉线</string>
-    <string name="rsrp_range_weak">极弱（&lt; -110dBm）</string>
+    <string name="rsrp_range_weak">极弱（弱于 -115 dBm）</string>
     <string name="rsrp_range_weak_desc">信号极弱，仅维持最低连接，可能无服务</string>
+    <string name="rsrp_range_note">注：3GPP 只规定 RSRP 的报告范围与精度，并不规定「多少算好」。上表是业界常用的经验分级，不同厂商与运营商判定略有差异；本应用的评估与综合评分采用同一套阈值。</string>
     <string name="rsrp_factor_title">影响信号强度的因素</string>
     <string name="rsrp_factor_distance">与基站的距离：越远信号越弱</string>
     <string name="rsrp_factor_obstacle">建筑物遮挡：钢筋混凝土墙体衰减严重</string>
@@ -123,14 +124,15 @@
     <string name="metric_rsrq_full">参考信号接收质量 (Reference Signal Received Quality)</string>
     <string name="metric_rsrq_tip">RSRQ 与 RSRP 结合使用才能全面评估信号状况。</string>
     <string name="rsrq_explain_title">什么是 RSRQ？</string>
-    <string name="rsrq_explain_basic">RSRQ（参考信号接收质量）衡量的是信号的"纯净度"。即使 RSRP 显示信号很强，但如果环境中有很多干扰，RSRQ 会降低，实际体验仍然不佳。RSRQ 单位是 dB。</string>
-    <string name="rsrq_range_title">RSRQ 质量分级</string>
-    <string name="rsrq_range_good">优（> -10dB）</string>
+    <string name="rsrq_explain_basic">RSRQ（参考信号接收质量）衡量的是信号有多「干净」。它的定义是 RSRQ = N × RSRP ÷ RSSI（N 为测量带宽内的资源块数量），因此数值恒为负值——RSSI 包含干扰与噪声，必然大于有用信号。即使 RSRP 显示信号很强，若环境干扰多或小区负载高，RSRQ 也会变差。单位是 dB。</string>
+    <string name="rsrq_range_title">RSRQ 质量分级（业界常用经验值）</string>
+    <string name="rsrq_range_good">优（优于 -10 dB）</string>
     <string name="rsrq_range_good_desc">信号纯净，小区负载低，体验极佳</string>
-    <string name="rsrq_range_fair">中（-15 ~ -10dB）</string>
+    <string name="rsrq_range_fair">中（-15 ~ -10 dB）</string>
     <string name="rsrq_range_fair_desc">有一定干扰或负载较高，整体可用</string>
-    <string name="rsrq_range_poor">差（&lt; -15dB）</string>
+    <string name="rsrq_range_poor">差（弱于 -15 dB）</string>
     <string name="rsrq_range_poor_desc">干扰较大或小区过载，网速不稳定，多出现在人群密集处</string>
+    <string name="rsrq_range_note">注：RSRQ 的理论上限约为 -3 dB（单天线端口、空载、无干扰的理想情况），现实中几乎无法达到；单端口满载时典型值约 -10.8 dB，双端口空载/满载约 -6 dB / -13 dB。仅小区负载变化就能让 RSRQ 浮动 7~8 dB，因此同一位置不同时段的 RSRQ 差异属正常现象。3GPP 只规定其报告范围（约 -19.5 ~ -3 dB，0.5 dB 步进），不规定分级。</string>
     <string name="rsrq_joint_title">RSRP 与 RSRQ 联合判断</string>
     <string name="rsrq_joint_good_both">RSRP 强 + RSRQ 优 = 信号质量极佳！</string>
     <string name="rsrq_joint_good_both_desc">信号强度和纯净度都很好，这是最理想的网络状态。</string>
@@ -145,21 +147,22 @@
 
     <!-- SINR 科普（新增强化版） -->
     <string name="metric_sinr_label">SINR</string>
-    <string name="metric_sinr_full">信噪比 (Signal to Interference plus Noise Ratio)</string>
+    <string name="metric_sinr_full">信干噪比 (Signal to Interference plus Noise Ratio)</string>
     <string name="metric_sinr_tip">SINR 是影响实际网速的关键指标，比 RSRP 更能反映真实体验。</string>
     <string name="sinr_explain_title">什么是 SINR？</string>
-    <string name="sinr_explain_basic">SINR（信噪比）是有用信号与干扰加噪声的比值。可以想象在嘈杂的房间里听人说话——信号是说话声，噪声是周围的嘈杂声。SINR 越高，你听得越清楚，网速就越快。单位是 dB。</string>
-    <string name="sinr_range_title">SINR 与下载速度对应表</string>
-    <string name="sinr_range_excellent">极速（> 20dB）</string>
-    <string name="sinr_range_excellent_speed">5G: 500~800Mbps+ / 4G: 80~100Mbps+，256QAM 峰值</string>
-    <string name="sinr_range_good">流畅（13 ~ 20dB）</string>
-    <string name="sinr_range_good_speed">5G: 300~500Mbps / 4G: 50~80Mbps，64QAM 高速</string>
-    <string name="sinr_range_fair">一般（0 ~ 13dB）</string>
-    <string name="sinr_range_fair_speed">5G: 30~250Mbps / 4G: 10~50Mbps，16QAM 中等</string>
-    <string name="sinr_range_poor">较差（-5 ~ 0dB）</string>
-    <string name="sinr_range_poor_speed">5G: 5~30Mbps / 4G: &lt; 10Mbps，QPSK 低速，延迟高</string>
-    <string name="sinr_range_weak">卡顿（&lt; -5dB）</string>
-    <string name="sinr_range_weak_speed">信号淹没在噪声中，频繁重传，可能无法维持连接</string>
+    <string name="sinr_explain_basic">SINR（信干噪比）是有用信号与干扰加噪声的比值。可以想象在嘈杂的房间里听人说话——信号是说话声，噪声和旁人交谈是干扰。SINR 越高，你听得越清楚，网速通常也越快。单位是 dB。注意它与单纯的 SNR（信噪比）不同：SINR 把邻区干扰也算了进去，因此更能反映真实体验。</string>
+    <string name="sinr_range_title">SINR 与下载速度的参考关系</string>
+    <string name="sinr_range_excellent">极速（优于 20 dB）</string>
+    <string name="sinr_range_excellent_speed">5G: 500~800Mbps+ / 4G: 80~100Mbps+，通常可支持 256QAM</string>
+    <string name="sinr_range_good">流畅（10 ~ 20 dB）</string>
+    <string name="sinr_range_good_speed">5G: 300~500Mbps / 4G: 50~80Mbps，通常可支持 64QAM</string>
+    <string name="sinr_range_fair">一般（5 ~ 10 dB）</string>
+    <string name="sinr_range_fair_speed">5G: 30~250Mbps / 4G: 10~50Mbps，通常为 16QAM</string>
+    <string name="sinr_range_poor">较差（0 ~ 5 dB）</string>
+    <string name="sinr_range_poor_speed">5G: 5~30Mbps / 4G: &lt; 10Mbps，通常回落至 QPSK，延迟升高</string>
+    <string name="sinr_range_weak">卡顿（弱于 0 dB）</string>
+    <string name="sinr_range_weak_speed">信号接近被噪声淹没，频繁重传，可能无法维持连接</string>
+    <string name="sinr_range_note">注：实际速率并非只由 SINR 决定。3GPP 未规定 SINR 到速率的换算关系，各芯片厂商依据自身实测建立映射；真实速率还受带宽、MIMO 层数、调度策略、网络拥塞与终端能力影响。调制方式与 SINR 之间也不是一一对应。上表仅供定性参考。</string>
     <string name="sinr_factor_title">影响 SINR 的因素</string>
     <string name="sinr_factor_location">距离基站越近，信号越强，SINR 越高</string>
     <string name="sinr_factor_crowd">人群密集导致干扰增加，SINR 下降</string>
@@ -177,12 +180,14 @@
     <string name="metric_rssi_full">接收信号强度指示</string>
     <string name="metric_rssi_tip">RSSI 测的是所有信号的总和，RSRP 只测有用信号。</string>
     <string name="rssi_explain_title">什么是 RSSI？</string>
-    <string name="rssi_explain_basic">RSSI（接收信号强度指示）是手机接收到的总功率，包括有用信号、干扰和背景噪声。它是一个比 RSRP 更宽泛的指标。单位是 dBm。</string>
-    <string name="rssi_vs_rsrp_title">RSSI 与 RSRP 的区别</string>
-    <string name="rssi_vs_rsrp_large">RSSI >> RSRP = 干扰大</string>
-    <string name="rssi_vs_rsrp_large_desc">如果 RSSI 远高于 RSRP，说明环境中存在大量干扰。</string>
-    <string name="rssi_vs_rsrp_small">RSSI ≈ RSRP = 信号纯净</string>
-    <string name="rssi_vs_rsrp_small_desc">如果 RSSI 接近 RSRP，说明信号纯净，干扰少。</string>
+    <string name="rssi_explain_basic">RSSI（接收信号强度指示）是手机在整个测量带宽内接收到的总功率，包括服务小区、同频邻区、邻道干扰以及热噪声。它是一个比 RSRP 更宽泛的指标。单位是 dBm。注意：RSRP 是「每个资源粒子」的功率，而 RSSI 是「整个带宽」的总功率，两者量纲不同，不能直接比较——RSSI 天然比 RSRP 高约 25~35 dB（取决于带宽）。</string>
+    <string name="rssi_vs_rsrp_title">RSSI 与 RSRP 的关系</string>
+    <string name="rssi_vs_rsrp_large">差值明显大于带宽理论值 = 干扰偏大</string>
+    <string name="rssi_vs_rsrp_large_desc">RSSI 与 RSRP 的差值主要来自带宽（如 20MHz 约差 31 dB）。若实际差值明显超出该理论值，说明存在较强干扰。</string>
+    <string name="rssi_vs_rsrp_small">差值接近带宽理论值 = 干扰较小</string>
+    <string name="rssi_vs_rsrp_small_desc">此时接收功率主要来自有用信号，环境相对干净。</string>
+    <string name="rssi_vs_rsrp_load">一个重要特性：RSSI 随小区负载上升</string>
+    <string name="rssi_vs_rsrp_load_desc">即使无线链路本身没有变化，只要小区内用户变多、发射功率增大，RSSI 就会升高。因此 RSSI 偏高并不一定代表信号更好。</string>
     <string name="rssi_when_use_title">什么时候参考 RSSI？</string>
     <string name="rssi_when_use_wifi">Wi-Fi 网络：RSSI 是 Wi-Fi 信号的主要指标</string>
     <string name="rssi_when_use_2g">2G/GSM 网络：RSSI 更常用</string>
@@ -266,11 +271,14 @@
     <string name="earfcn_explain_basic">EARFCN（绝对无线频率信道编号）是代表基站中心频率的编号。运营商使用它来标识基站广播的特定信道。</string>
     <string name="earfcn_formula_title">频率换算</string>
     <string name="earfcn_formula_4g_note">每个 EARFCN 对应一个具体的下行频率（MHz）。NR-ARFCN 范围更大，用于 5G 更宽的频率范围。</string>
-    <string name="earfcn_operator_title">运营商频点范围</string>
-    <string name="earfcn_operator_mobile">中国移动：B3(1800M), B8(900M), B39(1900M), n28(700M), n41(2.6G), n79(4.9G)</string>
-    <string name="earfcn_operator_unicom">中国联通：B1(2100M), B3(1800M), B8(900M), n1(2.1G), n78(3.5G)</string>
-    <string name="earfcn_operator_telecom">中国电信：B1(2100M), B3(1800M), B5(850M), n5(800M), n78(3.5G)</string>
-    <string name="earfcn_operator_broadcast">中国广电：n28(700M), n79(4.9G)</string>
+    <string name="earfcn_operator_title">运营商常用频段（仅供参考）</string>
+    <string name="earfcn_operator_mobile">中国移动：B3(1800M)、B8(900M)、B39(1900M)、n41(2.6G)、n79(4.9G)</string>
+    <string name="earfcn_operator_unicom">中国联通：B1(2100M)、B3(1800M)、B8(900M)、n1(2.1G)、n78(3.5G)</string>
+    <string name="earfcn_operator_telecom">中国电信：B1(2100M)、B3(1800M)、B5(850M)、n78(3.5G)</string>
+    <string name="earfcn_operator_broadcast">中国广电：n28(700M)</string>
+    <string name="earfcn_operator_note">注：700MHz（n28）由中国广电主导，中国移动通过共建共享共同使用，因此移动网络下也可能显示 n28。各运营商频段会随共建共享与网络调整而变化，此处仅列出主要频段。</string>
+    <string name="earfcn_formula_4g">4G LTE：Fdl = Fdl_low + 0.1 × (EARFCN − Ndl)</string>
+    <string name="earfcn_formula_4g_desc">Fdl_low 为该频段下行起始频率，Ndl 为对应的起始信道号，步进 0.1 MHz。例如 B3 的 Fdl_low=1805MHz、Ndl=1200，故 EARFCN 1500 对应 1805 + 0.1×(1500−1200) = 1835 MHz。</string>
     <string name="earfcn_assessment_title">当前 EARFCN 评估</string>
     <string name="earfcn_assessment_text">你的手机连接到了特定频率信道。同一频段内不同信道的性能特性相近。</string>
 
@@ -286,9 +294,10 @@
     <string name="tac_update_subway">地铁或火车经过不同区域</string>
     <string name="tac_update_airport">乘坐飞机到达新城市</string>
     <string name="tac_purpose_title">TAC 的作用</string>
-    <string name="tac_purpose_paging">高效寻呼：只在当前区域内的基站寻呼</string>
-    <string name="tac_purpose_location">位置跟踪：帮助网络知道你所在的区域</string>
-    <string name="tac_purpose_balance">负载均衡：避免网络资源浪费</string>
+    <string name="tac_purpose_paging">高效寻呼：只在你当前所在的跟踪区域内寻呼，而不是全网广播</string>
+    <string name="tac_purpose_location">位置管理：让网络知道你大致所在的区域，无需持续精确跟踪</string>
+    <string name="tac_purpose_balance">减少信令开销：多个 TAC 会组成一个「跟踪区列表」，你在列表范围内移动不必反复上报位置</string>
+    <string name="tac_purpose_note">注：TAC 本身不负责负载均衡。负载均衡由小区选择、重选与切换策略实现；跟踪区列表的划分虽会考虑寻呼信令量，但那属于网络规划层面的考量，而非 TAC 的功能。</string>
     <string name="tac_assessment_title">当前 TAC 评估</string>
     <string name="tac_assessment_stable">当前 TAC 稳定。你所在的跟踪区域没有变化。</string>
     <string name="tac_assessment_changed">TAC 已更新。你已进入新的跟踪区域。</string>

@@ -78,6 +78,8 @@ fun TacExplainer(currentTac: Int, onClose: () -> Unit, skipOuterPadding: Boolean
                     }
                 }
             }
+            // 澄清：TAC 不做负载均衡（负载均衡属小区选择/重选与切换策略）
+            NoteText(R.string.tac_purpose_note)
         }
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.tac_assessment_title, Icons.Default.Star) {
