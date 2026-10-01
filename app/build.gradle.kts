@@ -44,8 +44,11 @@ android {
         applicationId = "cn.debubu.signalinsight"
         minSdk = 31
         targetSdk = 37
-        versionCode = 7
-        versionName = "1.0.7"
+        // v1.1.0：签名密钥变更（原密钥丢失，换用新密钥库）。
+        // 因签名不匹配，已安装 v1.0.x 的用户需先卸载再安装本版本，
+        // 故按次版本号递增（1.0.7 → 1.1.0）以明确区分。
+        versionCode = 8
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -102,7 +105,7 @@ android {
         compose = true
     }
 
-    // APK 输出命名：SignalInsight-v1.0.4-release.apk
+    // APK 输出命名：SignalInsight-v<版本号>-release.apk（例：SignalInsight-v1.1.0-release.apk）
     androidComponents {
         onVariants { variant ->
             variant.outputs.forEach { output ->

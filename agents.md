@@ -426,6 +426,23 @@ sdk.dir=D\:\\Android\\Sdk
 
 ---
 
+## 签名密钥（重要）
+
+| 版本范围 | 证书 SHA-256 | 密钥库文件 | 状态 |
+|---------|-------------|-----------|------|
+| v1.0.0 ~ v1.0.7 | `6C:1D:3F:27:19:AD:78:8C:80:C3:63:E3:E3:AD:49:C3:11:5A:A5:F4:0A:18:27:7A:7A:24:3D:36:80:6B:27:E2` | — | **已丢失**（仅在 GitHub Secrets 中，无法导出） |
+| **v1.1.0 起** | `B9:8A:E3:A9:F7:76:40:08:33:E6:5E:6B:03:9C:E3:5C:39:44:23:2D:89:DB:5E:35:E1:C6:24:9F:DA:B9:D4:4F` | `private-release.jks`（别名 `release`） | 生效中，已备份至加密云盘 |
+
+**签名配置读取优先级**（`app/build.gradle.kts`）：
+`private-keystore.properties`（私有，已 gitignore）优先，回退 `keystore.properties`（公开测试密钥）。
+
+**公开测试密钥**：`keystore.properties` + `app/signal_insight.jks`（密码 `Android123`，指纹 `1E:38:27:E8…D0:2F`）
+为**有意公开**，供其他开发者快速上手调试，**不用于正式发版**。
+
+**变更历史**：v1.1.0 因原密钥丢失而更换签名，已安装 v1.0.x 的用户需卸载重装。
+详见 `doc/v1.1.0-发版说明.md`。
+
+---
 ## Git 约定
 
 - 提交信息格式: `<type>: <description>`（feat/fix/refactor/docs/test/chore）
