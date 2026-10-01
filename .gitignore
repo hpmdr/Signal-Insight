@@ -34,3 +34,6 @@ release.keystore
 
 # 涓存椂 base64 瀵嗛挜鏂囦欢
 signing_key_base64.txt
+
+# ── 调试/验证临时脚本(不入库) ──
+/scripts/

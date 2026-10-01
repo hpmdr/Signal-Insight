@@ -18,7 +18,6 @@
 
     <!-- 设置页面 (SettingsScreen) -->
     <string name="settings_title">设置</string>
-    <string name="settings_placeholder">设置功能开发中...</string>
     <string name="settings_display">显示设置</string>
     <string name="settings_dynamic_color">使用系统主题色</string>
     <string name="settings_dynamic_color_hint">从壁纸提取主题色，开启后自定义配色会自动关闭。部分系统可能不支持</string>
@@ -41,7 +40,6 @@
 
     <!-- 权限页面 (Permission) -->
     <string name="permission_title">权限授权</string>
-    <string name="permission_main_title">需要权限以开始监测</string>
     <string name="permission_subtitle">请授权以下权限以使用基站信号监测功能</string>
     <string name="permission_denied_hint">部分权限被永久拒绝，请在设置中手动开启</string>
     <string name="permission_go_settings">去设置中心</string>
@@ -61,7 +59,6 @@
     <string name="perm_status_pending">待授权</string>
 
     <!-- 信号监测页面 (CellularPage) -->
-    <string name="cellular_no_sim_toast">该卡槽没有插卡，无法切换显示</string>
     <string name="cellular_signal_quality">强度: %s</string>
     <string name="cellular_serving_cell_title">当前注册小区详情</string>
     <string name="cellular_tap_hint">点击格块查看科普释义与参考标准</string>
@@ -79,16 +76,9 @@
     <string name="column_band">频段</string>
 
     <!-- 科普弹窗 -->
-    <string name="explainer_what_is">它是做什么的？</string>
-    <string name="explainer_impact">对体验的影响</string>
-    <string name="explainer_standard">参考标准 (左差右优)</string>
     <string name="explainer_understand">知道了</string>
 
     <!-- 网络类型名称 -->
-    <string name="network_5g_nr">5G NR</string>
-    <string name="network_4g_lte">4G LTE</string>
-    <string name="network_3g_wcdma">3G WCDMA</string>
-    <string name="network_2g_gsm">2G GSM</string>
 
     <!-- 运营商名称（用于 MCC/MNC 映射默认值） -->
     <string name="operator_unknown">未知</string>
@@ -101,8 +91,6 @@
     <!-- RSRP 科普（新增强化版） -->
     <string name="metric_rsrp_label">RSRP</string>
     <string name="metric_rsrp_full">参考信号接收功率 (Reference Signal Received Power)</string>
-    <string name="metric_rsrp_desc">这是衡量 4G/5G 信号强度的最直接指标。它表示手机接收到基站信号的功率大小。</string>
-    <string name="metric_rsrp_impact">数值越接近 0，信号越强。如果数值太低，你会感觉到网页打不开，通话断断续续。</string>
     <string name="metric_rsrp_tip">RSRP 是衡量信号覆盖的最核心指标，信号强度的测量单位是 dBm。</string>
     <string name="rsrp_explain_title">什么是 RSRP？</string>
     <string name="rsrp_explain_basic">RSRP（参考信号接收功率）是手机测量基站发出的参考信号的功率值，是衡量 4G/5G 信号覆盖强度最核心的指标。单位是 dBm（分贝毫瓦），数值越接近 0 表示信号越强。5G NR 使用 SSB-RSRP，4G LTE 使用 CRS-RSRP，两者的判定标准相近。</string>
@@ -129,18 +117,10 @@
     <string name="rsrp_assessment_poor">信号较弱。建议移动到窗户附近或室外，避开建筑物遮挡。</string>
     <string name="rsrp_assessment_weak">信号极弱，可能处于服务边缘或盲区。</string>
     <!-- 保留旧版 range 名称供 metricsDatabase 引用 -->
-    <string name="range_rsrp_weak">极弱</string>
-    <string name="range_rsrp_fair">一般</string>
-    <string name="range_rsrp_excellent">极佳</string>
-    <string name="range_rsrq_poor">差</string>
-    <string name="range_rsrq_medium">中</string>
-    <string name="range_rsrq_good">优</string>
 
     <!-- RSRQ 科普（新增强化版） -->
     <string name="metric_rsrq_label">RSRQ</string>
     <string name="metric_rsrq_full">参考信号接收质量 (Reference Signal Received Quality)</string>
-    <string name="metric_rsrq_desc">反映信号的"纯净度"。即使信号很强，如果干扰太多，质量也会很差。</string>
-    <string name="metric_rsrq_impact">数值越低，说明环境干扰越大。这通常发生在人群密集的车站或商场。</string>
     <string name="metric_rsrq_tip">RSRQ 与 RSRP 结合使用才能全面评估信号状况。</string>
     <string name="rsrq_explain_title">什么是 RSRQ？</string>
     <string name="rsrq_explain_basic">RSRQ（参考信号接收质量）衡量的是信号的"纯净度"。即使 RSRP 显示信号很强，但如果环境中有很多干扰，RSRQ 会降低，实际体验仍然不佳。RSRQ 单位是 dB。</string>
@@ -166,8 +146,6 @@
     <!-- SINR 科普（新增强化版） -->
     <string name="metric_sinr_label">SINR</string>
     <string name="metric_sinr_full">信噪比 (Signal to Interference plus Noise Ratio)</string>
-    <string name="metric_sinr_desc">有用信号与噪声的比值。就像在嘈杂的房间里听人说话，比值越高听得越清楚。</string>
-    <string name="metric_sinr_impact">这是决定你下载速度快慢的最核心指标。SINR 越高，5G 测速跑分就越高。</string>
     <string name="metric_sinr_tip">SINR 是影响实际网速的关键指标，比 RSRP 更能反映真实体验。</string>
     <string name="sinr_explain_title">什么是 SINR？</string>
     <string name="sinr_explain_basic">SINR（信噪比）是有用信号与干扰加噪声的比值。可以想象在嘈杂的房间里听人说话——信号是说话声，噪声是周围的嘈杂声。SINR 越高，你听得越清楚，网速就越快。单位是 dB。</string>
@@ -193,15 +171,10 @@
     <string name="sinr_assessment_poor">SINR 较差，5G 低于 30Mbps，建议走到开阔处改善信号环境。</string>
     <string name="sinr_assessment_weak">SINR 极差，信号几乎被噪声淹没，建议移动到信号更好的位置。</string>
     <!-- 保留旧版 range 名称供 metricsDatabase 引用 -->
-    <string name="range_sinr_poor">卡顿</string>
-    <string name="range_sinr_fair">流畅</string>
-    <string name="range_sinr_good">极速</string>
 
     <!-- RSSI 科普（新增强化版） -->
     <string name="metric_rssi_label">RSSI</string>
     <string name="metric_rssi_full">接收信号强度指示</string>
-    <string name="metric_rssi_desc">手机接收到的总功率，包括有用信号、干扰和背景噪声。</string>
-    <string name="metric_rssi_impact">在 4G/5G 系统中，其参考意义通常弱于 RSRP。</string>
     <string name="metric_rssi_tip">RSSI 测的是所有信号的总和，RSRP 只测有用信号。</string>
     <string name="rssi_explain_title">什么是 RSSI？</string>
     <string name="rssi_explain_basic">RSSI（接收信号强度指示）是手机接收到的总功率，包括有用信号、干扰和背景噪声。它是一个比 RSRP 更宽泛的指标。单位是 dBm。</string>
@@ -222,8 +195,6 @@
     <!-- Band 科普（新增强化版） -->
     <string name="metric_band_label">Band</string>
     <string name="metric_band_full">工作频段 (Frequency Band)</string>
-    <string name="metric_band_desc">频段是无线通信中划分出来的特定频率范围，就像高速公路上的不同车道。</string>
-    <string name="metric_band_impact">低频段穿墙能力强但网速慢；高频段（如 n78）网速极快但穿透力弱。</string>
     <string name="metric_band_tip_5g_high">n78/n79 是目前最主流的 5G 高速频段，网速极快但穿透力较弱，室外使用体验最佳。</string>
     <string name="metric_band_tip_5g_mid">n41 是 5G 主力频段，兼顾覆盖与速度，是国内 5G 网络的核心频段。</string>
     <string name="metric_band_tip_lte_mid">B1/B3/B39/B40/B41 是 4G 主力频段，覆盖广、速率均衡，是目前移动网络的中坚力量。</string>
@@ -237,10 +208,6 @@
     <string name="band_operator_title">中国主要运营商频段分布</string>
     <string name="band_comparison_title">频段特性对比</string>
     <string name="band_assessment">频段评价</string>
-    <string name="band_table_operator">运营商</string>
-    <string name="band_table_5g">5G 频段</string>
-    <string name="band_table_4g">4G 频段</string>
-    <string name="band_table_feature">特点</string>
     <string name="band_feature_coverage">覆盖范围</string>
     <string name="band_feature_penetration">穿墙能力</string>
     <string name="band_feature_speed">传输速度</string>
@@ -277,8 +244,6 @@
     <!-- PCI 科普（新增强化版） -->
     <string name="metric_pci_label">PCI</string>
     <string name="metric_pci_full">物理小区标识 (Physical Cell ID)</string>
-    <string name="metric_pci_desc">用来区分不同基站的"身份证号"。</string>
-    <string name="metric_pci_impact">当 PCI 发生变化时，说明你的手机完成了基站切换。</string>
     <string name="metric_pci_tip">如果 PCI 频繁跳变，说明你处于两个基站交界处。</string>
     <string name="pci_explain_title">什么是 PCI？</string>
     <string name="pci_explain_basic">PCI（物理小区标识）是网络分配给每个小区扇区的唯一编号，用于帮助手机区分邻近的基站。4G LTE 的 PCI 范围为 0~503，5G NR 的 PCI 范围为 0~1007。</string>
@@ -296,14 +261,10 @@
     <!-- EARFCN 科普（新增强化版） -->
     <string name="metric_earfcn_label">EARFCN</string>
     <string name="metric_earfcn_full">中心频点</string>
-    <string name="metric_earfcn_desc">代表基站工作的精确频率位置。通过此数值计算基站确切的下行频率。</string>
-    <string name="metric_earfcn_impact">不同的运营商拥有不同的频点范围。</string>
     <string name="metric_earfcn_tip">通过 EARFCN 可以换算出基站的确切工作频率（MHz）。</string>
     <string name="earfcn_explain_title">什么是 EARFCN？</string>
     <string name="earfcn_explain_basic">EARFCN（绝对无线频率信道编号）是代表基站中心频率的编号。运营商使用它来标识基站广播的特定信道。</string>
     <string name="earfcn_formula_title">频率换算</string>
-    <string name="earfcn_formula_4g">4G LTE：Fdl = Fdl_low + 0.1 × (EARFCN - Ndl)</string>
-    <string name="earfcn_formula_nr">5G NR：Fref = Fref_Off + ΔF_Global × (NR-ARFCN - Nref)</string>
     <string name="earfcn_formula_4g_note">每个 EARFCN 对应一个具体的下行频率（MHz）。NR-ARFCN 范围更大，用于 5G 更宽的频率范围。</string>
     <string name="earfcn_operator_title">运营商频点范围</string>
     <string name="earfcn_operator_mobile">中国移动：B3(1800M), B8(900M), B39(1900M), n28(700M), n41(2.6G), n79(4.9G)</string>
@@ -316,8 +277,6 @@
     <!-- TAC 科普（新增强化版） -->
     <string name="metric_tac_label">TAC</string>
     <string name="metric_tac_full">跟踪区域代码 (Tracking Area Code)</string>
-    <string name="metric_tac_desc">运营商将基站划分成不同的"片区"进行管理。</string>
-    <string name="metric_tac_impact">跨区域移动时 TAC 会更新。</string>
     <string name="metric_tac_tip">TAC 的变化频率低于 PCI，通常在跨区域出行时才会更新。</string>
     <string name="tac_explain_title">什么是 TAC？</string>
     <string name="tac_explain_basic">TAC（跟踪区域代码）是为特定地理区域的一组基站分配的编号。运营商使用 TAC 来管理寻呼——当有人拨打你的电话时，网络只会在你当前 TAC 内的基站进行寻呼，而不是全网广播。</string>
@@ -338,7 +297,6 @@
     <string name="metric_no_data">无数据</string>
 
     <!-- 参数网络兼容性说明 -->
-    <string name="metric_net_prefix">📡 网络兼容性：</string>
     <string name="metric_net_pci">PCI 在所有网络类型（2G/3G/4G/5G）中均可用（5G/4G 称 PCI，3G 称 PSC，2G 称 CID）</string>
     <string name="metric_net_earfcn">EARFCN 在 4G LTE、5G NR 和 3G WCDMA 网络中可用，2G GSM 不支持此参数</string>
     <string name="metric_net_tac">TAC 在 4G LTE 和 5G NR 网络中使用。3G WCDMA 和 2G GSM 使用 LAC（位置区码）作为等效值</string>
