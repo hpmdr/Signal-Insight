@@ -168,6 +168,13 @@ class PermissionViewModel constructor(
     fun lastRequestedPermissions(): List<String> = _lastRequestedPermissions
 
     /**
+     * 供仪器测试校验请求集合构造规则（是否为 FINE 配对 COARSE、是否排除了非运行时权限）。
+     * 生产代码路径与此完全相同，避免测试复制一份实现导致漂移。
+     */
+    @androidx.annotation.VisibleForTesting
+    fun buildRequestListForTest(): List<String> = buildRequestList()
+
+    /**
      * 构造实际向系统发起的请求集合。
      *
      * 官方要求：**不要单独请求 ACCESS_FINE_LOCATION**，必须与 ACCESS_COARSE_LOCATION 在同一次

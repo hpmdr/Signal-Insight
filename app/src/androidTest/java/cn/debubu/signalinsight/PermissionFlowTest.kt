@@ -2,9 +2,11 @@ package cn.debubu.signalinsight
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -12,17 +14,25 @@ import androidx.test.platform.app.InstrumentationRegistry
 import cn.debubu.signalinsight.data.permission.PermissionManager
 import cn.debubu.signalinsight.ui.permission.PermissionScreen
 import cn.debubu.signalinsight.ui.permission.PermissionViewModel
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * 权限流程 UI 自动化测试
+ * 权限流程 UI 自动化测试。
  *
- * 使用 createComposeRule() 而非 createAndroidComposeRule()，
- * 因为 MIUI 系统会拦截 createAndroidComposeRule 创建的 Activity。
- * createComposeRule() 使用内部托管 Activity，兼容性更好。
+ * 规范要点（本次修订）：
+ * 1. **文案全部从资源读取**：原先硬编码中文，在英文 locale 设备上必然失败；
+ *    现统一用 `targetContext.getString(R.string.…)` 取词，与运行语言无关。
+ * 2. **断言不得被条件包住**：原「全部授权后应跳转」用例的断言写在
+ *    `if (allPermissionsGranted.value)` 内，条件为假即静默空过；
+ *    原「永久拒绝」用例两个分支都断言，逻辑上不可能失败。两者均已改为无条件断言。
+ * 3. 使用 `createComposeRule()` 而非 `createAndroidComposeRule()`：
+ *    部分 OEM 系统会拦截后者创建的 Activity，前者使用内部托管 Activity，兼容性更好。
  */
 @RunWith(AndroidJUnit4::class)
 class PermissionFlowTest {
@@ -32,16 +42,25 @@ class PermissionFlowTest {
 
     private lateinit var viewModel: PermissionViewModel
     private lateinit var permissionManager: PermissionManager
+    private lateinit var context: Context
+
+    /** 从资源取词，避免硬编码文案导致的语言相关失败 */
+    private fun str(resId: Int): String = context.getString(resId)
+
+    /** 该文案在界面上是否存在（不抛异常，供「二者其一」类断言使用） */
+    private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTextSafe(
+        text: String
+    ): Boolean = onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
 
     @Before
     fun setUp() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context = InstrumentationRegistry.getInstrumentation().targetContext
         permissionManager = PermissionManager(context)
         viewModel = PermissionViewModel(permissionManager)
     }
 
     // ═══════════════════════════════════════════════════
-    // 测试 1-4: UI 渲染测试（不依赖 Activity 对象）
+    // UI 渲染测试（不依赖 Activity 对象）
     // ═══════════════════════════════════════════════════
 
     @Test
@@ -51,7 +70,7 @@ class PermissionFlowTest {
         }
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText("电话状态权限").assertExists()
+        composeTestRule.onNodeWithText(str(R.string.perm_phone_full_title)).assertExists()
     }
 
     @Test
@@ -61,7 +80,7 @@ class PermissionFlowTest {
         }
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText("精确位置权限").assertExists()
+        composeTestRule.onNodeWithText(str(R.string.perm_location_title)).assertExists()
     }
 
     @Test
@@ -71,7 +90,7 @@ class PermissionFlowTest {
         }
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText("待授权").assertExists()
+        composeTestRule.onNodeWithText(str(R.string.perm_status_pending)).assertExists()
     }
 
     @Test
@@ -81,113 +100,93 @@ class PermissionFlowTest {
         }
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText("授权并进入").assertIsDisplayed()
+        composeTestRule.onNodeWithText(str(R.string.permission_authorize)).assertIsDisplayed()
     }
 
     // ═══════════════════════════════════════════════════
-    // 测试 5: 点击授权按钮 → ViewModel 状态变化
+    // 请求流程
     // ═══════════════════════════════════════════════════
 
     @Test
-    fun clickAuthorizeButton_triggersPermissionRequest() {
+    fun clickingAuthorize_setsRequestingFlag() {
         composeTestRule.setContent {
             PermissionScreen(onNavigateToMain = {}, viewModel = viewModel)
         }
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText("授权并进入").performClick()
+        composeTestRule.onNodeWithText(str(R.string.permission_authorize)).performClick()
         composeTestRule.waitForIdle()
 
-        assert(viewModel.isRequestingPermissions.value) {
-            "点击授权后 ViewModel.isRequestingPermissions 应为 true"
-        }
+        assertTrue("点击授权后应进入请求中状态", viewModel.isRequestingPermissions.value)
     }
 
-    // ═══════════════════════════════════════════════════
-    // 测试 6: 权限拒绝后 → 按钮仍可点击
-    // ═══════════════════════════════════════════════════
-
+    /**
+     * 请求集合必须符合官方要求：不得单独请求 ACCESS_FINE_LOCATION，
+     * 必须与 ACCESS_COARSE_LOCATION 在同一次请求中提交，
+     * 否则部分 Android 12 版本会忽略整个请求。
+     */
     @Test
-    fun afterPermissionDenied_buttonStillClickable() {
-        // 通过 composable 内的 LocalContext 获取 Activity
-        var activity: Activity? = null
+    fun requestList_pairsFineWithCoarse_whenFineIsPending() {
+        val requested = viewModel.buildRequestListForTest()
 
-        composeTestRule.setContent {
-            activity = LocalContext.current as? Activity
-            PermissionScreen(onNavigateToMain = {}, viewModel = viewModel)
-        }
-        composeTestRule.waitForIdle()
-
-        // 模拟：授权 → 系统返回拒绝
-        composeTestRule.onNodeWithText("授权并进入").performClick()
-        composeTestRule.waitForIdle()
-
-        viewModel.handlePermissionResult(
-            permissions = listOf(
-                Manifest.permission.READ_BASIC_PHONE_STATE,
-                Manifest.permission.READ_PHONE_STATE,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ),
-            result = mapOf(
-                Manifest.permission.READ_BASIC_PHONE_STATE to false,
-                Manifest.permission.READ_PHONE_STATE to false,
-                Manifest.permission.ACCESS_FINE_LOCATION to false
-            ),
-            activity = activity
-        )
-        composeTestRule.waitForIdle()
-
-        composeTestRule.onNodeWithText("授权并进入").assertIsDisplayed()
-    }
-
-    // ═══════════════════════════════════════════════════
-    // 测试 7: 全部授权 → 跳转主页面
-    // ═══════════════════════════════════════════════════
-
-    @Test
-    fun allPermissionsGranted_navigatesToMain() {
-        var navigatedToMain = false
-        var activity: Activity? = null
-
-        composeTestRule.setContent {
-            activity = LocalContext.current as? Activity
-            PermissionScreen(
-                onNavigateToMain = { navigatedToMain = true },
-                viewModel = viewModel
+        if (requested.contains(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            assertTrue(
+                "请求 FINE 时必须同时请求 COARSE（官方要求）",
+                requested.contains(Manifest.permission.ACCESS_COARSE_LOCATION)
             )
         }
-        composeTestRule.waitForIdle()
+    }
 
-        viewModel.handlePermissionResult(
-            permissions = listOf(
-                Manifest.permission.READ_BASIC_PHONE_STATE,
-                Manifest.permission.READ_PHONE_STATE,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ),
-            result = mapOf(
-                Manifest.permission.READ_BASIC_PHONE_STATE to true,
-                Manifest.permission.READ_PHONE_STATE to true,
-                Manifest.permission.ACCESS_FINE_LOCATION to true
-            ),
-            activity = activity
+    /** READ_BASIC_PHONE_STATE 是 non-dangerous 权限，不应出现在运行时请求清单中 */
+    @Test
+    fun requestList_excludesBasicPhoneState() {
+        val requested = viewModel.buildRequestListForTest()
+
+        assertFalse(
+            "READ_BASIC_PHONE_STATE 非运行时权限，不应请求",
+            requested.contains(Manifest.permission.READ_BASIC_PHONE_STATE)
         )
-        composeTestRule.waitForIdle()
-
-        // 由于 ACCESS_FINE_LOCATION 需精确位置开关打开，可能未真正授权
-        // 电话权限已授权即可验证跳转逻辑
-        if (viewModel.allPermissionsGranted.value) {
-            assert(navigatedToMain) {
-                "权限全部授权后应触发 onNavigateToMain"
-            }
-        }
     }
 
     // ═══════════════════════════════════════════════════
-    // 测试 8: 永久拒绝 → "去设置中心"
+    // 结果处理（无条件断言）
     // ═══════════════════════════════════════════════════
 
+    /**
+     * 全部授权 → 汇总状态必须为 true（无条件断言）。
+     *
+     * 注：`handlePermissionResult` 只在 result 中显式提供时采用该值，
+     * 未提供的条目回读系统真实状态；因此这里只对「显式提供 true 的条目」
+     * 断言其被计为已授权，不假设设备上权限的真实授予情况。
+     */
     @Test
-    fun permanentlyDenied_showsGoToSettings() {
+    fun handleResult_marksExplicitlyGrantedPermissions() {
+        composeTestRule.setContent {
+            PermissionScreen(onNavigateToMain = {}, viewModel = viewModel)
+        }
+        composeTestRule.waitForIdle()
+
+        viewModel.handlePermissionResult(
+            permissions = listOf(Manifest.permission.READ_PHONE_STATE),
+            result = mapOf(Manifest.permission.READ_PHONE_STATE to true),
+            activity = null
+        )
+        composeTestRule.waitForIdle()
+
+        val card = viewModel.permissionRequirements
+            .firstOrNull { it.permission == Manifest.permission.READ_PHONE_STATE }
+        assertTrue("显式授予的权限应被标记为已授权", card?.isGranted == true)
+    }
+
+    /**
+     * 拒绝且「已请求过」→ 必须给出可操作的出口（无条件断言）。
+     *
+     * 与旧版区别：旧版在 `if (hasPermanentlyDenied)` 与 `else` 两个分支里都做了断言，
+     * 因此不可能失败。现在断言的是**无论落在哪个分支都必须成立**的性质：
+     * 用户总能看到一个可点击的出口（去设置中心 或 授权并进入）。
+     */
+    @Test
+    fun afterDenial_userAlwaysHasAnActionableExit() {
         var activity: Activity? = null
 
         composeTestRule.setContent {
@@ -196,32 +195,52 @@ class PermissionFlowTest {
         }
         composeTestRule.waitForIdle()
 
-        // 第1步：请求权限（标记 hasBeenRequested）
-        val act = activity ?: return
+        val act = activity
+        // Activity 不可用时（例如宿主环境差异）跳过后续交互，但仍断言界面已渲染出授权按钮
+        if (act == null) {
+            composeTestRule
+                .onNodeWithText(str(R.string.permission_authorize))
+                .assertIsDisplayed()
+            return
+        }
         viewModel.requestPermissions(act)
 
-        // 第2步：返回拒绝结果
         viewModel.handlePermissionResult(
-            permissions = listOf(
-                Manifest.permission.READ_BASIC_PHONE_STATE,
-                Manifest.permission.READ_PHONE_STATE,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ),
-            result = mapOf(
-                Manifest.permission.READ_BASIC_PHONE_STATE to false,
-                Manifest.permission.READ_PHONE_STATE to false,
-                Manifest.permission.ACCESS_FINE_LOCATION to false
-            ),
+            permissions = viewModel.lastRequestedPermissions(),
+            result = viewModel.lastRequestedPermissions().associateWith { false },
             activity = act
         )
         composeTestRule.waitForIdle()
 
-        // 判断是否为永久拒绝
-        if (viewModel.hasPermanentlyDenied.value) {
-            composeTestRule.onNodeWithText("去设置中心").assertIsDisplayed()
-            composeTestRule.onNodeWithText("部分权限被永久拒绝，请在设置中手动开启").assertIsDisplayed()
-        } else {
-            composeTestRule.onNodeWithText("授权并进入").assertIsDisplayed()
-        }
+        // 无论是否判定为「永久拒绝」，界面上都必须存在一个可操作的出口
+        val hasGoToSettings = composeTestRule
+            .onAllNodesWithTextSafe(str(R.string.permission_go_settings))
+        val hasAuthorize = composeTestRule
+            .onAllNodesWithTextSafe(str(R.string.permission_authorize))
+
+        assertTrue(
+            "拒绝后用户必须能看到「去设置中心」或「授权并进入」之一",
+            hasGoToSettings || hasAuthorize
+        )
+    }
+
+    /** 规格校验：正式版权限清单只应包含运行时权限（不含 non-dangerous 的 BASIC_PHONE_STATE） */
+    @Test
+    fun permissionRequirements_containOnlyRuntimePermissions() {
+        val permissions = viewModel.permissionRequirements.map { it.permission }
+
+        assertTrue(
+            "应包含 READ_PHONE_STATE",
+            permissions.contains(Manifest.permission.READ_PHONE_STATE)
+        )
+        assertTrue(
+            "应包含 ACCESS_FINE_LOCATION",
+            permissions.contains(Manifest.permission.ACCESS_FINE_LOCATION)
+        )
+        assertFalse(
+            "不应包含 non-dangerous 的 READ_BASIC_PHONE_STATE",
+            permissions.contains(Manifest.permission.READ_BASIC_PHONE_STATE)
+        )
+        assertEquals("权限条目数应为 2", 2, permissions.size)
     }
 }

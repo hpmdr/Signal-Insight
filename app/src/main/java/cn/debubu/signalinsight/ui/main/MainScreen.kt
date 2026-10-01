@@ -357,12 +357,18 @@ fun MainScreen(
                     )
                 )
             }
-        ) { _ ->
-            // Scaffold 的 content padding 在此刻意不使用：本应用采用 edgeToEdge，
-            // 各页面自行通过 WindowInsets 处理状态栏/导航栏内边距（见 SimContentPage 等），
-            // 若再叠加 Scaffold 的 padding 会导致双重留白。
-            // 用 `_` 显式表达「有意忽略」，避免官方 lint 规则
-            // UnusedMaterial3ScaffoldPaddingParameter 报警。
+        ) { innerPadding ->
+            // Scaffold 的 content padding 在此**有意不使用**，并已通过实验证：
+            //   1) 本 Scaffold 已设 contentWindowInsets = WindowInsets(0)，不产生系统栏内边距；
+            //   2) 各页面（SimContentPage / PermissionScreen / SettingsScreen / AboutScreen /
+            //      ExplainerUtils / SignalOverviewScreen）都自行用 WindowInsets.statusBars
+            //      计算顶部留白，并额外预留给 TopAppBar；
+            //   3) 若再叠加 Scaffold 的 padding，会出现双重留白。
+            // 官方 lint 规则 UnusedMaterial3ScaffoldPaddingParameter 的告警前提是
+            // 「忽略后内容会被 app bar 遮挡」——本项目的遮挡已由各页面的留白处理覆盖，
+            // 故此处显式抑制并说明理由（而非被动忽略）。
+            @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
+            val unusedPadding = innerPadding
             SharedTransitionLayout(
                 modifier = Modifier
                     .fillMaxSize()

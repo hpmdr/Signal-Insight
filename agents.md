@@ -70,7 +70,7 @@ SignalInsight/
 │       │   │   │   ├── permission/
 │       │   │   │   │   └── PermissionManager.kt          # 权限管理
 │       │   │   │   └── theme/
-│       │   │   │       └── ThemeManager.kt               # 主题管理（DataStore）
+│       │   │   │       └── ThemeManager.kt               # 主题管理（SharedPreferences）
 │       │   │   └── ui/
 │       │   │       ├── cellular/
 │       │   │       │   ├── CellularPage.kt              # 信号监测主容器（双卡 Pager）
@@ -252,9 +252,9 @@ val sim2SignalData: StateFlow<SignalData> = _sim2Data.map { ... }.stateIn(...)
 ### 第四步：UI 渲染（SimContentPage.kt）
 
 ```kotlin
-val sim1Data by viewModel.sim1SignalData.collectAsState()
-// 5G → "SS-RSRP: -98" | 4G → "RSRP: -93" | 无信号 → "N/A"
-// Int.MAX_VALUE → 显示 "N/A"
+val sim1Data by viewModel.sim1SignalData.collectAsStateWithLifecycle()
+// 5G → "SS-RSRP: -98" | 4G → "RSRP: -93" | 无数据 → 显示 R.string.metric_no_data
+// Int.MAX_VALUE（即 CellInfo.UNAVAILABLE）→ 一律显示「无数据」，不可当数值渲染
 ```
 
 ---
@@ -263,27 +263,29 @@ val sim1Data by viewModel.sim1SignalData.collectAsState()
 
 **问题**：MIUI/Xiaomi 设备上 `TelephonyCallback.CellInfoListener` 不返回 LTE RSSNR（SINR）。
 
-**方案**：CellInfo + PhoneStateListener 双路监听
+**方案**：CellInfo + SignalStrength 双路监听（批次 C 已迁移到官方指定替代 API）
 
 ```kotlin
 // 1. CellInfo 监听器（主数据源）
-val callback = TelephonyCallback.CellInfoListener { list -> 
-    extractCellularData(list, slotId, operatorName, _lteSinrFallback)
+val callback = TelephonyCallback.CellInfoListener { list ->
+    extractCellularData(list, slotId, isPrimary, operatorName, lteSinrFallback)
 }
-// 2. PhoneStateListener（SINR 备用，MIUI 设备）
-val ssListener = PhoneStateListener { signalStrength ->
-    signalStrength?.cellSignalStrengths?.forEach { css ->
-        if (css is CellSignalStrengthLte && css.rssnr != Int.MAX_VALUE) {
-            _lteSinrFallback = css.rssnr
+// 2. TelephonyCallback.SignalStrengthsListener（SINR 备用，MIUI 设备）
+val ssCallback = object : TelephonyCallback(), TelephonyCallback.SignalStrengthsListener {
+    override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
+        signalStrength.cellSignalStrengths.forEach { css ->
+            if (css is CellSignalStrengthLte && css.rssnr != Int.MAX_VALUE) {
+                lteSinrFallback = css.rssnr   // flow 内局部变量
+            }
         }
     }
 }
-tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
+tm.registerTelephonyCallback(context.mainExecutor, ssCallback)
 ```
 
 **关键约束**：
-- `PhoneStateListener(context.mainExecutor)` — API 31+ 必需 Executor 参数
-- 该监听器**刻意保留旧 API**：虽然 `TelephonyCallback.SignalStrengthsListener` 已取代它，但替换会改变 MIUI 回退路径的行为，故以 `@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")` 抑制告警而非迁移
+- 备用值持有在 **flow 内局部变量**（非仓库字段）：仓库是应用级单例，若共用字段则双卡同为 LTE 时会互相污染
+- 迁移依据：官方文档明确 `LISTEN_SIGNAL_STRENGTHS` 与 `onSignalStrengthsChanged` 自 API 31 起弃用，指定替代品为 `TelephonyCallback.SignalStrengthsListener`；两者载荷同为 `SignalStrength`，A/B 实测行为等价
 - 备用值仅用于服务小区（邻小区不使用，避免全部显示相同 SINR）
 - `fromCellInfo()` 三级降级：`rssnr → lteRssnrFallback → Int.MAX_VALUE`
 
@@ -291,7 +293,7 @@ tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
 
 ## 主题管理
 
-- **ThemeManager**：基于 DataStore 持久化用户主题偏好
+- **ThemeManager**：基于 **SharedPreferences** 持久化用户主题偏好（键 `theme_prefs`）。注：早期文档误写为 DataStore，实际实现是 SharedPreferences
 - **ThemeViewModel**：管理主题状态（动态取色开关 + 预设主题索引）
 - **ColorSchemePresets**：多种预设配色方案
 - **Material You 动态取色**：Android 12+ 支持（与预设主题互斥）
@@ -326,8 +328,8 @@ tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
 ## 国际化
 
 - 默认语言：中文（values/strings.xml）
-- 英文支持：values-en/strings.xml（完整科普内容翻译）
-- 所有 UI 文本使用 `stringResource(R.string.xxx)`
+- 英文支持：values-en/strings.xml，与中文**完全对齐（各 324 个 key，双向缺失 0）**，已真机验证 RSRP/RSRQ/SINR 科普页与关于页整页英文
+- 所有 UI 文本使用 `stringResource(R.string.xxx)`。官方 lint 规则 `LocalContextGetResourceValueCall`：用 LocalContext 取资源不具备配置感知能力，Configuration 变化时可能返回陈旧值
 
 ---
 
@@ -374,13 +376,15 @@ tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS)
 - [x] 国际化（中文 + 英文）
 - [x] 关于页
 - [x] README.md 项目文档（含架构图和指标说明）
-- [x] Compose UI 测试（权限流程）
+- [x] Compose UI 测试（权限流程）—— 已修订：文案改为从资源取词（原先硬编码中文，英文设备必失败），并消除两个恒真用例
+- [x] Android 官方 lint Error 归零（`LocalContextGetResourceValueCall` ×3、`MissingPermission` ×4、`UnusedMaterial3ScaffoldPaddingParameter` ×1）
+- [x] 单元测试 18 个（评分归一化 11 + 无数据展示规则 6 + 模板 1）
 - [x] 清理编译弃用告警（`LocalLifecycleOwner` 迁至 `androidx.lifecycle.compose`、`Icons.AutoMirrored.Filled.ArrowBack`、`PhoneStateListener` 覆写加 `OVERRIDE_DEPRECATION` 抑制）
 
 ### ⬜ 待实现
 - [ ] **图表展示** — 信号变化趋势图（Compose Charts）
 - [ ] **后台记录** — Foreground Service 持续监测 + Room 数据库持久化
-- [ ] **ProGuard 规则** — 补充 release 构建的混淆规则（目前为空）
+- [x] **ProGuard 规则** — 已显式声明 `-keepattributes SourceFile,LineNumberTable`（注：经 dexdump 实测，AGP 9.x 默认本已保留行号，此项属显式声明而非修复缺失）
 - [ ] **更多集成测试** — ViewModel、数据解析逻辑的测试
 
 ---
@@ -441,7 +445,7 @@ A: 信号监测工具，不发起网络请求，读取系统 TelephonyManager �
 A: 两张 SIM 卡独立创建 callbackFlow，通过 `combine()` 合并；UI 层通过 HorizontalPager 左右滑动切换显示。
 
 **Q: MIUI 设备 SINR 显示异常？**
-A: 已通过 PhoneStateListener 双监听器模式修复。如仍有问题请反馈。
+A: 双路监听方案：主数据源是 `TelephonyCallback.CellInfoListener`，当 CellInfo 不返回 LTE RSSNR 时，由 `TelephonyCallback.SignalStrengthsListener` 提供备用值（批次 C 已从弃用的 `PhoneStateListener` 迁移）。实测特定小米机型在 4G 下 CellInfo 的 `rssnr` 恒为 UNAVAILABLE、切到 5G 后 NR 的 `ssSinr` 正常上报。
 
 ---
 
