@@ -344,10 +344,13 @@ data class NeighborCellInfo(
  * @param neighborCells 邻小区列表
  * @param timestamp 数据时间戳
  */
+// 注意：不要给 CellularData 加"默认取当前时间"之类的字段（如 timestamp）——
+// data class 的 equals() 覆盖所有主构造参数，此类字段会让内容相同的两次回调
+// 永远判不相等，击穿下游 lastData 手动去重与 distinctUntilChanged()。
+// 持久化时间戳应在 Room 实体层（如 recordedAt）单独承载。
 data class CellularData(
     val servingCell: CellularSignalInfo? = null,
-    val neighborCells: List<NeighborCellInfo> = emptyList(),
-    val timestamp: Long = System.currentTimeMillis()
+    val neighborCells: List<NeighborCellInfo> = emptyList()
 )
 
 /**

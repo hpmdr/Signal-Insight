@@ -222,16 +222,16 @@
     <string name="band_excellent_hint">%s 属于高速频段，你当前的 5G 体验很好！</string>
     <string name="band_good_hint">%s 属于中频段，速度与覆盖均衡。追求更高速率可尝试靠近 5G 基站。</string>
     <string name="band_normal_hint">%s 属于低频段，覆盖稳定但速度偏慢，适合室内和远距离使用。</string>
-    <string name="band_china_mobile_5g">n28 (700M, 共享广电), n41 (2.6G), n79 (4.9G)</string>
-    <string name="band_china_mobile_4g">B3 (1800M), B8 (900M), B34 (1900M), B38~B41 (2.6G, 部分重耕5G)</string>
+    <string name="band_china_mobile_5g">n28 (700MHz，共享广电)、n41 (2.6GHz)、n79 (4.9GHz)</string>
+    <string name="band_china_mobile_4g">B3 (1800MHz)、B8 (900MHz)、B34 (1900MHz)、B38~B41 (2.6GHz，部分重耕 5G)</string>
     <string name="band_china_mobile_feature">n41 主力 5G 兼顾 4G；与广电共享 n28 广覆盖；n79 用于热点容量补充</string>
-    <string name="band_china_unicom_5g">n1 (2.1G, 4G/5G 重耕), n78 (3.5GHz, 共享电信)</string>
-    <string name="band_china_unicom_4g">B1 (2100M), B3 (1800M), B8 (900M)</string>
+    <string name="band_china_unicom_5g">n1 (2.1GHz，4G/5G 重耕)、n78 (3.5GHz，共享电信)</string>
+    <string name="band_china_unicom_4g">B1 (2100MHz)、B3 (1800MHz)、B8 (900MHz)</string>
     <string name="band_china_unicom_feature">与电信共享 n78 为城市主力；n1 已重耕为 4G/5G 混合使用</string>
-    <string name="band_china_telecom_5g">n5 (800M, 低频重耕), n78 (3.5GHz, 共享联通)</string>
-    <string name="band_china_telecom_4g">B1 (2100M), B3 (1800M), B5 (850M)</string>
+    <string name="band_china_telecom_5g">n5 (800MHz，低频重耕)、n78 (3.5GHz，共享联通)</string>
+    <string name="band_china_telecom_4g">B1 (2100MHz)、B3 (1800MHz)、B5 (850MHz)</string>
     <string name="band_china_telecom_feature">与联通共建共享 n78 全球最大 SA 网络；n5 低频重耕为 5G 打底，优化室内/农村覆盖</string>
-    <string name="band_china_broadcast_5g">n28 (700M, 共享移动), n79 (4.9G)</string>
+    <string name="band_china_broadcast_5g">n28 (700MHz，与移动共建共享)</string>
     <string name="band_china_broadcast_4g">暂无（直接建设 5G）</string>
     <string name="band_china_broadcast_feature">独有 700MHz 覆盖极广穿墙强，借助移动基站快速铺开</string>
     <string name="band_low_freq">低频 (sub-1GHz)</string>
@@ -272,10 +272,10 @@
     <string name="earfcn_formula_title">频率换算</string>
     <string name="earfcn_formula_4g_note">每个 EARFCN 对应一个具体的下行频率（MHz）。NR-ARFCN 范围更大，用于 5G 更宽的频率范围。</string>
     <string name="earfcn_operator_title">运营商常用频段（仅供参考）</string>
-    <string name="earfcn_operator_mobile">中国移动：B3(1800M)、B8(900M)、B39(1900M)、n41(2.6G)、n79(4.9G)</string>
-    <string name="earfcn_operator_unicom">中国联通：B1(2100M)、B3(1800M)、B8(900M)、n1(2.1G)、n78(3.5G)</string>
-    <string name="earfcn_operator_telecom">中国电信：B1(2100M)、B3(1800M)、B5(850M)、n78(3.5G)</string>
-    <string name="earfcn_operator_broadcast">中国广电：n28(700M)</string>
+    <string name="earfcn_operator_mobile">中国移动：B3 (1800MHz)、B8 (900MHz)、B39 (1900MHz)、n41 (2.6GHz)、n79 (4.9GHz)</string>
+    <string name="earfcn_operator_unicom">中国联通：B1 (2100MHz)、B3 (1800MHz)、B8 (900MHz)、n1 (2.1GHz)、n78 (3.5GHz)</string>
+    <string name="earfcn_operator_telecom">中国电信：B1 (2100MHz)、B3 (1800MHz)、B5 (850MHz)、n78 (3.5GHz)</string>
+    <string name="earfcn_operator_broadcast">中国广电：n28 (700MHz)</string>
     <string name="earfcn_operator_note">注：700MHz（n28）由中国广电主导，中国移动通过共建共享共同使用，因此移动网络下也可能显示 n28。各运营商频段会随共建共享与网络调整而变化，此处仅列出主要频段。</string>
     <string name="earfcn_formula_4g">4G LTE：Fdl = Fdl_low + 0.1 × (EARFCN − Ndl)</string>
     <string name="earfcn_formula_4g_desc">Fdl_low 为该频段下行起始频率，Ndl 为对应的起始信道号，步进 0.1 MHz。例如 B3 的 Fdl_low=1805MHz、Ndl=1200，故 EARFCN 1500 对应 1805 + 0.1×(1500−1200) = 1835 MHz。</string>

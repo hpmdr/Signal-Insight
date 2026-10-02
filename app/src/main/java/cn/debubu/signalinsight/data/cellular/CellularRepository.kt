@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import java.util.concurrent.Executors
 
 /**
  * 蜂窝信号数据仓库
@@ -248,9 +249,21 @@ class CellularRepository constructor(
             return@callbackFlow
         }
 
+        // flow 专属单线程 executor（H2 修复）：currentTm / currentCallback / lastData /
+        // lteSinrFallback 的所有读写——初始注册、订阅变化处理、电话回调、awaitClose 清理——
+        // 全部收敛到该线程串行执行，消除「flow 体跑在 IO 线程、系统回调跑在主线程」的竞态；
+        // 副作用是把注册 / 订阅查询相关的 binder IPC 一并移出了主线程。
+        val callbackExecutor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "CellularRepo-Slot$slotId").apply { isDaemon = true }
+        }
+
         var currentTm: TelephonyManager? = null
         var currentCallback: TelephonyCallback? = null
         var lastData: CellularData? = null
+
+        /** 最近一次「实际完成注册」的订阅 ID（M2）：只在注册成功时赋值，
+         *  拔卡（无效订阅）不记录，保证重新插卡后必然重新注册。 */
+        var lastRegisteredSubId = Int.MIN_VALUE
 
         // SINR 备用值 —— 每个 flow 各自持有。
         // 早期版本把它放在 repository 字段上，而仓库是应用级单例：双卡同时为 LTE 时，
@@ -272,7 +285,37 @@ class CellularRepository constructor(
             }
         }
 
+        /** 注销当前已注册的两个监听器。
+         *  H3 修复：由 registerCallback 无条件先行调用——原先注销逻辑位于
+         *  「订阅无效提前 return」之后，拔卡分支会残留旧监听器直到 flow 取消。 */
+        fun unregisterCurrent() {
+            currentCallback?.let {
+                try {
+                    currentTm?.unregisterTelephonyCallback(it)
+                    Log.d(TAG, "注销旧 CellInfo 监听器 - SIM 卡槽: $slotId")
+                } catch (e: Exception) {
+                    Log.e(TAG, "注销 CellInfo 监听器失败 - SIM 卡槽: $slotId", e)
+                }
+            }
+            try {
+                currentTm?.unregisterTelephonyCallback(ssCallback)
+            } catch (e: Exception) {
+                Log.e(TAG, "注销 SignalStrength 监听器失败 - SIM 卡槽: $slotId", e)
+            }
+            currentCallback = null
+            currentTm = null
+        }
+
         fun registerCallback(subscriptionId: Int) {
+            // M2：订阅 ID 未变化时直接跳过（订阅监听器注册后会立即回调一次，
+            // 原先每次都会白跑一轮注销+重注册）
+            if (subscriptionId == lastRegisteredSubId) return
+
+            // H3 修复：注销无条件先行，任何提前 return 分支都不会残留旧监听器
+            unregisterCurrent()
+            // 换卡后重置 SINR 备用值，避免残留上一张卡的数据
+            lteSinrFallback = Int.MAX_VALUE
+
             if (subscriptionId == SubscriptionManager.INVALID_SUBSCRIPTION_ID ||
                 subscriptionId == Int.MAX_VALUE
             ) {
@@ -318,24 +361,6 @@ class CellularRepository constructor(
                 return
             }
 
-            currentCallback?.let {
-                try {
-                    currentTm?.unregisterTelephonyCallback(it)
-                    Log.d(TAG, "注销旧监听器 - SIM 卡槽: $slotId")
-                } catch (e: Exception) {
-                    Log.e(TAG, "注销 CellInfo 监听器失败 - SIM 卡槽: $slotId",e)
-                }
-            }
-
-            // SignalStrength 监听器同样要换绑，否则换卡后会残留在旧订阅上
-            try {
-                currentTm?.unregisterTelephonyCallback(ssCallback)
-            } catch (e: Exception) {
-                Log.e(TAG, "注销 SignalStrength 监听器失败 - SIM 卡槽: $slotId", e)
-            }
-
-            currentTm = tm
-
             val operatorName = getOperatorNameForSlot(slotId)
 
             val callback = object : TelephonyCallback(), TelephonyCallback.CellInfoListener {
@@ -358,11 +383,13 @@ class CellularRepository constructor(
                 }
             }
 
-            currentCallback = callback
-
             try {
-                tm.registerTelephonyCallback(context.mainExecutor, callback)
-                tm.registerTelephonyCallback(context.mainExecutor, ssCallback)
+                tm.registerTelephonyCallback(callbackExecutor, callback)
+                tm.registerTelephonyCallback(callbackExecutor, ssCallback)
+                // 只有注册成功后才记录订阅 ID 与状态引用，失败路径走下方回滚
+                currentTm = tm
+                currentCallback = callback
+                lastRegisteredSubId = subscriptionId
 
                 val initialCellInfo = tm.allCellInfo ?: emptyList()
                 Log.d(
@@ -388,71 +415,58 @@ class CellularRepository constructor(
                 Log.e(
                     TAG, "注册 CellInfo 监听器失败 - SIM 卡槽: $slotId, SubscriptionId: $subscriptionId",e
                 )
+                // L6：注册失败时回滚状态，避免 currentTm/currentCallback 指向未注册的回调
+                unregisterCurrent()
+                lastRegisteredSubId = Int.MIN_VALUE
             }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val subscriptionManager =
-                context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE)
-                        as SubscriptionManager
+        val subscriptionManager =
+            context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE)
+                    as SubscriptionManager
 
-            val subscriptionListener =
-                object : SubscriptionManager.OnSubscriptionsChangedListener() {
-                    override fun onSubscriptionsChanged() {
-                        val newSubscriptionId = getSubscriptionIdForSlot(slotId)
-                        Log.d(
-                            TAG,
-                            "SIM 卡订阅信息变化 - SIM 卡槽: $slotId, 新 SubscriptionId: $newSubscriptionId"
-                        )
-                        registerCallback(newSubscriptionId)
-                    }
+        val subscriptionListener =
+            object : SubscriptionManager.OnSubscriptionsChangedListener() {
+                override fun onSubscriptionsChanged() {
+                    val newSubscriptionId = getSubscriptionIdForSlot(slotId)
+                    Log.d(
+                        TAG,
+                        "SIM 卡订阅信息变化 - SIM 卡槽: $slotId, 新 SubscriptionId: $newSubscriptionId"
+                    )
+                    // 本回调运行在 callbackExecutor 线程，与初始注册 / awaitClose 清理天然串行
+                    registerCallback(newSubscriptionId)
                 }
+            }
 
-            subscriptionManager.addOnSubscriptionsChangedListener(
-                context.mainExecutor,
-                subscriptionListener
-            )
+        // minSdk 31 ≥ 30，可直接使用带 Executor 的重载，回调不再挤占主线程
+        subscriptionManager.addOnSubscriptionsChangedListener(
+            callbackExecutor,
+            subscriptionListener
+        )
 
-            Log.d(TAG, "注册订阅监听器成功 - SIM 卡槽: $slotId")
+        Log.d(TAG, "注册订阅监听器成功 - SIM 卡槽: $slotId")
 
-            val initialSubscriptionId = getSubscriptionIdForSlot(slotId)
-            Log.d(
-                TAG,
-                "初始 SubscriptionId - SIM 卡槽: $slotId, SubscriptionId: $initialSubscriptionId"
-            )
-            registerCallback(initialSubscriptionId)
+        val initialSubscriptionId = getSubscriptionIdForSlot(slotId)
+        Log.d(
+            TAG,
+            "初始 SubscriptionId - SIM 卡槽: $slotId, SubscriptionId: $initialSubscriptionId"
+        )
+        // 初始注册同样派发到 callbackExecutor（H2 修复：与回调 / 清理完全串行）
+        callbackExecutor.execute { registerCallback(initialSubscriptionId) }
 
-            awaitClose {
+        awaitClose {
+            // 清理派发到同一 executor 串行执行：即使注册任务仍在队列中，
+            // 也必然「先注册完成、再执行清理」，不会出现注销跑在注册前面的竞态（H2 修复）；
+            // 各清理项独立 try/catch，单项失败不阻断其余清理（M1 修复）。
+            callbackExecutor.execute {
+                unregisterCurrent()
                 try {
-                    currentCallback?.let {
-                        currentTm?.unregisterTelephonyCallback(it)
-                        Log.d(TAG, "注销 CellInfo 监听器 - SIM 卡槽: $slotId")
-                    }
-                    currentTm?.unregisterTelephonyCallback(ssCallback)
                     subscriptionManager.removeOnSubscriptionsChangedListener(subscriptionListener)
                     Log.d(TAG, "移除订阅监听器 - SIM 卡槽: $slotId")
                 } catch (e: Exception) {
-                    Log.e(TAG,  "注销监听器失败 - SIM 卡槽: $slotId",e)
+                    Log.e(TAG, "移除订阅监听器失败 - SIM 卡槽: $slotId", e)
                 }
-            }
-        } else {
-            val initialSubscriptionId = getSubscriptionIdForSlot(slotId)
-            Log.d(
-                TAG,
-                "初始 SubscriptionId (Android N 以下) - SIM 卡槽: $slotId, SubscriptionId: $initialSubscriptionId"
-            )
-            registerCallback(initialSubscriptionId)
-
-            awaitClose {
-                try {
-                    currentCallback?.let {
-                        currentTm?.unregisterTelephonyCallback(it)
-                        Log.d(TAG, "注销 CellInfo 监听器 - SIM 卡槽: $slotId")
-                    }
-                    currentTm?.unregisterTelephonyCallback(ssCallback)
-                } catch (e: Exception) {
-                    Log.e(TAG, "注销监听器失败 - SIM 卡槽: $slotId", e)
-                }
+                callbackExecutor.shutdown()
             }
         }
     }.distinctUntilChanged()
