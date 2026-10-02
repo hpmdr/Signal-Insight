@@ -208,16 +208,16 @@
     <string name="metric_tac_full">Tracking Area Code (TAC)</string>
     <string name="metric_tac_tip">TAC changes less frequently than PCI, usually when you travel to a new area.</string>
     <string name="tac_explain_title">What is TAC?</string>
-    <string name="tac_explain_basic">TAC (Tracking Area Code) is a number assigned to a group of cell towers in a specific geographic area. Network operators use TAC to manage paging — when someone calls you, the network only pages the cell towers within your current TAC, not the entire network.</string>
+    <string name="tac_explain_basic">TAC (Tracking Area Code) identifies a tracking area within a PLMN, typically covering a group of base stations. Together with MCC and MNC it forms the TAI (Tracking Area Identity). The network uses it to manage paging: when someone calls you, paging is sent only from base stations in your current tracking area rather than across the whole network, saving signalling and radio resources.</string>
     <string name="tac_update_title">When TAC Updates</string>
-    <string name="tac_update_move">Moving to a new district or city center</string>
+    <string name="tac_update_move">Moving to a new district or city centre (leaving the current Tracking Area List)</string>
     <string name="tac_update_highway">Traveling along highways between cities</string>
     <string name="tac_update_subway">Subway or train passing through different zones</string>
     <string name="tac_update_airport">Flying into a new city (airport arrival)</string>
     <string name="tac_purpose_title">Purpose of TAC</string>
-    <string name="tac_purpose_paging">Efficient paging: Only pages the cell towers in your current area</string>
-    <string name="tac_purpose_location">Location tracking: Helps the network know which region you are in</string>
-    <string name="tac_purpose_balance">Load balancing: Prevents the network from wasting resources</string>
+    <string name="tac_purpose_paging">Efficient paging: sent only within your current tracking area, not network-wide</string>
+    <string name="tac_purpose_location">Location management: the network knows roughly which area you are in, without tracking you precisely</string>
+    <string name="tac_purpose_balance">Less signalling: several TACs form a Tracking Area List, so you need not re-report while moving within it</string>
     <string name="tac_assessment_title">Current TAC Assessment</string>
     <string name="tac_assessment_stable">Current TAC is stable. Your location area has not changed.</string>
     <string name="tac_assessment_changed">TAC has changed. You have entered a new tracking area.</string>
@@ -256,7 +256,7 @@
     <!-- ===== RSRP explainer ===== -->
     <string name="metric_rsrq_tip">RSRQ must be read together with RSRP to judge signal conditions reliably.</string>
     <string name="rsrp_explain_title">What is RSRP?</string>
-    <string name="rsrp_explain_basic">RSRP (Reference Signal Received Power) is the power of the reference signal your phone measures from the tower. It is the core metric for 4G/5G coverage strength.</string>
+    <string name="rsrp_explain_basic">RSRP (Reference Signal Received Power) is the linear average power of the resource elements carrying reference signals, and the core metric for 4G/5G coverage strength. The unit is dBm and values closer to 0 are stronger. 4G LTE uses CRS-RSRP (cell-specific reference signals); 5G NR uses SSB-RSRP (synchronization signal block). 3GPP reporting ranges: 4G LTE -156 to -44 dBm, 5G NR -156 to -31 dBm (both in 1 dB steps).</string>
     <string name="rsrp_range_title">RSRP Signal Strength Levels (international standard)</string>
     <string name="rsrp_range_excellent">Excellent (&gt; -80 dBm)</string>
     <string name="rsrp_range_excellent_desc">Very strong signal, peak throughput, HD VoLTE, seamless handover</string>
@@ -282,7 +282,7 @@
 
     <!-- ===== RSRQ explainer ===== -->
     <string name="rsrq_explain_title">What is RSRQ?</string>
-    <string name="rsrq_explain_basic">RSRQ (Reference Signal Received Quality) measures how clean the signal is. Even with strong RSRP, heavy interference will drag down real-world speed.</string>
+    <string name="rsrq_explain_basic">RSRQ (Reference Signal Received Quality) measures how clean the signal is. 3GPP defines it as RSRQ = N x RSRP / RSSI, where N is the number of resource blocks in the RSSI measurement bandwidth; numerator and denominator must use the same set of resource blocks. RSSI includes the serving cell, neighbouring cells, adjacent-channel interference and thermal noise, so a lower RSRQ means more interference or load. The unit is dB. Even with strong RSRP, heavy interference or a heavily loaded cell will drag RSRQ down.</string>
     <string name="rsrq_range_title">RSRQ Quality Levels</string>
     <string name="rsrq_range_good">Good (&gt; -10 dB)</string>
     <string name="rsrq_range_good_desc">Clean signal, low cell load, excellent experience</string>
@@ -305,7 +305,7 @@
     <!-- ===== SINR explainer ===== -->
     <string name="metric_sinr_tip">SINR is the key metric for real-world speed — more informative than RSRP.</string>
     <string name="sinr_explain_title">What is SINR?</string>
-    <string name="sinr_explain_basic">SINR (Signal to Interference plus Noise Ratio) compares useful signal against interference and noise. Imagine hearing someone in a noisy room — the voice is the signal, the crowd is the noise.</string>
+    <string name="sinr_explain_basic">SINR (Signal to Interference plus Noise Ratio) is the ratio of useful signal power to interference plus noise power. Imagine hearing someone in a noisy room — the voice is the signal, the crowd is the interference. Higher SINR means a clearer signal and usually faster data. The unit is dB. 3GPP names this RS-SINR in 4G and SS-SINR in 5G; both have a reporting range of -23 to +40 dB (0.5 dB steps). It differs from plain SNR: SINR also counts neighbour-cell interference in the denominator.</string>
     <string name="sinr_range_title">SINR and Expected Download Speed</string>
     <string name="sinr_range_excellent">Excellent (&gt; 20 dB)</string>
     <string name="sinr_range_excellent_speed">5G: 500-800 Mbps+ / 4G: 80-100 Mbps+, peak 256QAM</string>
@@ -344,12 +344,12 @@
     <string name="action_confirm">OK</string>
     <string name="action_cancel">Cancel</string>
     <!-- ===== 参数详解审查修正(v1.1.1)===== -->
-    <string name="rsrp_range_note">Note: 3GPP only specifies RSRP reporting range and accuracy, not what counts as good. The table above is a common industry rule of thumb; vendors and operators differ slightly. This app uses the same thresholds for assessment and scoring.</string>
-    <string name="rsrq_range_note">Note: RSRQ\'s theoretical ceiling is about -3 dB (single antenna port, unloaded, no interference) and is rarely reached in practice. A typical single-port fully loaded cell reads about -10.8 dB; two-port cells read about -6 dB unloaded and -13 dB loaded. Cell load alone can shift RSRQ by 7-8 dB, so variation at the same location over time is normal. 3GPP only defines its reporting range (about -19.5 to -3 dB, 0.5 dB steps), not its grading.</string>
+    <string name="rsrp_range_note">Note: 3GPP specifies only the RSRP reporting range and resolution, not what counts as good. The table above is a common industry rule of thumb and varies slightly between vendors and operators. This app uses the same thresholds for assessment and scoring.</string>
+    <string name="rsrq_range_note">Note: 3GPP reporting ranges for RSRQ are -34 to +2.5 dB in 4G LTE and -43 to +20 dB in 5G NR (both in 0.5 dB steps) - so RSRQ is not necessarily negative. Typical live values fall between about -20 and -3 dB: a single-port unloaded cell tops out near -3 dB, a fully loaded one reads about -10.8 dB, and two-port cells about -6 dB / -13 dB. Cell load alone can shift RSRQ by 7-8 dB, so variation at the same location over time is normal. 3GPP only defines the reporting range, not the grading shown above.</string>
     <string name="sinr_range_note">Note: Real throughput does not depend on SINR alone. 3GPP does not define a SINR-to-throughput conversion; each chipset vendor builds its own mapping from measurement. Actual speed also depends on bandwidth, MIMO layers, scheduling, network congestion and device capability, and modulation order does not map one-to-one to SINR. The table above is indicative only.</string>
     <string name="rssi_vs_rsrp_load">An important property: RSSI rises with cell load</string>
     <string name="rssi_vs_rsrp_load_desc">Even when the radio link itself is unchanged, RSSI increases as more users in the cell raise total transmit power. A higher RSSI therefore does not necessarily mean a better signal.</string>
-    <string name="tac_purpose_note">Note: TAC itself does not perform load balancing. Load balancing is handled by cell selection, reselection and handover policies. Tracking Area List planning does consider paging signalling volume, but that is a network-planning concern rather than a function of TAC.</string>
+    <string name="tac_purpose_note">Note: TAC itself does not perform load balancing — that is handled by cell selection, reselection and handover policies; Tracking Area List planning does consider paging signalling volume, but that is a network-planning concern. Also note the TAC length differs by system: 4G LTE (EPS) uses 2 octets (16 bits, range 0-65535) while 5G NR (5GS) uses 3 octets (24 bits, range 0-16777215). Seeing a TAC above 65535 on a 5G network is therefore normal.</string>
     <string name="earfcn_operator_note">Note: 700 MHz (n28) is led by China Broadcasting Network, with China Mobile sharing it under network co-construction. An n28 cell may therefore also appear on China Mobile. Operator band usage changes with co-construction and network tuning; only major bands are listed here.</string>
     <string name="earfcn_formula_4g">4G LTE: Fdl = Fdl_low + 0.1 x (EARFCN - Ndl)</string>
     <string name="earfcn_formula_4g_desc">Fdl_low is the band\'s downlink start frequency, Ndl the corresponding start channel number, with 0.1 MHz steps. For band B3, Fdl_low = 1805 MHz and Ndl = 1200, so EARFCN 1500 maps to 1805 + 0.1 x (1500 - 1200) = 1835 MHz.</string>

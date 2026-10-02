@@ -93,7 +93,7 @@
     <string name="metric_rsrp_full">参考信号接收功率 (Reference Signal Received Power)</string>
     <string name="metric_rsrp_tip">RSRP 是衡量信号覆盖的最核心指标，信号强度的测量单位是 dBm。</string>
     <string name="rsrp_explain_title">什么是 RSRP？</string>
-    <string name="rsrp_explain_basic">RSRP（参考信号接收功率）是手机测量基站发出的参考信号的功率值，是衡量 4G/5G 信号覆盖强度最核心的指标。单位是 dBm（分贝毫瓦），数值越接近 0 表示信号越强。5G NR 使用 SSB-RSRP，4G LTE 使用 CRS-RSRP，两者判定标准相近。按 3GPP 规范，RSRP 的报告范围约为 -156 ~ -44 dBm。</string>
+    <string name="rsrp_explain_basic">RSRP（参考信号接收功率）是手机测量的、承载参考信号的每个资源粒子的功率平均值，是衡量 4G/5G 覆盖强度最核心的指标。单位是 dBm（分贝毫瓦），数值越接近 0 表示越强。4G LTE 用 CRS-RSRP（小区专用参考信号），5G NR 用 SSB-RSRP（同步信号块）。3GPP 规定的报告范围：4G LTE 为 -156 ~ -44 dBm，5G NR 为 -156 ~ -31 dBm（均 1 dB 步进）。</string>
     <string name="rsrp_range_title">RSRP 信号强度分级（业界常用经验值）</string>
     <string name="rsrp_range_excellent">极佳（优于 -85 dBm）</string>
     <string name="rsrp_range_excellent_desc">信号极强，可达峰值吞吐量，语音通话清晰，切换流畅</string>
@@ -124,7 +124,7 @@
     <string name="metric_rsrq_full">参考信号接收质量 (Reference Signal Received Quality)</string>
     <string name="metric_rsrq_tip">RSRQ 与 RSRP 结合使用才能全面评估信号状况。</string>
     <string name="rsrq_explain_title">什么是 RSRQ？</string>
-    <string name="rsrq_explain_basic">RSRQ（参考信号接收质量）衡量的是信号有多「干净」。它的定义是 RSRQ = N × RSRP ÷ RSSI（N 为测量带宽内的资源块数量），因此数值恒为负值——RSSI 包含干扰与噪声，必然大于有用信号。即使 RSRP 显示信号很强，若环境干扰多或小区负载高，RSRQ 也会变差。单位是 dB。</string>
+    <string name="rsrq_explain_basic">RSRQ（参考信号接收质量）衡量的是信号有多「干净」。3GPP 定义为 RSRQ = N × RSRP ÷ RSSI，其中 N 是 RSSI 测量带宽内的资源块数量，分子分母必须取自同一组资源块。RSSI 包含本区、邻区、邻道干扰与热噪声，因此 RSRQ 越低说明干扰或负载越重。单位是 dB。即使 RSRP 很强，若干扰大或小区负载高，RSRQ 也会明显变差。</string>
     <string name="rsrq_range_title">RSRQ 质量分级（业界常用经验值）</string>
     <string name="rsrq_range_good">优（优于 -10 dB）</string>
     <string name="rsrq_range_good_desc">信号纯净，小区负载低，体验极佳</string>
@@ -132,7 +132,7 @@
     <string name="rsrq_range_fair_desc">有一定干扰或负载较高，整体可用</string>
     <string name="rsrq_range_poor">差（弱于 -15 dB）</string>
     <string name="rsrq_range_poor_desc">干扰较大或小区过载，网速不稳定，多出现在人群密集处</string>
-    <string name="rsrq_range_note">注：RSRQ 的理论上限约为 -3 dB（单天线端口、空载、无干扰的理想情况），现实中几乎无法达到；单端口满载时典型值约 -10.8 dB，双端口空载/满载约 -6 dB / -13 dB。仅小区负载变化就能让 RSRQ 浮动 7~8 dB，因此同一位置不同时段的 RSRQ 差异属正常现象。3GPP 只规定其报告范围（约 -19.5 ~ -3 dB，0.5 dB 步进），不规定分级。</string>
+    <string name="rsrq_range_note">注：3GPP 规定的 RSRQ 报告范围：4G LTE 为 -34 ~ +2.5 dB，5G NR 为 -43 ~ +20 dB（均为 0.5 dB 步进）。可见 RSRQ 并非一定是负值。实际网络中常见值多在 -20 ~ -3 dB：单天线端口空载时理论最高约 -3 dB，满载时典型约 -10.8 dB，双端口约为 -6 dB / -13 dB；仅小区负载变化就能让 RSRQ 浮动 7~8 dB，因此同一位置不同时段的差异属正常现象。3GPP 只规定报告范围，不规定上表这类分级。</string>
     <string name="rsrq_joint_title">RSRP 与 RSRQ 联合判断</string>
     <string name="rsrq_joint_good_both">RSRP 强 + RSRQ 优 = 信号质量极佳！</string>
     <string name="rsrq_joint_good_both_desc">信号强度和纯净度都很好，这是最理想的网络状态。</string>
@@ -150,7 +150,7 @@
     <string name="metric_sinr_full">信干噪比 (Signal to Interference plus Noise Ratio)</string>
     <string name="metric_sinr_tip">SINR 是影响实际网速的关键指标，比 RSRP 更能反映真实体验。</string>
     <string name="sinr_explain_title">什么是 SINR？</string>
-    <string name="sinr_explain_basic">SINR（信干噪比）是有用信号与干扰加噪声的比值。可以想象在嘈杂的房间里听人说话——信号是说话声，噪声和旁人交谈是干扰。SINR 越高，你听得越清楚，网速通常也越快。单位是 dB。注意它与单纯的 SNR（信噪比）不同：SINR 把邻区干扰也算了进去，因此更能反映真实体验。</string>
+    <string name="sinr_explain_basic">SINR（信干噪比）是有用信号的功率与干扰加噪声功率之比。可以想象在嘈杂的房间里听人说话——说话声是信号，噪声与他人交谈是干扰。SINR 越高，听得越清楚，网速通常也越快。单位是 dB。3GPP 的正式名称在 4G 为 RS-SINR、5G 为 SS-SINR，两者的报告范围都是 -23 ~ +40 dB（0.5 dB 步进）。它与单纯的 SNR（信噪比）不同：SINR 把邻区干扰也计入分母，因此更能反映真实体验。</string>
     <string name="sinr_range_title">SINR 与下载速度的参考关系</string>
     <string name="sinr_range_excellent">极速（优于 20 dB）</string>
     <string name="sinr_range_excellent_speed">5G: 500~800Mbps+ / 4G: 80~100Mbps+，通常可支持 256QAM</string>
@@ -287,9 +287,9 @@
     <string name="metric_tac_full">跟踪区域代码 (Tracking Area Code)</string>
     <string name="metric_tac_tip">TAC 的变化频率低于 PCI，通常在跨区域出行时才会更新。</string>
     <string name="tac_explain_title">什么是 TAC？</string>
-    <string name="tac_explain_basic">TAC（跟踪区域代码）是为特定地理区域的一组基站分配的编号。运营商使用 TAC 来管理寻呼——当有人拨打你的电话时，网络只会在你当前 TAC 内的基站进行寻呼，而不是全网广播。</string>
+    <string name="tac_explain_basic">TAC（Tracking Area Code，跟踪区域码）用于标识 PLMN 内的一个跟踪区域，该区域通常包含一组基站。TAC 与 MCC（国家码）、MNC（网络码）共同组成 TAI（跟踪区域标识）。网络用它来管理寻呼：有人拨打你的电话时，只在你当前跟踪区域内的基站发起寻呼，而不必全网广播，从而节省信令与无线资源。</string>
     <string name="tac_update_title">TAC 何时更新</string>
-    <string name="tac_update_move">移动到新城区或市中心</string>
+    <string name="tac_update_move">移动到新的城区或市中心（跨出当前跟踪区列表）</string>
     <string name="tac_update_highway">驾车行驶在城市之间的高速公路上</string>
     <string name="tac_update_subway">地铁或火车经过不同区域</string>
     <string name="tac_update_airport">乘坐飞机到达新城市</string>
@@ -297,7 +297,7 @@
     <string name="tac_purpose_paging">高效寻呼：只在你当前所在的跟踪区域内寻呼，而不是全网广播</string>
     <string name="tac_purpose_location">位置管理：让网络知道你大致所在的区域，无需持续精确跟踪</string>
     <string name="tac_purpose_balance">减少信令开销：多个 TAC 会组成一个「跟踪区列表」，你在列表范围内移动不必反复上报位置</string>
-    <string name="tac_purpose_note">注：TAC 本身不负责负载均衡。负载均衡由小区选择、重选与切换策略实现；跟踪区列表的划分虽会考虑寻呼信令量，但那属于网络规划层面的考量，而非 TAC 的功能。</string>
+    <string name="tac_purpose_note">注：TAC 本身不负责负载均衡——负载均衡由小区选择、重选与切换策略实现；跟踪区列表的划分虽会考虑寻呼信令量，但属于网络规划层面的考量。另需注意 TAC 的长度因制式而异：4G LTE（EPS）为 2 字节（16 位），取值 0~65535；5G NR（5GS）为 3 字节（24 位），取值 0~16777215。因此在 5G 网络下看到超过 65535 的 TAC 是正常的。</string>
     <string name="tac_assessment_title">当前 TAC 评估</string>
     <string name="tac_assessment_stable">当前 TAC 稳定。你所在的跟踪区域没有变化。</string>
     <string name="tac_assessment_changed">TAC 已更新。你已进入新的跟踪区域。</string>
