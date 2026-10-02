@@ -1,14 +1,21 @@
 name: Release
 
-# 自动发布已恢复：推送 v* tag 即触发构建并创建 GitHub Release。
+# 自动发布：推送 v* tag 即触发构建并创建 GitHub Release。
 #
-# 签名密钥变更说明（v1.1.0 起）：
-#   v1.0.0 ~ v1.0.7 使用的密钥库文件已丢失（证书指纹 6C:1D:3F:27:…:27:E2），
-#   v1.1.0 起改用新密钥库（证书指纹 B9:8A:E3:A9:…:D4:4F，别名 release）。
-#   已安装 v1.0.x 的用户需卸载重装，详见 doc/v1.1.0-发版说明.md。
+# ── 签名密钥（重要，勿改）──
+# 线上发布使用 GitHub Secrets 中的密钥签名，其证书指纹为：
+#     6C:1D:3F:27:19:AD:78:8C:80:C3:63:E3:E3:AD:49:C3:11:5A:A5:F4:0A:18:27:7A:7A:24:3D:36:80:6B:27:E2
+# 该指纹自 v1.0.0 起从未变更（v1.0.0 ~ v1.1.0 八个版本实测完全一致），
+# 因此用户升级始终可正常覆盖安装。
 #
-# 发版前请确认 GitHub Secrets 已更新为新密钥对应的值：
-#   SIGNING_KEY / KEY_STORE_PASSWORD / KEY_PASSWORD / KEY_ALIAS(=release)
+# ⚠️ 注意：本地 private-release.jks 是**另一把**密钥（指纹 B9:8A:E3:A9:…:D4:4F），
+# 用它签出的包与线上签名不匹配。**正式分发一律走本 workflow（CI 构建）**，
+# 不要用本地 assembleRelease 的产物对外分发。详见 doc/签名密钥与分发规范.md。
+#
+# GitHub Secrets 必须保持的四项（请勿删除或修改）：
+#   SIGNING_KEY / KEY_STORE_PASSWORD / KEY_PASSWORD / KEY_ALIAS
+# 注意 Secrets 是「一次性配置、长期保存」的凭据，不是每次打 tag 上传的产物；
+# 且它只写不读、无法导出——线上密钥没有文件备份，删除后即永久失去。
 on:
   push:
     tags:

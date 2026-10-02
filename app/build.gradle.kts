@@ -74,11 +74,14 @@ android {
         applicationId = "cn.debubu.signalinsight"
         minSdk = 31
         targetSdk = 37
-        // v1.1.0：签名密钥变更（原密钥丢失，换用新密钥库）。
-        // 因签名不匹配，已安装 v1.0.x 的用户需先卸载再安装本版本，
-        // 故按次版本号递增（1.0.7 → 1.1.0）以明确区分。
-        versionCode = 8
-        versionName = "1.1.0"
+        // 版本历史：
+        //   1.0.7  → 1.1.0：曾按「签名密钥变更」发布，但该判断后被证伪——
+        //                   线上密钥（GitHub Secrets 中）从未变更，v1.0.0~v1.1.0
+        //                   实测证书指纹完全一致，用户可正常覆盖升级。
+        //   1.1.0  → 1.1.1：参数详解页按 3GPP 规范逐条修正（报告范围、TAC 位宽等）
+        //                   及频率单位统一，属修正类改动，故升补丁号。
+        versionCode = 9
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
