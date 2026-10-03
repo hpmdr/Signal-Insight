@@ -44,11 +44,23 @@ class CellularRepository constructor(
      * @return 对应的 TelephonyManager 实例，如果不可用则返回 null
      */
     private fun getTelephonyManagerForSlot(slotId: Int): TelephonyManager? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            telephonyManager.createForSubscriptionId(getSubscriptionIdForSlot(slotId))
-        } else {
-            if (slotId == 0) telephonyManager else null
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return if (slotId == 0) telephonyManager else null
         }
+        // 空卡槽时 getSubscriptionIdForSlot 返回 INVALID_SUBSCRIPTION_ID（详见 isUsableSubscriptionId）。
+        // AOSP 各版本的 createForSubscriptionId() 本身并不校验 subId（只是 new TelephonyManager(mContext, subId)），
+        // 但拿无效订阅去调 requestCellInfoUpdate / getDataNetworkType 只会换来无意义的 binder 往返：
+        // 单卡设备上双卡轮询意味着每 refreshIntervalMs 一次空转。这里直接短路返回 null，
+        // 让调用方走各自的「未插卡」分支。
+        val subId = getSubscriptionIdForSlot(slotId)
+        if (!isUsableSubscriptionId(subId)) {
+            Log.d(
+                TAG,
+                "订阅 ID 无效，跳过获取 TelephonyManager - SIM 卡槽: $slotId, SubscriptionId: $subId"
+            )
+            return null
+        }
+        return telephonyManager.createForSubscriptionId(subId)
     }
 
     /**
@@ -173,19 +185,37 @@ class CellularRepository constructor(
 
         for (cellInfo in cellInfoList) {
             if (cellInfo.isRegistered) {
-                servingCell = CellularSignalInfo.fromCellInfo(cellInfo, slotId, isPrimary, operatorName, lteSinrFallback)
-                Log.d(
-                    TAG,
-                    "服务小区信息 - SIM 卡槽: $slotId, PCI: ${servingCell.pci}, RSRP: ${servingCell.rsrp} dBm, EARFCN: ${servingCell.earfcn}, 运营商: ${servingCell.operatorName}, 频段: ${servingCell.band}, 网络类型: ${servingCell.networkType}"
-                )
+                // 解析失败返回 null：统一交给下方 servingCell == null 分支兜底，
+                // 此处不造占位数据，避免把空壳当成真实服务小区推给 UI。
+                val cell = CellularSignalInfo.fromCellInfo(cellInfo, slotId, isPrimary, operatorName, lteSinrFallback)
+                if (cell != null) {
+                    servingCell = cell
+                    Log.d(
+                        TAG,
+                        "服务小区信息 - SIM 卡槽: $slotId, PCI: ${cell.pci}, RSRP: ${cell.rsrp} dBm, EARFCN: ${cell.earfcn}, 运营商: ${cell.operatorName}, 频段: ${cell.band}, 网络类型: ${cell.networkType}"
+                    )
+                } else {
+                    Log.w(
+                        TAG,
+                        "服务小区解析失败（信号强度/小区标识缺失或类型不符） - SIM 卡槽: $slotId"
+                    )
+                }
             } else {
+                // 解析失败返回 null：直接跳过该条。NeighborCellInfo 的默认值是 -120/-20 这类
+                // 看似正常的数值而非无数据哨兵，用默认值兜底会在列表里多出一行虚构的邻区。
                 val neighborCell = NeighborCellInfo.fromCellInfo(cellInfo, isServing = false)
-                neighborCells.add(neighborCell)
-                Log.d(
-                    TAG,
-                    "邻小区信息 - SIM 卡槽: $slotId, PCI: ${neighborCell.pci}, RSRP: ${neighborCell.rsrp} dBm, SINR: ${neighborCell.sinr}, EARFCN: ${neighborCell.earfcn}, 频段: ${neighborCell.band}"
-                )
-
+                if (neighborCell != null) {
+                    neighborCells.add(neighborCell)
+                    Log.d(
+                        TAG,
+                        "邻小区信息 - SIM 卡槽: $slotId, PCI: ${neighborCell.pci}, RSRP: ${neighborCell.rsrp} dBm, SINR: ${neighborCell.sinr}, EARFCN: ${neighborCell.earfcn}, 频段: ${neighborCell.band}"
+                    )
+                } else {
+                    Log.w(
+                        TAG,
+                        "邻小区解析失败（信号强度/小区标识缺失或类型不符），已跳过 - SIM 卡槽: $slotId"
+                    )
+                }
             }
         }
 

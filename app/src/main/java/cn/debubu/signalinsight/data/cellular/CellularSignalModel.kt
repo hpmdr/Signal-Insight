@@ -1,12 +1,19 @@
 package cn.debubu.signalinsight.data.cellular
 
+import android.telephony.CellIdentityGsm
+import android.telephony.CellIdentityLte
 import android.telephony.CellIdentityNr
+import android.telephony.CellIdentityWcdma
 import android.telephony.CellInfo
 import android.telephony.CellInfoGsm
 import android.telephony.CellInfoLte
 import android.telephony.CellInfoNr
 import android.telephony.CellInfoWcdma
+import android.telephony.CellSignalStrengthGsm
+import android.telephony.CellSignalStrengthLte
 import android.telephony.CellSignalStrengthNr
+import android.telephony.CellSignalStrengthWcdma
+import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import androidx.compose.runtime.Immutable
 
@@ -82,11 +89,19 @@ data class CellularSignalInfo(
          *   }
          * };
          */
-        fun fromCellInfo(cellInfo: CellInfo, simSlotId: Int, isPrimary: Boolean, operatorName: String = "Unknown", lteRssnrFallback: Int = Int.MAX_VALUE): CellularSignalInfo {
+        fun fromCellInfo(cellInfo: CellInfo, simSlotId: Int, isPrimary: Boolean, operatorName: String = "Unknown", lteRssnrFallback: Int = Int.MAX_VALUE): CellularSignalInfo? {
+            // 契约：cellSignalStrength / cellIdentity 任一缺失或类型不符即返回 null，
+            // 由 CellularRepository 的 servingCell == null 分支统一兜底。
+            // 此处绝不返回占位数据——那会造出一个「有运营商名、指标全不可用」的壳子，
+            // 既绕过调用方的兜底，又让 isRegistered=true 的服务小区静默退化成空数据。
             val signalStrength = when (cellInfo) {
                 is CellInfoLte -> {
-                    val signalStrengthLte = cellInfo.cellSignalStrength
-                    val cellIdentityLte = cellInfo.cellIdentity
+                    // 安全取值：AOSP 把 getCellSignalStrength/getCellIdentity 标注为 @NonNull，
+                    // 但 CellIdentity 字段非 final、且 CellInfoNr 存在不做 null 校验的 @hide setter，
+                    // 部分厂商 ROM 会下发空对象。此处统一按可空处理，缺失时返回 null。
+                    val signalStrengthLte: CellSignalStrengthLte? = cellInfo.cellSignalStrength
+                    val cellIdentityLte: CellIdentityLte? = cellInfo.cellIdentity
+                    if (signalStrengthLte == null || cellIdentityLte == null) return null
                     val cellBand = cellIdentityLte.bands.firstOrNull()?.let { "B$it" }
                         ?: earfcnToBand(cellIdentityLte.earfcn)
                         ?: ""
@@ -96,7 +111,7 @@ data class CellularSignalInfo(
                         else if (lteRssnrFallback != Int.MAX_VALUE) lteRssnrFallback
                         else Int.MAX_VALUE
                     }
-                    val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
+                    val resolvedOperator = operatorName.takeIf { it != "Unknown" }
                         ?: cellIdentityLte.operatorAlphaLong?.toString()
                         ?: "Unknown"
                     CellularSignalInfo(
@@ -119,38 +134,22 @@ data class CellularSignalInfo(
                 *
                 * */
                 is CellInfoNr -> {
-                    val signalStrengthNr = cellInfo.cellSignalStrength as CellSignalStrengthNr
-                    val cellIdentityNr = cellInfo.cellIdentity as CellIdentityNr
+                    // CellInfoNr 的两个 getter 返回基类（CellSignalStrength / CellIdentity），
+                    // 因此必须做窄化转换；用 as? 而非 as，避免厂商返回 null / 异类型时
+                    // 抛 ClassCastException 或 NPE（回调跑在专用线程上，抛出会终止线程）。
+                    val signalStrengthNr = cellInfo.cellSignalStrength as? CellSignalStrengthNr
+                        ?: return null
+                    val cellIdentityNr = cellInfo.cellIdentity as? CellIdentityNr
+                        ?: return null
                     val cellBand = cellIdentityNr.bands.firstOrNull()?.let { "n$it" }
                         ?: nrarfcnToBand(cellIdentityNr.nrarfcn)
                         ?: ""
 
-                    val invalidValue = Int.MAX_VALUE
-                    val rsrp = if (signalStrengthNr.ssRsrp != invalidValue) {
-                        signalStrengthNr.ssRsrp
-                    } else if (signalStrengthNr.csiRsrp != invalidValue) {
-                        signalStrengthNr.csiRsrp
-                    } else {
-                        Int.MAX_VALUE
-                    }
+                    val rsrp = resolveNrMetric(signalStrengthNr.ssRsrp, signalStrengthNr.csiRsrp)
+                    val rsrq = resolveNrMetric(signalStrengthNr.ssRsrq, signalStrengthNr.csiRsrq)
+                    val sinr = resolveNrMetric(signalStrengthNr.ssSinr, signalStrengthNr.csiSinr)
 
-                    val rsrq = if (signalStrengthNr.ssRsrq != invalidValue) {
-                        signalStrengthNr.ssRsrq
-                    } else if (signalStrengthNr.csiRsrq != invalidValue) {
-                        signalStrengthNr.csiRsrq
-                    } else {
-                        Int.MAX_VALUE
-                    }
-
-                    val sinr = if (signalStrengthNr.ssSinr != invalidValue) {
-                        signalStrengthNr.ssSinr
-                    } else if (signalStrengthNr.csiSinr != invalidValue) {
-                        signalStrengthNr.csiSinr
-                    } else {
-                        Int.MAX_VALUE
-                    }
-
-                    val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
+                    val resolvedOperator = operatorName.takeIf { it != "Unknown" }
                         ?: cellIdentityNr.operatorAlphaLong?.toString()
                         ?: "Unknown"
 
@@ -159,7 +158,7 @@ data class CellularSignalInfo(
                         simSlotId = simSlotId,
                         operatorName = resolvedOperator,
                         networkType = "5G NR",
-                        dbm = signalStrengthNr.dbm.let { if (it != invalidValue) it else Int.MAX_VALUE },
+                        dbm = signalStrengthNr.dbm.let { if (it != Int.MAX_VALUE) it else Int.MAX_VALUE },
                         rsrp = rsrp,
                         rsrq = rsrq,
                         sinr = sinr,
@@ -172,9 +171,10 @@ data class CellularSignalInfo(
                     )
                 }
                 is CellInfoWcdma -> {
-                    val signalStrengthWcdma = cellInfo.cellSignalStrength
-                    val cellIdentityWcdma = cellInfo.cellIdentity
-                    val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
+                    val signalStrengthWcdma: CellSignalStrengthWcdma? = cellInfo.cellSignalStrength
+                    val cellIdentityWcdma: CellIdentityWcdma? = cellInfo.cellIdentity
+                    if (signalStrengthWcdma == null || cellIdentityWcdma == null) return null
+                    val resolvedOperator = operatorName.takeIf { it != "Unknown" }
                         ?: cellIdentityWcdma.operatorAlphaLong?.toString()
                         ?: "Unknown"
                     // WCDMA — 仅 dbm/rssi/pci(psc)/earfcn/tac 可用，RSRP/RSRQ/SINR 不适用
@@ -192,9 +192,10 @@ data class CellularSignalInfo(
                     )
                 }
                 is CellInfoGsm -> {
-                    val signalStrengthGsm = cellInfo.cellSignalStrength
-                    val cellIdentityGsm = cellInfo.cellIdentity
-                    val resolvedOperator = operatorName.takeUnless { it == "Unknown" }
+                    val signalStrengthGsm: CellSignalStrengthGsm? = cellInfo.cellSignalStrength
+                    val cellIdentityGsm: CellIdentityGsm? = cellInfo.cellIdentity
+                    if (signalStrengthGsm == null || cellIdentityGsm == null) return null
+                    val resolvedOperator = operatorName.takeIf { it != "Unknown" }
                         ?: cellIdentityGsm.operatorAlphaLong?.toString()
                         ?: "Unknown"
                     // GSM — 仅 dbm 和 rssi 可用，RSRP/RSRQ/SINR 不适用
@@ -209,10 +210,9 @@ data class CellularSignalInfo(
                         isPrimary = isPrimary
                     )
                 }
-                else -> CellularSignalInfo(
-                    simSlotId = simSlotId, isPrimary = isPrimary,
-                    operatorName = operatorName.takeUnless { it == "Unknown" } ?: "Unknown"
-                )
+                // 未覆盖的网络制式（CDMA / TD-SCDMA 等）：交由调用方按「未插卡/未知」兜底，
+                // 不再返回一个各字段均为默认值的壳子。
+                else -> null
             }
             return signalStrength
         }
@@ -251,6 +251,11 @@ data class CellularSignalInfo(
  * @param earfcn E-UTRA 绝对无线频率信道号
  * @param band 频段
  * @param isServing 是否为服务小区
+ *
+ * ⚠️ 注意：本类默认值（pci=0 / rsrp=-120 / rsrq=-20 / sinr=-20 / rssi=-120）是
+ * 「看起来合理的真实数值」，**不是** CellularSignalInfo 用的 Int.MAX_VALUE 无数据哨兵。
+ * 因此解析失败时绝不能用默认值兜底，必须返回 null 跳过该条邻小区，
+ * 否则 UI 的邻小区表里会凭空多出一行正常却虚构的数据。
  */
 data class NeighborCellInfo(
     val pci: Int = 0,
@@ -265,12 +270,21 @@ data class NeighborCellInfo(
     companion object {
         /**
          * 从 CellInfo 创建 NeighborCellInfo
+         *
+         * 契约：cellSignalStrength / cellIdentity 任一缺失或类型不符即返回 null，
+         * 由调用方跳过该条邻小区。
+         *
+         * 之所以不返回默认值兜底，是因为 [NeighborCellInfo] 的默认值不是「不可用」哨兵值
+         * （rsrp=-120 / rsrq=-20 / sinr=-20 是看起来合理的真实数值，与 CellularSignalInfo
+         * 用 Int.MAX_VALUE 表示无数据的约定不同）。一旦回落到默认值，邻小区表里会多出
+         * 一行完全正常却凭空捏造的邻区数据。
          */
-        fun fromCellInfo(cellInfo: CellInfo, isServing: Boolean = false): NeighborCellInfo {
+        fun fromCellInfo(cellInfo: CellInfo, isServing: Boolean = false): NeighborCellInfo? {
             return when (cellInfo) {
                 is CellInfoLte -> {
-                    val signalStrengthLte = cellInfo.cellSignalStrength
-                    val cellIdentityLte = cellInfo.cellIdentity
+                    val signalStrengthLte: CellSignalStrengthLte? = cellInfo.cellSignalStrength
+                    val cellIdentityLte: CellIdentityLte? = cellInfo.cellIdentity
+                    if (signalStrengthLte == null || cellIdentityLte == null) return null
                     val cellBand = earfcnToBand(cellIdentityLte.earfcn)
                         ?: cellIdentityLte.bands.firstOrNull()?.toString()
                         ?: ""
@@ -289,36 +303,17 @@ data class NeighborCellInfo(
                     )
                 }
                 is CellInfoNr -> {
-                    val signalStrengthNr = cellInfo.cellSignalStrength as CellSignalStrengthNr
-                    val cellIdentityNr = cellInfo.cellIdentity as CellIdentityNr
+                    val signalStrengthNr = cellInfo.cellSignalStrength as? CellSignalStrengthNr
+                        ?: return null
+                    val cellIdentityNr = cellInfo.cellIdentity as? CellIdentityNr
+                        ?: return null
                     val cellBand = nrarfcnToBand(cellIdentityNr.nrarfcn)
                         ?: cellIdentityNr.bands.firstOrNull()?.toString()
                         ?: ""
 
-                    val invalidValue = Int.MAX_VALUE
-                    val rsrp = if (signalStrengthNr.ssRsrp != invalidValue) {
-                        signalStrengthNr.ssRsrp
-                    } else if (signalStrengthNr.csiRsrp != invalidValue) {
-                        signalStrengthNr.csiRsrp
-                    } else {
-                        Int.MAX_VALUE
-                    }
-
-                    val rsrq = if (signalStrengthNr.ssRsrq != invalidValue) {
-                        signalStrengthNr.ssRsrq
-                    } else if (signalStrengthNr.csiRsrq != invalidValue) {
-                        signalStrengthNr.csiRsrq
-                    } else {
-                        Int.MAX_VALUE
-                    }
-
-                    val sinr = if (signalStrengthNr.ssSinr != invalidValue) {
-                        signalStrengthNr.ssSinr
-                    } else if (signalStrengthNr.csiSinr != invalidValue) {
-                        signalStrengthNr.csiSinr
-                    } else {
-                        Int.MAX_VALUE
-                    }
+                    val rsrp = resolveNrMetric(signalStrengthNr.ssRsrp, signalStrengthNr.csiRsrp)
+                    val rsrq = resolveNrMetric(signalStrengthNr.ssRsrq, signalStrengthNr.csiRsrq)
+                    val sinr = resolveNrMetric(signalStrengthNr.ssSinr, signalStrengthNr.csiSinr)
 
                     NeighborCellInfo(
                         pci = cellIdentityNr.pci,
@@ -330,7 +325,7 @@ data class NeighborCellInfo(
                         isServing = isServing
                     )
                 }
-                else -> NeighborCellInfo(isServing = isServing)
+                else -> null
             }
         }
     }
@@ -468,6 +463,33 @@ data class NeighborCellTableModel(
 
 /** 该指标值是否为「系统未上报 / 无数据」 */
 fun isUnavailable(value: Int): Boolean = value == Int.MAX_VALUE
+
+/**
+ * 订阅 ID 是否可用于创建 per-subscription 的 [android.telephony.TelephonyManager]。
+ *
+ * 空卡槽时 CellularRepository 取订阅会拿到 [SubscriptionManager.INVALID_SUBSCRIPTION_ID]（-1），
+ * 本项目在旧于 API 31 的分支上用 [Int.MAX_VALUE] 作同样的「无效」标记，因此两者都要排除。
+ *
+ * 这里直接比较常量而不调用 SubscriptionManager.isValidSubscriptionId()：该方法是平台实现，
+ * 在 JVM 单元测试里只会返回默认值；保持本函数为纯逻辑才能被单测直接覆盖。
+ */
+internal fun isUsableSubscriptionId(subId: Int): Boolean =
+    subId >= 0 && subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID && subId != Int.MAX_VALUE
+
+/**
+ * 解析 5G NR 的单项指标（RSRP / RSRQ / SINR）。
+ *
+ * 优先取 SS-*（基于同步信号 SSB 的测量值，主流上报口径）；SS-* 为 [Int.MAX_VALUE]
+ * （系统未上报）时回退到 CSI-*（信道状态参考）；两者都不可用则返回 [Int.MAX_VALUE]，
+ * 交由渲染层按「无数据」处理。
+ *
+ * 这段逻辑原先在服务小区与邻小区两处各重复了三遍，抽成纯函数以便 JVM 单测直接覆盖。
+ */
+internal fun resolveNrMetric(ssValue: Int, csiValue: Int): Int = when {
+    ssValue != Int.MAX_VALUE -> ssValue
+    csiValue != Int.MAX_VALUE -> csiValue
+    else -> Int.MAX_VALUE
+}
 
 /** 指标值的展示文本；不可用时返回占位文案 */
 fun displayMetric(value: Int, placeholder: String): String =
