@@ -151,6 +151,16 @@ android {
         compose = true
     }
 
+    testOptions {
+        unitTests {
+            // 允许 JVM 单元测试调用 Android 框架桩方法（返回默认值而不是抛 "Stub!"）。
+            // 这样才能在没有设备的情况下直接构造 CellInfoLte / CellInfoNr 等对象，
+            // 验证 fromCellInfo 在「信号强度/小区标识缺失」时的安全兜底路径。
+            // 纯逻辑单测（评分、无数据展示规则等）不依赖任何 Android 桩，行为不受影响。
+            isReturnDefaultValues = true
+        }
+    }
+
     // APK 输出命名：SignalInsight-v<版本号>-release.apk（例：SignalInsight-v1.1.0-release.apk）
     androidComponents {
         onVariants { variant ->
