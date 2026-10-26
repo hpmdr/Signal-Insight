@@ -80,8 +80,11 @@ android {
         //                   实测证书指纹完全一致，用户可正常覆盖升级。
         //   1.1.0  → 1.1.1：参数详解页按 3GPP 规范逐条修正（报告范围、TAC 位宽等）
         //                   及频率单位统一，属修正类改动，故升补丁号。
-        versionCode = 9
-        versionName = "1.1.1"
+        //   1.1.1  → 1.1.2：对外文案聚焦 4G/5G（2G/3G 不再作为宣传点），
+        //                   README 改写为面向用户的版本，构建工具升至
+        //                   Kotlin 2.4.21 / Gradle 9.8.2，修复 lint 报错。
+        versionCode = 10
+        versionName = "1.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
