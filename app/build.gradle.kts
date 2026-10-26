@@ -83,8 +83,9 @@ android {
         //   1.1.1  → 1.1.2：对外文案聚焦 4G/5G（2G/3G 不再作为宣传点），
         //                   README 改写为面向用户的版本，构建工具升至
         //                   Kotlin 2.4.21 / Gradle 9.8.2，修复 lint 报错。
-        versionCode = 10
-        versionName = "1.1.2"
+        //   1.1.2  → 1.1.3：关于页新增「版本更新」入口，直达 GitHub Releases。
+        versionCode = 11
+        versionName = "1.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
