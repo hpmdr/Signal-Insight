@@ -3,7 +3,7 @@ package cn.debubu.signalinsight
 import android.Manifest
 import android.app.Activity
 import android.content.Context
-import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -190,7 +190,7 @@ class PermissionFlowTest {
         var activity: Activity? = null
 
         composeTestRule.setContent {
-            activity = LocalContext.current as? Activity
+            activity = LocalActivity.current
             PermissionScreen(onNavigateToMain = {}, viewModel = viewModel)
         }
         composeTestRule.waitForIdle()
