@@ -6,7 +6,7 @@
 
 > **下载地址：** <https://github.com/hpmdr/Signal-Insight/releases/latest>
 >
-> 在页面底部的 **Assets** 中点击 `SignalInsight-v1.1.2-release.apk` 即可下载（文件名中的版本号会随新版本变化）。
+> 在页面底部的 **Assets** 中点击 `SignalInsight-v1.1.3-release.apk` 即可下载（文件名中的版本号会随新版本变化）。
 
 <table>
   <tr>
@@ -99,7 +99,7 @@
 
 ### 安装步骤
 
-1. 打开 [**Releases 页面**](https://github.com/hpmdr/Signal-Insight/releases/latest)，在最新版本的 **Assets** 中下载 `SignalInsight-v1.1.2-release.apk`
+1. 打开 [**Releases 页面**](https://github.com/hpmdr/Signal-Insight/releases/latest)，在最新版本的 **Assets** 中下载 `SignalInsight-v1.1.3-release.apk`
 2. 用文件管理器点击安装；若系统提示「禁止安装未知应用」，按提示为浏览器或文件管理器**允许安装未知应用**
 3. 首次打开时授予两项权限（见下方说明），即可进入主界面
 4. 升级新版本时直接覆盖安装即可，**无需卸载**，设置会保留
