@@ -190,7 +190,7 @@
     <string name="rssi_vs_rsrp_load_desc">即使无线链路本身没有变化，只要小区内用户变多、发射功率增大，RSSI 就会升高。因此 RSSI 偏高并不一定代表信号更好。</string>
     <string name="rssi_when_use_title">什么时候参考 RSSI？</string>
     <string name="rssi_when_use_wifi">Wi-Fi 网络：RSSI 是 Wi-Fi 信号的主要指标</string>
-    <string name="rssi_when_use_2g">2G/GSM 网络：RSSI 更常用</string>
+    <string name="rssi_when_use_lte">4G LTE 网络：观察整段带宽的总功率变化</string>
     <string name="rssi_when_use_proximity">信号快速检查：粗略判断是否靠近基站</string>
     <string name="rssi_assessment_title">当前 RSSI 评估</string>
     <string name="rssi_assessment_good">信号水平在正常范围内。</string>
@@ -306,14 +306,14 @@
     <string name="metric_no_data">无数据</string>
 
     <!-- 参数网络兼容性说明 -->
-    <string name="metric_net_pci">PCI 在所有网络类型（2G/3G/4G/5G）中均可用（5G/4G 称 PCI，3G 称 PSC，2G 称 CID）</string>
-    <string name="metric_net_earfcn">EARFCN 在 4G LTE、5G NR 和 3G WCDMA 网络中可用，2G GSM 不支持此参数</string>
-    <string name="metric_net_tac">TAC 在 4G LTE 和 5G NR 网络中使用。3G WCDMA 和 2G GSM 使用 LAC（位置区码）作为等效值</string>
-    <string name="metric_net_rsrp">RSRP/SS-RSRP 在 4G LTE 和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
-    <string name="metric_net_rsrq">RSRQ/SS-RSRQ 在 4G LTE 和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
-    <string name="metric_net_sinr">SINR/SS-SINR 在 4G LTE（使用 RSSNR）和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
-    <string name="metric_net_rssi">RSSI 在 2G GSM 和 4G LTE 中可通过 API 获取。5G NR 底层协议也有 RSSI（用于计算 SS-RSRQ），但 Google 因 TDD 动态波束导致总功率波动剧烈、参考价值低，未对应用层开放接口</string>
-    <string name="metric_net_band">频段信息在 4G LTE 和 5G NR 网络中可用，3G WCDMA 和 2G GSM 不支持</string>
+    <string name="metric_net_pci">PCI 在 4G LTE 与 5G NR 中均可用（编号范围：4G 为 0~503，5G 为 0~1007）</string>
+    <string name="metric_net_earfcn">EARFCN 在 4G LTE 中可用，5G NR 使用扩展后的 NR-ARFCN</string>
+    <string name="metric_net_tac">TAC 在 4G LTE 和 5G NR 网络中使用，用于标识归属的跟踪区域</string>
+    <string name="metric_net_rsrp">RSRP/SS-RSRP 在 4G LTE 和 5G NR 网络中可用，是衡量覆盖强度的核心指标</string>
+    <string name="metric_net_rsrq">RSRQ/SS-RSRQ 在 4G LTE 和 5G NR 网络中可用，反映信号质量与干扰程度</string>
+    <string name="metric_net_sinr">SINR/SS-SINR 在 4G LTE 与 5G NR 网络中可用；4G 下若 CellInfo 未上报，本应用会用系统信号强度中的 RSSNR 作为等效值</string>
+    <string name="metric_net_rssi">RSSI 在 4G LTE 中可通过 API 获取。5G NR 底层协议也有 RSSI（用于计算 SS-RSRQ），但 Google 因 TDD 动态波束导致总功率波动剧烈、参考价值低，未对应用层开放接口</string>
+    <string name="metric_net_band">频段信息在 4G LTE 和 5G NR 网络中可用</string>
 
     <!-- 信号综合分析页 (SignalOverviewScreen) -->
     <string name="overview_title">信号综合诊断</string>
@@ -334,7 +334,7 @@
     <string name="refresh_slow_detail">5秒</string>
     <!-- 关于页(完整本地化) -->
     <string name="about_app_version">信号监测仪 v%1$s</string>
-    <string name="about_tagline">实时监测 2G/3G/4G/5G 蜂窝网络信号，了解你的网络环境。</string>
+    <string name="about_tagline">实时监测 4G/5G 蜂窝网络信号质量，了解你的网络环境。</string>
     <string name="about_privacy_title">隐私说明</string>
     <string name="about_privacy_no_network_title">本应用不会联网</string>
     <string name="about_privacy_no_network_desc">信号监测仪根本没有申请联网权限。你在系统设置中查看本应用的权限列表，找不到「网络」这一项——所有数据仅在本地处理，不可能上传或泄露到任何服务器。</string>

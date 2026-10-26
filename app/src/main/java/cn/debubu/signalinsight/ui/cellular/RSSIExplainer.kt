@@ -76,7 +76,7 @@ fun RssiExplainer(currentRssi: Int, onClose: () -> Unit, skipOuterPadding: Boole
         Spacer(Modifier.height(16.dp))
         SectionCard(R.string.rssi_when_use_title, Icons.Default.Info) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf(R.string.rssi_when_use_wifi, R.string.rssi_when_use_2g, R.string.rssi_when_use_proximity).forEach { resId ->
+                listOf(R.string.rssi_when_use_wifi, R.string.rssi_when_use_lte, R.string.rssi_when_use_proximity).forEach { resId ->
                     Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Info, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)

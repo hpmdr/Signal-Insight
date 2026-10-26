@@ -114,7 +114,7 @@
     <string name="rssi_vs_rsrp_small_desc">If RSSI is close to RSRP, the signal is clean with minimal interference.</string>
     <string name="rssi_when_use_title">When is RSSI Useful?</string>
     <string name="rssi_when_use_wifi">Wi-Fi networks: RSSI is the primary signal metric</string>
-    <string name="rssi_when_use_2g">2G/GSM networks: RSSI is more commonly used</string>
+    <string name="rssi_when_use_lte">4G LTE networks: watch how total power across the band changes</string>
     <string name="rssi_when_use_proximity">Signal proximity check: good for quick checks</string>
     <string name="rssi_assessment_title">Current RSSI Assessment</string>
     <string name="rssi_assessment_good">Signal level is within normal range.</string>
@@ -226,14 +226,14 @@
     <string name="metric_no_data">N/A</string>
 
     <!-- Network compatibility info -->
-    <string name="metric_net_pci">PCI is available on all networks (2G/3G/4G/5G), named differently per protocol (PCI/PSC/CID)</string>
-    <string name="metric_net_earfcn">EARFCN is available on 4G LTE, 5G NR, and 3G WCDMA. 2G GSM does not support this parameter</string>
-    <string name="metric_net_tac">TAC is used on 4G LTE and 5G NR. 3G WCDMA and 2G GSM use LAC (Location Area Code) instead</string>
-    <string name="metric_net_rsrp">RSRP/SS-RSRP is available on 4G LTE and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
-    <string name="metric_net_rsrq">RSRQ/SS-RSRQ is available on 4G LTE and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
-    <string name="metric_net_sinr">SINR is available on 4G LTE (via RSSNR) and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
-    <string name="metric_net_rssi">RSSI is available via API on 2G GSM and 4G LTE. 5G NR has RSSI in its protocol (used to compute SS-RSRQ), but Google chose not to expose it to apps due to TDD/beamforming causing unreliable wide fluctuations</string>
-    <string name="metric_net_band">Band info is available on 4G LTE and 5G NR. 3G WCDMA and 2G GSM do not support it</string>
+    <string name="metric_net_pci">PCI is available on both 4G LTE and 5G NR (range: 0 to 503 on 4G, 0 to 1007 on 5G)</string>
+    <string name="metric_net_earfcn">EARFCN is available on 4G LTE; 5G NR uses the extended NR-ARFCN</string>
+    <string name="metric_net_tac">TAC is used on 4G LTE and 5G NR to identify the tracking area a cell belongs to</string>
+    <string name="metric_net_rsrp">RSRP/SS-RSRP is available on 4G LTE and 5G NR and is the core metric for coverage strength</string>
+    <string name="metric_net_rsrq">RSRQ/SS-RSRQ is available on 4G LTE and 5G NR and reflects signal quality and interference</string>
+    <string name="metric_net_sinr">SINR/SS-SINR is available on 4G LTE and 5G NR; on 4G, if CellInfo does not report it, the app falls back to RSSNR from the system signal strength</string>
+    <string name="metric_net_rssi">RSSI is available via API on 4G LTE. 5G NR has RSSI in its protocol (used to compute SS-RSRQ), but Google chose not to expose it to apps due to TDD/beamforming causing unreliable wide fluctuations</string>
+    <string name="metric_net_band">Band info is available on 4G LTE and 5G NR</string>
 
     <!-- Signal Overview Screen -->
     <string name="overview_title">Signal Diagnosis</string>
@@ -331,7 +331,7 @@
     <!-- ===== EARFCN (NR formula) ===== -->
     <!-- About screen (fully localized) -->
     <string name="about_app_version">Signal Insight v%1$s</string>
-    <string name="about_tagline">Monitor 2G/3G/4G/5G cellular signals in real time and understand your network environment.</string>
+    <string name="about_tagline">Monitor 4G/5G cellular signal quality in real time and understand your network environment.</string>
     <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy_no_network_title">This app never goes online</string>
     <string name="about_privacy_no_network_desc">Signal Insight does not request the network permission at all. Check this app\'s permission list in system settings — there is no network entry. All data is processed locally and can never be uploaded or leaked to any server.</string>
