@@ -321,8 +321,8 @@
     <string name="overview_metrics_title">关键指标速览</string>
 
     <!-- 关于页-弹窗 -->
-    <string name="about_view_source">查看源码</string>
-    <string name="about_view_source_confirm">即将打开浏览器访问 GitHub 仓库，是否继续？</string>
+    <string name="about_open_link_title">打开链接</string>
+    <string name="about_view_source_confirm">即将打开浏览器访问 GitHub 页面，是否继续？</string>
 
     <!-- 刷新间隔设置 -->
     <string name="settings_refresh">刷新设置</string>
@@ -335,6 +335,8 @@
     <!-- 关于页(完整本地化) -->
     <string name="about_app_version">信号监测仪 v%1$s</string>
     <string name="about_tagline">实时监测 4G/5G 蜂窝网络信号质量，了解你的网络环境。</string>
+    <string name="about_update_title">版本更新</string>
+    <string name="about_update_desc">新版本会发布在 GitHub Releases 页面，附带更新内容与安装包。点击下方链接查看。</string>
     <string name="about_privacy_title">隐私说明</string>
     <string name="about_privacy_no_network_title">本应用不会联网</string>
     <string name="about_privacy_no_network_desc">信号监测仪根本没有申请联网权限。你在系统设置中查看本应用的权限列表，找不到「网络」这一项——所有数据仅在本地处理，不可能上传或泄露到任何服务器。</string>

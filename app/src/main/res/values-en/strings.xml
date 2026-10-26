@@ -241,8 +241,8 @@
     <string name="overview_metrics_title">Key Metrics</string>
 
     <!-- About page dialog -->
-    <string name="about_view_source">View Source</string>
-    <string name="about_view_source_confirm">About to open browser to visit GitHub repository. Continue?</string>
+    <string name="about_open_link_title">Open Link</string>
+    <string name="about_view_source_confirm">This will open the GitHub page in your browser. Continue?</string>
 
     <!-- Refresh interval settings -->
     <string name="settings_refresh">Refresh Settings</string>
@@ -332,6 +332,8 @@
     <!-- About screen (fully localized) -->
     <string name="about_app_version">Signal Insight v%1$s</string>
     <string name="about_tagline">Monitor 4G/5G cellular signal quality in real time and understand your network environment.</string>
+    <string name="about_update_title">Updates</string>
+    <string name="about_update_desc">New versions are published on the GitHub Releases page, with release notes and the APK. Tap the link below to check.</string>
     <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy_no_network_title">This app never goes online</string>
     <string name="about_privacy_no_network_desc">Signal Insight does not request the network permission at all. Check this app\'s permission list in system settings — there is no network entry. All data is processed locally and can never be uploaded or leaked to any server.</string>

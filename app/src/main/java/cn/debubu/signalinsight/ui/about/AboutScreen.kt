@@ -53,28 +53,29 @@ fun AboutScreen(modifier: Modifier = Modifier) {
     }
 
     val gitHubUrl = "https://github.com/hpmdr/Signal-Insight"
-    var showGitDialog by remember { mutableStateOf(false) }
+    val releasesUrl = "https://github.com/hpmdr/Signal-Insight/releases"
+    var pendingUrl by remember { mutableStateOf<String?>(null) }
 
-    // ── 打开 GitHub 确认弹窗 ──
-    if (showGitDialog) {
+    // ── 打开 GitHub 页面确认弹窗（仓库 / Releases 共用） ──
+    pendingUrl?.let { url ->
         AlertDialog(
-            onDismissRequest = { showGitDialog = false },
-            title = { Text(stringResource(R.string.about_view_source)) },
+            onDismissRequest = { pendingUrl = null },
+            title = { Text(stringResource(R.string.about_open_link_title)) },
             text = { Text(stringResource(R.string.about_view_source_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
-                    showGitDialog = false
+                    pendingUrl = null
                     // 设备无浏览器/被管控时 startActivity 会抛 ActivityNotFoundException
                     //（官方 Context.startActivity 文档明确列出该异常），此处显式兜底。
                     try {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(gitHubUrl)))
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                     } catch (e: android.content.ActivityNotFoundException) {
                         android.util.Log.w("AboutScreen", "无法打开浏览器", e)
                     }
                 }) { Text(stringResource(R.string.action_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showGitDialog = false }) {
+                TextButton(onClick = { pendingUrl = null }) {
                     Text(stringResource(R.string.action_cancel))
                 }
             }
@@ -161,6 +162,31 @@ fun AboutScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // ── 版本更新 ──
+        Text(
+            text = stringResource(R.string.about_update_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.about_update_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            lineHeight = 18.sp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = releasesUrl,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            lineHeight = 18.sp,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier.clickable { pendingUrl = releasesUrl }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // ── 开源信息 ──
         Text(
             text = stringResource(R.string.about_license_title),
@@ -181,7 +207,7 @@ fun AboutScreen(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.primary,
             lineHeight = 18.sp,
             textDecoration = TextDecoration.Underline,
-            modifier = Modifier.clickable { showGitDialog = true }
+            modifier = Modifier.clickable { pendingUrl = gitHubUrl }
         )
     }
 }
