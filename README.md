@@ -1,290 +1,163 @@
-# Signal Insight - 信号监测仪
+# 信号监测仪 · Signal Insight
 
-一款专业的 Android **蜂窝网络信号监测**工具，基于 Jetpack Compose + Material 3 开发。
-实时展示 2G/3G/4G/5G 信号的各项核心指标，区分各网络类型参数差异，并提供详细的科普解读。
+**看得懂手机信号的应用。** 实时显示你所在位置的 4G / 5G 信号强度与质量，把 RSRP、SINR 这些专业参数翻译成普通人能理解的话。
+
+[![Download Latest Release](https://img.shields.io/github/v/release/hpmdr/Signal-Insight?style=for-the-badge&label=Download)](https://github.com/hpmdr/Signal-Insight/releases/latest)
+
+> **下载地址：** <https://github.com/hpmdr/Signal-Insight/releases/latest>
+>
+> 在页面底部的 **Assets** 中点击 `SignalInsight-v1.1.2-release.apk` 即可下载（文件名中的版本号会随新版本变化）。
 
 ![Signal Insight 主界面](screen_main.png)
 
 ---
 
-## 信号监听原理
+## 它能帮你做什么
 
-```mermaid
-flowchart TB
-    subgraph Android["Android System Layer"]
-        SC["SubscriptionManager"]
-        TM["TelephonyManager"]
-        CL["CellInfoListener<br/>(被动)"]
-        PS["PhoneStateListener<br/>(MIUI RSSNR 备用)"]
-        RCU["requestCellInfoUpdate()<br/>(主动刷新)"]
-    end
+### 一眼看清信号好坏
 
-    subgraph Repo["CellularRepository"]
-        CF["callbackFlow"]
-        EC["extractCellularData()"]
-        FD["fromCellInfo()<br/>类型分流"]
-        EB["earfcnToBand()<br/>频段反算"]
-    end
+不用记 dBm 数值，应用会用**颜色和环形进度**告诉你现在信号是「优秀」还是「极弱」，并给出一句人话结论。
 
-    subgraph Net["Network Type Dispatch"]
-        direction LR
-        L4G["4G LTE"]
-        NR_5G["5G NR"]
-        W3G["3G WCDMA"]
-        G2G["2G GSM"]
-    end
+### 双卡同时监测
 
-    subgraph VM["CellularViewModel"]
-        RJ["refreshJob<br/>每 5s 轮询"]
-        FL["collect { sim1, sim2 }"]
-        SF["StateFlow&lt;SignalData&gt;"]
-        LC["ON_RESUME / ON_PAUSE"]
-    end
+两张 SIM 卡各自独立采集，左右滑动或点击底部胶囊即可切换，卡片上直接显示各自的运营商和实时信号。
 
-    subgraph UI["Compose UI"]
-        CS["collectAsState()"]
-        CP["CellularPage<br/>Dual SIM Pager"]
-        SG["SimContentPage<br/>信号环 + 指标网格"]
-        SO["SignalOverviewScreen<br/>综合评分 + 诊断"]
-    end
+### 8 项核心指标，一项不糊弄
 
-    SC --> TM
-    TM --> CL
-    TM --> PS
-    RJ -->|每 5s| RCU
-    RCU -->|触发刷新| CL
+| 指标 | 含义（简单说） |
+|------|--------------|
+| **RSRP / SS-RSRP** | 信号强度，最常用的那个数 |
+| **RSRQ / SS-RSRQ** | 信号质量，看有没有被干扰 |
+| **SINR / SS-SINR** | 信噪比，直接决定你能跑多快 |
+| **RSSI** | 总接收功率 |
+| **Band** | 当前连的是哪个频段（n41、B3…） |
+| **PCI** | 小区标识，判断是否在同一个基站 |
+| **EARFCN** | 频点编号，可换算成实际频率 |
+| **TAC** | 跟踪区编号，用于定位你在哪个片区 |
 
-    CL -->|onCellInfoChanged| CF
-    PS -.->|备用 SINR| EB
-    CF --> EC
-    EC --> FD
+指标名称会随网络类型自动变化（5G 显示 SS-RSRP，4G 显示 RSRP），设备或系统没上报的项目会老实显示「无数据」，不会用 0 或乱码糊弄你。
 
-    FD -->|LTE| L4G
-    FD -->|NR| NR_5G
-    FD -->|WCDMA| W3G
-    FD -->|GSM| G2G
+### 邻小区列表
 
-    L4G & NR_5G & W3G & G2G --> FL
-    FL --> SF
-    LC -->|控制| FL
-    LC -->|控制| RJ
+看到周围其他基站的 PCI、频点、频段和信号强度，方便判断当前的弱信号是不是「没别的基站可连」。
 
-    SF --> CS
-    CS --> CP
-    CP --> SG
-    SG --> SO
-```
+### 综合评分与诊断
 
-### 核心流程说明
+点一下信号环，进入综合分析页：0–100 分、评级、诊断说明，以及**针对当前短板的改善建议**（比如「靠近窗户」）。评分只统计当前网络真正可用的参数，不会因为系统没提供 SINR 就把你判成「信号差」。
 
-1. **被动监听**：`TelephonyManager` + `TelephonyCallback.CellInfoListener` 注册回调，监听基站信号变化
-2. **主动刷新**：前台每 5s 调用 `requestCellInfoUpdate()` 强制 Modem 刷新，解决被动监听在信号稳定时更新不及时的问题。数据通过已有的 `CellInfoListener` 自动抵达，不改变下游链路
-3. **MIUI 兼容**：额外注册 `PhoneStateListener`，解决 MIUI 设备上 CellInfo 不返回 LTE RSSNR 的问题，通过 SignalStrength 路径获取备用 SINR
-4. **频段反算**：`CellIdentity.bands` API 对邻小区不可靠（部分设备返回占位值），改用 EARFCN/NR-ARFCN → 频段查表覆盖国内主流 LTE/NR 频段
-5. **数据提取**：`callbackFlow` 将回调转为协程 Flow，`extractCellularData()` 解析 `CellInfo` 列表
-6. **类型分流**：`fromCellInfo()` 根据 `CellInfo` 实际类型（LTE/NR/WCDMA/GSM）分别提取可用参数
-7. **ViewModel 处理**：通过 `MutableStateFlow` → `.map{}.stateIn()` 转为不可变 UI 状态
-8. **Compose 渲染**：`collectAsState()` 收集 StateFlow，驱动 UI 响应式更新
+### 每个参数都有科普
 
-### 各网络类型参数差异
+点任意指标格，进入专属解读页：
 
-| 参数 | 5G NR | 4G LTE | 3G WCDMA | 2G GSM |
-|------|-------|--------|---------|--------|
-| **RSRP** | **SS-RSRP** (ssRsrp→csiRsrp) | RSRP (rsrp) | 无数据 | 无数据 |
-| **RSRQ** | **SS-RSRQ** (ssRsrq→csiRsrq) | RSRQ (rsrq) | 无数据 | 无数据 |
-| **SINR** | **SS-SINR** (ssSinr→csiSinr) | rssnr 作为 SINR 等效值 | 无数据 | 无数据 |
-| **RSSI** | 无数据（NR 无此概念） | rssi | 无数据 | rssi |
-| **PCI** | pci | pci | psc（主扰码） | cid（小区ID） |
-| **频率** | nrarfcn | earfcn | uarfcn | 无数据 |
-| **频段** | bands API | bands API | 无数据 | 无数据 |
-| **TAC** | tac | tac | lac | lac |
+- 这个参数到底是干什么的
+- 多少算好、多少算差（分级表）
+- 对你刷视频、打游戏的实际影响
+- 结合**你当前的真实数值**给出个性化评估
+
+比如 SINR 页面会直接告诉你「当前 12 dB，属于流畅档，4G 大致对应 50~80 Mbps、5G 大致对应 300~500 Mbps」。
+
+### 外观随你
+
+- 深色 / 浅色模式自适应
+- 12 套配色方案，或跟随系统壁纸取色（Material You）
+- 信号刷新速度可选：快速（2 秒）/ 慢速（5 秒）
+- 中文 / 英文自动跟随系统语言
 
 ---
 
-## 功能特性
+## 为什么选它
 
-### 📊 实时信号监测
-- **双卡同时监测**：HorizontalPager 左右滑动切换 SIM 卡
-- **弹性水滴切换器**：底部 SIM 切换采用独立双边界弹簧动画，模拟液滴拉伸吸附效果
-- **信号环形进度条**：绿/黄/红三色直观指示信号强度
-- **8 大核心指标网格**：按网络类型自适应标签（5G 显示 SS-RSRP，4G 显示 RSRP）
-- **不可用指标显示「无数据」**：3G/2G 不支持的参数显示「无数据」
-- **共享元素容器转场动画**：点击指标格或信号环，详情页从原位置无缝缩放展开（420ms CubicBezier，类似手机桌面启动 App）
-- **信号综合分析**：Energy Pulse 动画评分环（数字跳跃+弹性弹跳+脉冲波纹），含诊断说明+短板建议
+| 优势 | 说明 |
+|------|------|
+| **无广告** | 没有开屏广告、没有横幅、没有弹窗，没有「看广告解锁」 |
+| **不联网** | 应用**没有申请网络权限**，安装包里也不存在 `INTERNET` 权限，从系统层面就无法上传任何数据 |
+| **安装包小** | 约 **2.4 MB**，不占空间、下载快、老机型也无压力 |
+| **不收集隐私** | 无需注册登录；不读取通讯录、短信、相册；不申请任何与功能无关的权限 |
+| **免费开源** | Apache License 2.0，代码公开，任何人都能审查它到底做了什么 |
+| **数据来自系统** | 数值直接读系统上报的基站信息，不做估算和编造 |
+| **专注 4G / 5G** | 指标、评分与科普全部围绕 4G / 5G 打磨 |
 
-### 📖 参数科普解读
-点击每个指标格块进入全屏详情页：
-
-| 指标 | 科普内容 |
-|------|---------|
-| **RSRP / SS-RSRP** | 信号强度范围 + 影响因素 + 当前值个性化评估 |
-| **RSRQ / SS-RSRQ** | 信号质量分级 + RSRP/RSRQ 联合判断 |
-| **SINR / SS-SINR** | 信噪比 → 下载速度映射表 + 评估 |
-| **RSSI** | RSSI vs RSRP 对比 + 什么时候参考 RSSI |
-| **Band** | 运营商频段分布表（移动/联通/电信/广电），根据当前频段动态显示提示 |
-| **PCI** | 基站切换原理 + PCI Mod 3 干扰 |
-| **EARFCN** | 频率换算公式 + 运营商频点范围 |
-| **TAC** | TAC 更新场景 + 作用说明 |
-
-### 🌐 国际化
-- **中文 / 英文自动切换**（跟随系统语言）
-- 所有 UI 文本、科普内容均双语
-
-### 🎨 主题
-- Material Design 3（Material You）
-- 支持浅色/深色模式 + 动态取色
-- 支持多套预设配色方案
+> 想自行验证「不联网」？用任意 APK 权限查看器打开安装包，权限列表里找不到「网络 / INTERNET」这一项——没有这项权限，应用在技术上不可能发出任何请求。
 
 ---
 
-## 技术栈
+## 下载与安装
 
-| 组件 | 技术 | 版本 |
-|------|------|------|
-| 语言 | Kotlin | 2.4.20 |
-| UI 框架 | Jetpack Compose + Material 3 | BOM 2026.09.00 |
-| 导航 | Jetpack Navigation Compose | 2.10.2 |
-| 架构 | MVVM (Repository + ViewModel + StateFlow) | - |
-| 异步 | Kotlin Coroutines + Flow + StateFlow | - |
-| 构建系统 | Gradle | 9.8.0 |
-| AGP | Android Gradle Plugin | 9.4.1 |
-| 动画 | spring + tween + AnimatedContent + AnimatedVisibility | - |
-| 测试 | Compose UI Test (ui-test-junit4) | - |
-| 编译 SDK | Android 17 (API 37.2) | - |
-| 目标 SDK | Android 17 (API 37) | - |
-| 最低支持 | Android 12 (API 31) | - |
+### 系统要求
 
----
+- Android **12 及以上**（API 31+）
+- 需要一张已插入且有 **4G / 5G** 覆盖的 SIM 卡（双卡机型可分别查看两张卡）
 
-## 项目结构
+### 安装步骤
 
-```
-app/src/main/java/cn/debubu/signalinsight/
-├── data/
-│   ├── cellular/
-│   │   ├── CellularRepository.kt          # TelephonyManager + callbackFlow + PhoneStateListener
-│   │   ├── CellularSignalModel.kt         # 数据模型 + 各网络类型参数解析
-│   │   └── SignalQualityEvaluator.kt      # 综合评分算法
-│   ├── permission/
-│   │   └── PermissionManager.kt           # 权限管理（含永久拒绝检测）
-│   └── theme/
-│       └── ThemeManager.kt                # 主题管理器（浅色/深色/配色方案）
-├── ui/
-│   ├── about/
-│   │   └── AboutScreen.kt                 # 关于页（动态版本号 + 隐私说明）
-│   ├── cellular/
-│   │   ├── CellularPage.kt                # 双卡切换主页面（HorizontalPager）
-│   │   ├── CellularViewModel.kt           # 视图模型（StateFlow 驱动）
-│   │   ├── SimContentPage.kt              # 单卡信号内容（信号环+指标网格+邻小区）
-│   │   ├── SignalOverviewScreen.kt        # 信号综合分析页（评分环+诊断）
-│   │   ├── BandExplainer.kt ~ TACExplainer.kt  # 8 个科普组件
-│   │   └── ExplainerUtils.kt              # 共享组件（SectionCard / MetricExplainerShell）
-│   ├── components/
-│   │   └── ElasticSimSwitcher.kt          # 弹性水滴双卡槽切换器（双边界弹簧动画）
-│   ├── main/
-│   │   └── MainScreen.kt                  # 主界面（NavHost + 侧边抽屉 + 生命周期）
-│   ├── permission/
-│   │   ├── PermissionScreen.kt            # 权限申请页面
-│   │   └── PermissionViewModel.kt         # 权限视图模型
-│   ├── settings/
-│   │   ├── SettingsScreen.kt              # 设置页面（主题切换）
-│   │   └── ThemeViewModel.kt              # 主题视图模型
-│   └── theme/
-│       ├── Color.kt / Theme.kt / Type.kt   # Material 3 主题
-│       └── ColorSchemePresets.kt           # 预定义配色方案
-├── MainActivity.kt                        # 应用入口
-└── SignalInsightApplication.kt            # Application 类（单例仓库）
-```
+1. 打开 [**Releases 页面**](https://github.com/hpmdr/Signal-Insight/releases/latest)，在最新版本的 **Assets** 中下载 `SignalInsight-v1.1.2-release.apk`
+2. 用文件管理器点击安装；若系统提示「禁止安装未知应用」，按提示为浏览器或文件管理器**允许安装未知应用**
+3. 首次打开时授予两项权限（见下方说明），即可进入主界面
+4. 升级新版本时直接覆盖安装即可，**无需卸载**，设置会保留
 
----
+> 请始终从本仓库的 Releases 页面下载。其他渠道二次打包的安装包可能被篡改，且签名不同，将无法覆盖升级。
 
-## 导航架构
+### 需要哪些权限，为什么
 
-基于 **Jetpack Navigation Compose**，统一管理所有页面路由：
-
-| 路由 | 页面 | 动画 |
-|------|------|------|
-| `cellular` | 信号监测页 | fadeIn(250) / fadeOut(150) |
-| `settings` | 设置页 | fadeIn(250) / fadeOut(150) |
-| `about` | 关于页 | fadeIn(250) / fadeOut(150) |
-| `explainer/{metricKey}` | 参数详解页 | SharedTransitionLayout 容器转换 (420ms CubicBezier) |
-| 底部 SIM 切换栏 | 仅在 cellular 页显示 | 延迟 300ms 闪现（等页面动画播完） |
-
----
-
-## 构建指南
-
-### 环境要求
-- **JDK** 17+（实测 Microsoft JDK 25 通过）
-- **Android SDK** Platform 37.2 + Build-Tools 37.0.0
-- **Gradle** 9.8.0（gradlew 自动下载）
-- **local.properties** 需在项目根目录自行创建（已被 `.gitignore` 忽略），指定 `sdk.dir` 指向本地 SDK
-
-### 快速开始
-
-```bash
-# 克隆（GitHub）
-git clone https://github.com/hpmdr/Signal-Insight.git
-# 或 Gitee 镜像
-git clone https://gitee.com/debumao/SingnalInsight.git
-cd Signal-Insight   # GitHub 克隆后的目录名（Gitee 镜像的目录名为 SingnalInsight）
-
-# 构建 Debug
-./gradlew assembleDebug
-
-# 运行测试（需要连接手机/模拟器）
-./gradlew connectedDebugAndroidTest
-
-# 构建 Release（需要 keystore.properties 签名配置）
-./gradlew assembleRelease
-```
-
-### 签名配置
-
-项目内置了**公开测试密钥** `app/signal_insight.jks`（密码 `Android123`），克隆后可直接构建 Debug/Release 版本。
-
-如需使用自己的密钥：
-
-1. 生成自己的密钥库文件（如 `private-release.jks`），**不要提交到仓库**
-2. 在项目根目录创建 `private-keystore.properties`（已加入 `.gitignore`）：
-   ```properties
-   storePassword=你的密码
-   keyPassword=你的密码
-   keyAlias=你的别名
-   storeFile=private-release.jks
-   ```
-3. 构建系统会优先读取 `private-keystore.properties`，不存在时回退到公开密钥
-
----
-
-## 权限说明
-
-| 权限 | 用途 | API 级别 |
+| 权限 | 用途 | 是否必须 |
 |------|------|---------|
-| `ACCESS_FINE_LOCATION` | 访问 CellInfo（系统要求位置权限才能获取基站信息） | 必须 |
-| `READ_PHONE_STATE` | 读取运营商名称、网络类型 | Android 12 及以下 |
-| `READ_BASIC_PHONE_STATE` | 读取基本电话状态 | Android 13+ 替代 |
+| **电话**（`READ_PHONE_STATE`） | 读取运营商名称、网络制式、SIM 卡信息 | 必须 |
+| **位置**（`ACCESS_FINE_LOCATION`） | Android 系统规定：读取基站信息必须先授予位置权限 | 必须 |
 
-> 应用**没有申请联网权限**，所有数据仅在本地设备上处理，不会也无法上传或泄露任何信息。
+关于位置权限，需要说清楚：
+
+- 这是**系统强制要求**，不是应用想定位你。Android 从 10 开始就把「基站信息」归类为可能推断位置的数据。
+- 应用**不会**读取 GPS、不会显示你的坐标、不会记录你去过哪里，更没有网络权限把任何东西发出去。
+- 拒绝授权则无法获取基站数据，应用会停留在授权页。
+
+---
+
+## 常见问题
+
+**Q：为什么有些指标显示「无数据」？**
+A：要么当前网络本身没有这个概念（比如 5G 没有 RSSI），要么是你的手机/系统没有上报（部分机型在 4G 下不提供 SINR）。应用如实显示，不做猜测填充。
+
+**Q：为什么选择「快速刷新」，数字却不是每 2 秒都变？**
+A：刷新请求由系统统一调度并限流，官方明确说明「不保证按请求频率更新」。信号稳定时数值本来也不会有明显变化。
+
+**Q：装了之后在系统设置里找不到「网络」权限？**
+A：因为应用根本没有申请网络权限，系统自然不会列出这一项。这是刻意设计，不是权限被隐藏。
+
+**Q：这个分数是运营商测速吗？**
+A：不是。评分只反映**当前无线链路的质量**（强度、质量、信噪比），与你的套餐带宽、服务器负载、测速节点无关。
+
+**Q：能看 Wi-Fi 信号吗？**
+A：目前只做蜂窝网络（4G / 5G）。
+
+---
+
+## 反馈与建议
+
+遇到问题或有功能建议，欢迎在 [Issues](https://github.com/hpmdr/Signal-Insight/issues) 中反馈。如果对你有帮助，给个 Star 是最大的鼓励。
 
 ---
 
 ## 开源协议
 
-本项目基于 **Apache License 2.0** 协议开源，详见 [LICENSE](LICENSE) 文件。
+本项目基于 [Apache License 2.0](LICENSE) 开源，Copyright 2026 hpmdr / debumao。
 
+<details>
+<summary>开发者：从源码构建</summary>
+
+```bash
+git clone https://github.com/hpmdr/Signal-Insight.git
+cd Signal-Insight
+
+# 首次构建前，在项目根目录创建 local.properties，写入 SDK 路径
+echo "sdk.dir=/path/to/android-sdk" > local.properties
+
+./gradlew assembleDebug      # 调试包
+./gradlew assembleRelease    # 发布包（R8 + 资源压缩）
+./gradlew testDebugUnitTest  # 单元测试
 ```
-Copyright 2026 hpmdr / debumao
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+- 环境：JDK 17+、Android SDK Platform 37.2、Build-Tools 37.0.0（Gradle 由 wrapper 自动下载）
+- 正式分发包一律由 GitHub Actions 使用仓库 Secrets 中的密钥签名构建，本地 `assembleRelease` 的产物**不要**对外分发
+- 详细页面与功能说明见 [`doc/页面与功能文档.md`](doc/页面与功能文档.md)，签名与分发规范见 [`doc/签名密钥与分发规范.md`](doc/签名密钥与分发规范.md)
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
+</details>
