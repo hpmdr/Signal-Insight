@@ -8,7 +8,16 @@
 >
 > 在页面底部的 **Assets** 中点击 `SignalInsight-v1.1.2-release.apk` 即可下载（文件名中的版本号会随新版本变化）。
 
-![Signal Insight 主界面](screen_main.png)
+<table>
+  <tr>
+    <td width="50%"><img src="screen_main.png" alt="Signal Insight 深色模式主界面"></td>
+    <td width="50%"><img src="screen_main_light.png" alt="Signal Insight 浅色模式主界面"></td>
+  </tr>
+  <tr>
+    <td align="center">深色模式</td>
+    <td align="center">浅色模式</td>
+  </tr>
+</table>
 
 ---
 
